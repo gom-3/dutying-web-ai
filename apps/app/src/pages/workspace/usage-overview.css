@@ -1,0 +1,475 @@
+.workspace-app .workspace-section.usage-overview {
+    --usage-accent: var(--workspace-primary, #663dfa);
+    --usage-accent-soft: var(--workspace-secondary, #f0ecff);
+    --usage-ink: var(--workspace-ink, #242428);
+    --usage-muted: #5e6575;
+    --usage-track: #e5e7ee;
+    --usage-warning: #974717;
+    min-width: 0;
+    margin: 0;
+    padding: 28px;
+    border: 0;
+    border-radius: 24px;
+    background: #fff;
+    color: var(--usage-ink);
+    box-shadow: none;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+}
+
+.workspace-app .usage-overview .usage-overview__header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    margin-bottom: 24px;
+}
+
+.workspace-app .usage-overview .usage-overview__eyebrow {
+    margin: 0 0 6px;
+    color: var(--usage-muted);
+    font-size: 0.8125rem;
+    font-weight: 500;
+}
+
+.workspace-app .usage-overview .usage-overview__plan {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 6px 14px;
+}
+
+.workspace-app .usage-overview .usage-overview__plan-name {
+    margin: 0;
+    color: var(--usage-ink);
+    font-size: 2rem;
+    font-weight: 750;
+    line-height: 1.25;
+    letter-spacing: -0.04em;
+}
+
+.workspace-app .usage-overview .usage-overview__plan-caption {
+    color: var(--usage-muted);
+    font-size: 0.8125rem;
+}
+
+.workspace-app .usage-overview .usage-overview__action {
+    display: inline-flex;
+    flex: 0 1 auto;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-height: 44px;
+    margin: 0;
+    padding: 10px 16px;
+    border: 0;
+    border-radius: 10px;
+    background: var(--usage-accent);
+    color: #fff;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    line-height: 1.5;
+    text-decoration: none;
+}
+
+.workspace-app .usage-overview .usage-overview__action svg {
+    flex: 0 0 auto;
+}
+
+.workspace-app .usage-overview .usage-overview__action:hover {
+    background: var(--workspace-primary-hover, #5832e7);
+    color: #fff;
+}
+
+.workspace-app .usage-overview .usage-overview__action:active {
+    background: #342078;
+}
+
+.workspace-app .usage-overview .usage-overview__ai {
+    min-width: 0;
+    padding: 24px 24px 12px;
+    border-radius: 18px;
+    background: var(--usage-accent-soft);
+}
+
+.workspace-app .usage-overview .usage-overview__ai-summary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    padding-bottom: 12px;
+}
+
+.workspace-app .usage-overview .usage-overview__ai-main {
+    min-width: 0;
+    flex: 1 1 280px;
+}
+
+.workspace-app .usage-overview .usage-overview__ai-heading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    color: var(--usage-accent);
+}
+
+.workspace-app .usage-overview .usage-overview__label {
+    margin: 0;
+    font-size: 0.875rem;
+    font-weight: 650;
+    line-height: 1.5;
+    letter-spacing: -0.02em;
+}
+
+.workspace-app .usage-overview .usage-overview__ai-value {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 6px;
+    margin: 0;
+    color: var(--usage-ink);
+    font-size: 1.625rem;
+    font-weight: 700;
+    line-height: 1.4;
+    letter-spacing: -0.04em;
+}
+
+.workspace-app .usage-overview .usage-overview__ai-value strong {
+    color: var(--usage-accent);
+    font-size: 2rem;
+    font-weight: 750;
+    font-variant-numeric: tabular-nums;
+}
+
+.workspace-app .usage-overview .usage-overview__ai-value span {
+    font-size: 1.125rem;
+    font-weight: 600;
+}
+
+.workspace-app .usage-overview .usage-overview__ai-stats {
+    display: flex;
+    flex-wrap: wrap;
+    flex: 0 1 auto;
+    gap: 20px 32px;
+    margin: 0;
+    padding: 0;
+}
+
+.workspace-app .usage-overview .usage-overview__ai-stats dt {
+    margin: 0 0 4px;
+    color: var(--usage-muted);
+    font-size: 0.75rem;
+}
+
+.workspace-app .usage-overview .usage-overview__ai-stats dd {
+    margin: 0;
+    color: var(--usage-ink);
+    font-size: 1.375rem;
+    font-weight: 650;
+    line-height: 1.4;
+    font-variant-numeric: tabular-nums;
+}
+
+.workspace-app .usage-overview .usage-overview__ai-stats dd span {
+    margin-left: 4px;
+    font-size: 0.8125rem;
+    font-weight: 400;
+}
+
+.workspace-app .usage-overview .usage-overview__meter {
+    display: block;
+    width: 100%;
+    height: 6px;
+    margin: 12px 0;
+    overflow: hidden;
+    border: 0;
+    border-radius: 3px;
+    background: var(--usage-track);
+    appearance: none;
+}
+
+.workspace-app .usage-overview .usage-overview__meter::-webkit-meter-bar {
+    height: 6px;
+    border: 0;
+    border-radius: 3px;
+    background: var(--usage-track);
+    box-shadow: none;
+}
+
+.workspace-app .usage-overview .usage-overview__meter::-webkit-meter-optimum-value {
+    border-radius: 3px;
+    background: var(--usage-accent);
+}
+
+.workspace-app .usage-overview .usage-overview__meter::-moz-meter-bar {
+    border-radius: 3px;
+    background: var(--usage-accent);
+}
+
+.workspace-app .usage-overview .usage-overview__ai > .usage-overview__meter {
+    --usage-track: #d6cdef;
+    margin: 4px 0 12px;
+}
+
+.workspace-app .usage-overview .usage-overview__allowance {
+    margin: 2px 0 0;
+    color: var(--usage-muted);
+    font-size: 0.75rem;
+}
+
+.workspace-app .usage-overview .usage-overview__allowance summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 44px;
+    margin: 0 -8px;
+    padding: 10px 8px;
+    border-radius: 6px;
+    color: var(--usage-muted);
+    font-size: 0.75rem;
+    font-weight: 550;
+    line-height: 1.6;
+    list-style: none;
+    cursor: pointer;
+}
+
+.workspace-app .usage-overview .usage-overview__allowance summary::-webkit-details-marker {
+    display: none;
+}
+
+.workspace-app .usage-overview .usage-overview__allowance summary:hover {
+    background: #e6dff8;
+    color: var(--usage-ink);
+}
+
+.workspace-app .usage-overview .usage-overview__allowance[open] summary svg {
+    transform: rotate(180deg);
+}
+
+.workspace-app .usage-overview .usage-overview__allowance-note {
+    margin: 4px 0 16px;
+    color: var(--usage-muted);
+    font-size: 0.75rem;
+}
+
+.workspace-app .usage-overview .usage-overview__lots {
+    display: grid;
+    gap: 16px;
+    margin: 8px 0 12px;
+    padding: 0;
+    list-style: none;
+}
+
+.workspace-app .usage-overview .usage-overview__lots li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 4px 16px;
+}
+
+.workspace-app .usage-overview .usage-overview__lots li > div {
+    display: grid;
+    min-width: 0;
+    gap: 2px;
+}
+
+.workspace-app .usage-overview .usage-overview__lots li span,
+.workspace-app .usage-overview .usage-overview__lots li strong {
+    color: var(--usage-ink);
+    font-size: 0.8125rem;
+}
+
+.workspace-app .usage-overview .usage-overview__lots li strong {
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.workspace-app .usage-overview .usage-overview__lots li small {
+    color: var(--usage-muted);
+    font-size: 0.75rem;
+}
+
+.workspace-app .usage-overview .usage-overview__people {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 32px;
+    margin-top: 28px;
+}
+
+.workspace-app .usage-overview .usage-overview__people-section {
+    min-width: 0;
+}
+
+.workspace-app .usage-overview .usage-overview__people-heading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 6px 12px;
+}
+
+.workspace-app .usage-overview .usage-overview__limit {
+    color: var(--usage-muted);
+    font-size: 0.75rem;
+}
+
+.workspace-app .usage-overview .usage-overview__people-value {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 6px;
+    margin: 12px 0 0;
+    color: var(--usage-muted);
+    font-size: 0.8125rem;
+}
+
+.workspace-app .usage-overview .usage-overview__people-value strong {
+    color: var(--usage-ink);
+    font-size: 1.875rem;
+    font-weight: 700;
+    line-height: 1.4;
+    letter-spacing: -0.04em;
+    font-variant-numeric: tabular-nums;
+}
+
+.workspace-app .usage-overview .usage-overview__admin-summary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0 12px;
+}
+
+.workspace-app .usage-overview .usage-overview__pending {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 6px;
+    margin: 8px 0 0;
+    color: var(--usage-muted);
+    font-size: 0.75rem;
+}
+
+.workspace-app .usage-overview .usage-overview__pending strong {
+    color: var(--usage-ink);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.workspace-app .usage-overview .usage-overview__people-caption {
+    margin: 8px 0 0;
+    color: var(--usage-muted);
+    font-size: 0.8125rem;
+    line-height: 1.7;
+}
+
+.workspace-app .usage-overview .usage-overview__notice {
+    display: grid;
+    gap: 4px;
+    margin: 24px 0 0;
+    padding: 16px;
+    border-radius: 10px;
+    background: #f5f6f8;
+    color: var(--usage-muted);
+    font-size: 0.8125rem;
+    line-height: 1.8;
+}
+
+.workspace-app .usage-overview .usage-overview__notice strong {
+    color: var(--usage-ink);
+    font-weight: 600;
+}
+
+.workspace-app .usage-overview [data-warning='true'] .usage-overview__people-caption {
+    color: var(--usage-warning);
+    font-weight: 550;
+}
+
+.workspace-app .usage-overview [data-warning='true'] .usage-overview__meter::-webkit-meter-optimum-value {
+    background: var(--usage-warning);
+}
+
+.workspace-app .usage-overview [data-warning='true'] .usage-overview__meter::-moz-meter-bar {
+    background: var(--usage-warning);
+}
+
+.workspace-app .usage-overview .usage-overview__notice[data-warning='true'] {
+    background: #fff3e8;
+    color: var(--usage-warning);
+}
+
+.workspace-app .usage-overview .usage-overview__ai[data-empty='true'] {
+    background: #f5f6f8;
+}
+
+.workspace-app .usage-overview .usage-overview__action:focus-visible,
+.workspace-app .usage-overview .usage-overview__allowance summary:focus-visible {
+    outline: none;
+    background: #25203b;
+    color: #fff;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+}
+
+@media (max-width: 640px) {
+    .workspace-app .workspace-section.usage-overview {
+        padding: 22px 18px;
+        border-radius: 20px;
+    }
+
+    .workspace-app .usage-overview .usage-overview__header {
+        align-items: flex-start;
+        gap: 18px;
+        margin-bottom: 22px;
+    }
+
+    .workspace-app .usage-overview .usage-overview__action {
+        width: 100%;
+    }
+
+    .workspace-app .usage-overview .usage-overview__ai {
+        padding: 20px 18px 8px;
+        border-radius: 14px;
+    }
+
+    .workspace-app .usage-overview .usage-overview__ai-summary {
+        gap: 20px;
+    }
+
+    .workspace-app .usage-overview .usage-overview__ai-main {
+        flex-basis: 100%;
+    }
+
+    .workspace-app .usage-overview .usage-overview__ai-value {
+        font-size: 1.375rem;
+    }
+
+    .workspace-app .usage-overview .usage-overview__ai-stats {
+        flex: 1 1 100%;
+        gap: 20px 40px;
+    }
+
+    .workspace-app .usage-overview .usage-overview__people {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 28px;
+        margin-top: 28px;
+    }
+}
+
+@media (forced-colors: active) {
+    .workspace-app .usage-overview .usage-overview__meter {
+        appearance: auto;
+    }
+
+    .workspace-app .usage-overview .usage-overview__action:focus-visible,
+    .workspace-app .usage-overview .usage-overview__allowance summary:focus-visible {
+        outline: 2px solid Highlight;
+        outline-offset: 2px;
+    }
+}

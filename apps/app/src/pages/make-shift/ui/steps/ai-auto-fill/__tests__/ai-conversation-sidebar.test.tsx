@@ -3255,8 +3255,8 @@ describe('persistent schedule sidebar', () => {
         });
         renderSidebar();
         await userEvent.click(await screen.findByRole('radio', {name: '가능하면'}));
-        expect(screen.getByRole('button', {name: '이대로 수정하기'})).toBeDisabled();
-        await userEvent.click(screen.getByRole('button', {name: '변경한 조건 확인하기'}));
+        expect(screen.queryByRole('button', {name: '이대로 수정하기'})).not.toBeInTheDocument();
+        await userEvent.click(screen.getByRole('button', {name: '변경 내용 확인'}));
         await waitFor(() =>
             expect(mocks.changeModalities).toHaveBeenCalledExactlyOnceWith(1, 'priority:parent', 0, 'a'.repeat(64), {count: 'SOFT'}),
         );

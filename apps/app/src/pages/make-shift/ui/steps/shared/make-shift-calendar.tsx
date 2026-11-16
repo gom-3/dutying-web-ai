@@ -37,6 +37,7 @@ import {PersonIcon, SixDotsIcon} from '@/shared/assets/svg';
 import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {getLocaleForLanguage} from '@/shared/i18n/locale';
+import {getDivisionDisplayLabel} from '@/shared/lib/division-label';
 import {CalendarNurseName} from './calendar-nurse-name';
 import {formatNurseDisplayName} from './format-nurse-display-name';
 
@@ -351,15 +352,12 @@ const MIN_NIGHT_INTERVAL_EXPECTED_PATTERNS = [
 function getDivisionHeaderLabel(
     rows: TShift['divisionShiftNurses'][number],
     divisionNum: number,
+    t: ReturnType<typeof useTypedTranslation>['t'],
     divisionLabelByNum?: ReadonlyMap<number, string | null | undefined>,
 ) {
     const mappedName = divisionLabelByNum?.get(divisionNum)?.trim();
 
-    if (mappedName && mappedName.length > 0) return mappedName;
-
-    const trimmedName = rows[0]?.shiftNurse.divisionName?.trim();
-
-    return trimmedName && trimmedName.length > 0 ? trimmedName : `그룹${divisionNum}`;
+    return getDivisionDisplayLabel(divisionNum, mappedName || rows[0]?.shiftNurse.divisionName, t);
 }
 
 const VIOLATION_POPOVER_WIDTH = 360;
@@ -1914,7 +1912,7 @@ export function MakeShiftCalendar({
                         if (rows.length === 0) return null;
 
                         const divisionNum = rows[0]?.shiftNurse.divisionNum ?? level + 1;
-                        const divisionLabel = getDivisionHeaderLabel(rows, divisionNum, divisionLabelByNum);
+                        const divisionLabel = getDivisionHeaderLabel(rows, divisionNum, t, divisionLabelByNum);
 
                         return (
                             <div key={level} className={cn('make-shift-calendar__division-section flex w-full min-w-0 flex-col')}>
@@ -1928,7 +1926,7 @@ export function MakeShiftCalendar({
                                         </span>
                                         <span
                                             className="inline-flex items-center gap-0.5 font-apple text-[11px] font-medium text-gray-4 tabular-nums"
-                                            aria-label={`${divisionLabel} ${rows.length}명`}
+                                            aria-label={t('shared.division.memberCountAria', {group: divisionLabel, count: rows.length})}
                                         >
                                             <PersonIcon className="h-3 w-3" aria-hidden="true" />
                                             {rows.length}

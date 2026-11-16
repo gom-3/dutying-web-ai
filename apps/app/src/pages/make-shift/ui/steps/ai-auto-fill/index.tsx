@@ -3389,6 +3389,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                     goalNurses={currentTeamNurses.map((nurse) => ({
                         nurseId: nurse.nurseId,
                         name: nurse.name,
+                        divisionNum: nurse.divisionNum,
                         divisionName: Object.values(editorDoc.workerMeta).find((meta) => meta.nurseId === nurse.nurseId)?.divisionName,
                     }))}
                     requests={monthRequests}

@@ -26,6 +26,7 @@ import {
     WEB_LANGUAGES,
     type TWebLanguage,
 } from '@/shared/i18n/locale';
+import {isValidAccountName, normalizeAccountNameForRequest} from '@/shared/lib/account-name';
 import {formatBirthDateInput, getTodayDateKey, isValidBirthDate, normalizeBirthDateForStorage} from '@/shared/lib/birth-date';
 import {
     CONTACT_PHONE_MAX_LENGTH,
@@ -33,10 +34,18 @@ import {
     normalizeContactPhoneForStorage,
     sanitizeContactPhoneInput,
 } from '@/shared/lib/contact-phone';
+import {
+    GLOBAL_PHONE_INPUT_MAX_LENGTH,
+    normalizeGlobalPhoneInput,
+    parseGlobalContactPhone,
+    resolveContactPhoneCountry,
+    type TPhoneCountry,
+} from '@/shared/lib/global-contact-phone';
 import {isValidNurseName, NURSE_NAME_MAX_LENGTH, normalizeNurseNameForRequest, sanitizeNurseNameInput} from '@/shared/lib/nurse-name';
 import Card from '@/shared/ui/Card';
 import ConfirmActionDialog from '@/shared/ui/ConfirmActionDialog';
 import PageState from '@/shared/ui/PageState';
+import PhoneCountrySelect from '@/shared/ui/PhoneCountrySelect';
 import {Button} from '@/shared/ui/primitives/button';
 import {findProfileNurse, getCurrentProfileImage, getProfileDisplayName, getProfilePhoneNum, isProfileFormDirty} from './model';
 
@@ -53,12 +62,12 @@ const FIELD_CLASS =
 const SELECT_FIELD_CLASS =
     'h-11 w-full rounded-[12px] border border-transparent bg-gray-7 px-3.5 text-[15px] font-medium text-sub-1 outline-none transition-colors focus-visible:bg-main-light';
 const LANGUAGE_OPTIONS = WEB_LANGUAGES;
-const validateName = (value: string, messages: {required: string; invalid: string}) => {
-    const requestName = normalizeNurseNameForRequest(value);
+const validateName = (value: string, messages: {required: string; invalid: string}, isAccountName = false) => {
+    const requestName = isAccountName ? normalizeAccountNameForRequest(value) : normalizeNurseNameForRequest(value);
 
     if (!requestName) return messages.required;
 
-    if (!isValidNurseName(value)) {
+    if (!(isAccountName ? isValidAccountName(value) : isValidNurseName(value))) {
         return messages.invalid;
     }
 
@@ -204,6 +213,13 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
     });
     const selectedNurse = findProfileNurse(wardQuery.data, accountMe?.accountId);
     const isWardAdmin = isWardAdminAccessToken(accessToken);
+    const savedPhoneCountry = resolveContactPhoneCountry(
+        accountMe?.phoneNum,
+        accountMe?.serviceRegion ?? accountMe?.resolvedRegion ?? getDefaultServiceRegionForLanguage(i18n.resolvedLanguage ?? i18n.language),
+        accountMe?.phoneCountry,
+    );
+    const [phoneCountry, setPhoneCountry] = useState<TPhoneCountry | undefined>(savedPhoneCountry);
+    const normalizeProfilePhoneInput = isWardAdmin ? normalizeGlobalPhoneInput : normalizeContactPhoneForStorage;
     const savedBirthDate = accountMe?.birthDate ?? selectedNurse?.birthDate ?? null;
     const birthDateMax = getTodayDateKey();
     const nextBirthDate = normalizeBirthDateForStorage(draftBirthDate);
@@ -211,9 +227,9 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
     const isBirthDateDirty = !isWardAdmin && nextBirthDate !== savedBirthDate;
     const validationMessages = {
         nameRequired: t('page.profile.validation.nameRequired'),
-        nameInvalid: t('page.profile.validation.nameInvalid'),
+        nameInvalid: t(writeNurse ? 'page.profile.validation.nameInvalid' : 'page.register.nurse.validation.nameInvalid'),
         phoneRequired: t('page.profile.validation.phoneRequired'),
-        phoneInvalid: t('page.profile.validation.phoneInvalid'),
+        phoneInvalid: t(isWardAdmin ? 'shared.contactPhone.invalid' : 'page.profile.validation.phoneInvalid'),
     };
     const displayName = getProfileDisplayName(writeNurse, accountMe, t('page.profile.unknownName'));
     const phoneInputValue = writeNurse
@@ -242,25 +258,36 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
     });
     const isAccountFormDirty =
         Boolean(profileImg) ||
-        normalizeNurseNameForRequest(draftName) !== normalizeNurseNameForRequest(accountMe?.name ?? '') ||
-        normalizeContactPhoneForStorage(draftPhoneNum) !== normalizeContactPhoneForStorage(accountMe?.phoneNum ?? '');
+        normalizeAccountNameForRequest(draftName) !== normalizeAccountNameForRequest(accountMe?.name ?? '') ||
+        normalizeProfilePhoneInput(draftPhoneNum) !== normalizeProfilePhoneInput(accountMe?.phoneNum ?? '') ||
+        (isWardAdmin && phoneCountry !== savedPhoneCountry);
     const isPreferenceDirty = draftPreferredLanguage !== savedPreferredLanguage;
     const hasProfileChanges = hasNurseProfile ? isDirty : isAccountFormDirty;
     const hasUnsavedChanges = hasProfileChanges || isBirthDateDirty || isPreferenceDirty;
     const isSaveDisabled =
         isProfileImageLoading || isSaving || isSavingPreferences || !hasUnsavedChanges || (isBirthDateDirty && !isBirthDateValid);
+    const validateProfilePhone = (value: string) => {
+        const messages = {required: validationMessages.phoneRequired, invalid: validationMessages.phoneInvalid};
+
+        if (!isWardAdmin) return validatePhoneNum(value, phoneValidationRegion, messages);
+
+        if (!normalizeGlobalPhoneInput(value)) return messages.required;
+
+        return parseGlobalContactPhone(value, phoneCountry) ? undefined : messages.invalid;
+    };
     const validateField = (field: TProfileField, value: string) => {
         if (field === 'name') {
-            return validateName(value, {
-                required: validationMessages.nameRequired,
-                invalid: validationMessages.nameInvalid,
-            });
+            return validateName(
+                value,
+                {
+                    required: validationMessages.nameRequired,
+                    invalid: validationMessages.nameInvalid,
+                },
+                !writeNurse,
+            );
         }
 
-        return validatePhoneNum(value, phoneValidationRegion, {
-            required: validationMessages.phoneRequired,
-            invalid: validationMessages.phoneInvalid,
-        });
+        return validateProfilePhone(value);
     };
     const setFieldError = (field: TProfileField, value: string) => {
         const message = validateField(field, value);
@@ -278,10 +305,7 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
                 required: validationMessages.nameRequired,
                 invalid: validationMessages.nameInvalid,
             }),
-            phoneNum: validatePhoneNum(phoneNum, phoneValidationRegion, {
-                required: validationMessages.phoneRequired,
-                invalid: validationMessages.phoneInvalid,
-            }),
+            phoneNum: validateProfilePhone(phoneNum),
         };
 
         setFieldErrors(nextErrors);
@@ -290,16 +314,17 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
         return !nextErrors.name && !nextErrors.phoneNum;
     };
     const validateAccountForm = () => {
-        const nextName = normalizeNurseNameForRequest(draftName) || normalizeNurseNameForRequest(accountMe?.name ?? '');
+        const nextName = normalizeAccountNameForRequest(draftName) || normalizeAccountNameForRequest(accountMe?.name ?? '');
         const nextErrors: TProfileErrors = {
-            name: validateName(nextName, {
-                required: validationMessages.nameRequired,
-                invalid: validationMessages.nameInvalid,
-            }),
-            phoneNum: validatePhoneNum(draftPhoneNum, phoneValidationRegion, {
-                required: validationMessages.phoneRequired,
-                invalid: validationMessages.phoneInvalid,
-            }),
+            name: validateName(
+                nextName,
+                {
+                    required: validationMessages.nameRequired,
+                    invalid: validationMessages.nameInvalid,
+                },
+                true,
+            ),
+            phoneNum: validateProfilePhone(draftPhoneNum),
         };
 
         setFieldErrors(nextErrors);
@@ -308,7 +333,7 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
         return {
             isValid: !nextErrors.name && !nextErrors.phoneNum,
             name: nextName,
-            phoneNum: normalizeContactPhoneForStorage(draftPhoneNum),
+            phoneNum: normalizeProfilePhoneInput(draftPhoneNum),
         };
     };
     const handleChange = <T extends keyof TNurse>(key: T, value: TNurse[T]) => {
@@ -356,20 +381,22 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
                 if (writeNurse) {
                     if (!validateForm()) return;
 
-                    const phoneNum = normalizeContactPhoneForStorage(
+                    const phoneNum = normalizeProfilePhoneInput(
                         hasEditedPhoneNum ? (writeNurse.phoneNum ?? '') : getProfilePhoneNum(writeNurse, accountMe),
                     );
+                    const profile = {...writeNurse, name: normalizeNurseNameForRequest(writeNurse.name ?? ''), phoneNum};
 
-                    isProfileSaved = await handleEditProfile(
-                        {...writeNurse, name: normalizeNurseNameForRequest(writeNurse.name ?? ''), phoneNum},
-                        currentProfileImage,
-                    );
+                    isProfileSaved = isWardAdmin
+                        ? await handleEditProfile(profile, currentProfileImage, phoneCountry)
+                        : await handleEditProfile(profile, currentProfileImage);
                 } else {
                     const {isValid, name, phoneNum} = validateAccountForm();
 
                     if (!isValid) return;
 
-                    isProfileSaved = await handleEditAccountBasic(name, currentProfileImage, phoneNum);
+                    isProfileSaved = isWardAdmin
+                        ? await handleEditAccountBasic(name, currentProfileImage, phoneNum, phoneCountry)
+                        : await handleEditAccountBasic(name, currentProfileImage, phoneNum);
                 }
 
                 if (!isProfileSaved) return;
@@ -400,12 +427,23 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
 
         setWriteNurse(null);
         setDraftName(accountMe?.name ?? '');
-        setDraftPhoneNum(normalizeContactPhoneForStorage(accountMe?.phoneNum ?? ''));
+        setDraftPhoneNum(
+            isWardAdmin ? normalizeGlobalPhoneInput(accountMe?.phoneNum ?? '') : normalizeContactPhoneForStorage(accountMe?.phoneNum ?? ''),
+        );
+        setPhoneCountry(
+            resolveContactPhoneCountry(
+                accountMe?.phoneNum,
+                accountMe?.serviceRegion ??
+                    accountMe?.resolvedRegion ??
+                    getDefaultServiceRegionForLanguage(i18n.resolvedLanguage ?? i18n.language),
+                accountMe?.phoneCountry,
+            ),
+        );
         setDraftBirthDate(accountMe?.birthDate ?? '');
         setHasEditedPhoneNum(false);
         setFieldErrors({});
         setFieldTouched({});
-    }, [accountMe?.accountId, accountMe?.birthDate, accountMe?.name, accountMe?.phoneNum, selectedNurse]);
+    }, [accountMe?.accountId, accountMe?.birthDate, accountMe?.name, accountMe?.phoneNum, accountMe?.phoneCountry, selectedNurse]);
 
     useEffect(() => {
         if (!selectedNurse) return;
@@ -673,11 +711,11 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
                                     modalFieldClassName,
                                     fieldErrors.name && 'border-red bg-[#FFF7F8] focus-visible:bg-white',
                                 )}
-                                maxLength={NURSE_NAME_MAX_LENGTH}
+                                maxLength={writeNurse ? NURSE_NAME_MAX_LENGTH : undefined}
                                 placeholder={t('page.profile.namePlaceholder')}
                                 value={writeNurse?.name ?? draftName}
                                 onChange={(e) => {
-                                    const nextValue = sanitizeNurseNameInput(e.target.value);
+                                    const nextValue = writeNurse ? sanitizeNurseNameInput(e.target.value) : e.target.value;
 
                                     if (writeNurse) {
                                         handleChange('name', nextValue);
@@ -685,7 +723,7 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
                                         setDraftName(nextValue);
                                     }
 
-                                    if (fieldTouched.name) setFieldError('name', nextValue);
+                                    if (fieldTouched.name && !(e.nativeEvent as InputEvent).isComposing) setFieldError('name', nextValue);
                                 }}
                                 onBlur={(e) => {
                                     setFieldTouched((prev) => ({...prev, name: true}));
@@ -701,6 +739,11 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
                             ) : null}
                         </div>
                         <div className={fieldContainerClassName}>
+                            {isWardAdmin ? (
+                                <div className="mb-3">
+                                    <PhoneCountrySelect id="profile-phone-country" value={phoneCountry} onChange={setPhoneCountry} />
+                                </div>
+                            ) : null}
                             <label htmlFor="phoneNum" className="mb-1.5 block font-apple text-[13px] font-medium text-[#4E5968]">
                                 {t('page.profile.phoneNum')}
                             </label>
@@ -708,7 +751,7 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
                                 id="phoneNum"
                                 type="tel"
                                 inputMode="tel"
-                                maxLength={CONTACT_PHONE_MAX_LENGTH}
+                                maxLength={isWardAdmin ? GLOBAL_PHONE_INPUT_MAX_LENGTH : CONTACT_PHONE_MAX_LENGTH}
                                 className={cn(
                                     FIELD_CLASS,
                                     modalFieldClassName,
@@ -717,7 +760,7 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
                                 placeholder={t('page.profile.phoneNumPlaceholder')}
                                 value={phoneInputValue}
                                 onChange={(e) => {
-                                    const nextValue = sanitizeContactPhoneInput(e.target.value);
+                                    const nextValue = isWardAdmin ? e.target.value : sanitizeContactPhoneInput(e.target.value);
 
                                     if (writeNurse) {
                                         setHasEditedPhoneNum(true);
@@ -726,15 +769,29 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
                                         setDraftPhoneNum(nextValue);
                                     }
 
-                                    if (fieldTouched.phoneNum) setFieldError('phoneNum', nextValue);
+                                    if (fieldTouched.phoneNum && !(e.nativeEvent as InputEvent).isComposing)
+                                        setFieldError('phoneNum', nextValue);
                                 }}
                                 onBlur={(e) => {
                                     setFieldTouched((prev) => ({...prev, phoneNum: true}));
                                     setFieldError('phoneNum', e.target.value);
+
+                                    const phone = isWardAdmin ? parseGlobalContactPhone(e.target.value, phoneCountry) : undefined;
+
+                                    if (phone) setPhoneCountry(phone.country);
                                 }}
                                 aria-invalid={Boolean(fieldErrors.phoneNum)}
-                                aria-describedby={fieldErrors.phoneNum ? 'profile-phone-error' : undefined}
+                                aria-describedby={
+                                    [fieldErrors.phoneNum && 'profile-phone-error', isWardAdmin && 'profile-phone-hint']
+                                        .filter(Boolean)
+                                        .join(' ') || undefined
+                                }
                             />
+                            {isWardAdmin ? (
+                                <p id="profile-phone-hint" className="mt-1.5 text-xs leading-relaxed text-gray-3">
+                                    {t('shared.contactPhone.hint')}
+                                </p>
+                            ) : null}
                             {fieldErrors.phoneNum ? (
                                 <p id="profile-phone-error" className="mt-1 font-apple text-xs text-red">
                                     {fieldErrors.phoneNum}

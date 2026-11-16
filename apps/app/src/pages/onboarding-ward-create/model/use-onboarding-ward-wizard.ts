@@ -1,5 +1,4 @@
-import {captureRosterImportEvent} from '@/shared/util/abto';
-﻿import type {
+import type {
     TOnboardingScheduleInputPreviewDTO,
     TOnboardingScheduleInputPreviewResponse,
     TOnboardingWardDraftResponse,
@@ -12,6 +11,8 @@ import useRegister from '@/features/register';
 import {FileAPI} from '@/shared/api';
 import type {TOnboardingWardParseOptions} from '@/shared/api/file/type';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import {getDefaultDivisionName} from '@/shared/lib/division-label';
+import {captureRosterImportEvent} from '@/shared/util/abto';
 import {
     applyParsedWardData,
     buildUploadedMonthlySchedulesFromParsedWardData,
@@ -147,7 +148,6 @@ const isOnboardingStep = (value: unknown): value is TOnboardingWardDraft['curren
     value === 1 || value === 2 || value === 3 || value === 4 || value === 5;
 const isSortMode = (value: unknown): value is TSortMode => value === 'manual' || value === 'name';
 const normalizeRestoredDivisionNum = (value: unknown) => (typeof value === 'number' && Number.isInteger(value) && value > 0 ? value : 1);
-const getRestoredDivisionFallbackName = (divisionNum: number) => `그룹${divisionNum}`;
 const normalizeRestoredTeams = (
     teams: TOnboardingWardDraft['teams'],
     nurses: TOnboardingWardDraft['nurses'],
@@ -161,7 +161,7 @@ const normalizeRestoredTeams = (
             if (!divisionByNum.has(divisionNum)) {
                 divisionByNum.set(divisionNum, {
                     divisionNum,
-                    name: division.name?.trim() || getRestoredDivisionFallbackName(divisionNum),
+                    name: division.name?.trim() || getDefaultDivisionName(divisionNum),
                 });
             }
         });
@@ -171,12 +171,12 @@ const normalizeRestoredTeams = (
                 const divisionNum = normalizeRestoredDivisionNum(nurse.divisionNum);
 
                 if (!divisionByNum.has(divisionNum)) {
-                    divisionByNum.set(divisionNum, {divisionNum, name: getRestoredDivisionFallbackName(divisionNum)});
+                    divisionByNum.set(divisionNum, {divisionNum, name: getDefaultDivisionName(divisionNum)});
                 }
             });
 
         if (!divisionByNum.has(1)) {
-            divisionByNum.set(1, {divisionNum: 1, name: getRestoredDivisionFallbackName(1)});
+            divisionByNum.set(1, {divisionNum: 1, name: getDefaultDivisionName(1)});
         }
 
         return {
@@ -1623,6 +1623,7 @@ function useOnboardingWardWizard(options: TOnboardingWardWizardOptions = {}) {
 
             serverImportFormat = image ? 'PHOTO' : 'EXCEL';
             captureRosterImportEvent('roster_import_requested', serverImportFormat);
+
             const response = await FileAPI.parseOnboardingWardExcel(fileForParsing, options);
             const {parsedWardData, warnings} = buildOnboardingParseDraftInjection(response, file.name, options, {
                 failedSheet: (sheetName) => t('page.onboardingWardCreate.upload.failedSheet', {sheetName}),
@@ -1671,12 +1672,11 @@ function useOnboardingWardWizard(options: TOnboardingWardWizardOptions = {}) {
 
             setUploadWarnings(warnings);
             setUploadStatus(warnings.length > 0 ? 'warning' : 'success');
-            toast.success(t(image
-                ? 'page.onboardingWardCreate.upload.reviewImage'
-                : 'page.onboardingWardCreate.toast.uploadApplied'));
+            toast.success(t(image ? 'page.onboardingWardCreate.upload.reviewImage' : 'page.onboardingWardCreate.toast.uploadApplied'));
             captureRosterImportEvent('roster_import_draft_ready', serverImportFormat);
         } catch (error) {
             if (serverImportFormat) captureRosterImportEvent('roster_import_failed', serverImportFormat);
+
             const message = getOnboardingUploadFailureMessage(error, {
                 defaultMessage: t('page.onboardingWardCreate.upload.parseFailed'),
                 networkMessage: t('page.onboardingWardCreate.upload.networkFailed'),

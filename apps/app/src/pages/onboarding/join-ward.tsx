@@ -11,6 +11,7 @@ import {type TWard} from '@/entities/ward';
 import useAuth from '@/features/auth';
 import useGetWardByCode from '@/features/get-ward-by-code';
 import useRegister from '@/features/register';
+import RegisterHeading from '@/pages/register/ui/register-heading';
 import RegisterShell from '@/pages/register/ui/register-shell';
 import {AdminAPI, AdminWardAPI, WardAPI} from '@/shared/api';
 import ROUTE from '@/shared/constant/path';
@@ -322,7 +323,7 @@ function OnboardingJoinWardPage() {
                             </button>
 
                             <div>
-                                <h1 className="text-[32px] font-semibold text-sub-1">{t('page.onboardingJoinWard.title')}</h1>
+                                <RegisterHeading>{t('page.onboardingJoinWard.title')}</RegisterHeading>
                                 <p className="mt-2 text-sm text-gray-3">{t('page.onboardingJoinWard.description')}</p>
                             </div>
 

@@ -1,7 +1,12 @@
 import {type TCreateWardDTO, type TShiftConstraintSeverity} from '@dutying/api/ward';
 import {type DropResult} from '@hello-pangea/dnd';
+import {getDefaultDivisionName} from '@/shared/lib/division-label';
 import {getNextNewNurseNumber} from '@/shared/lib/new-nurse-name';
-import {isValidNurseName, NURSE_NAME_MAX_LENGTH, normalizeNurseNameForRequest} from '@/shared/lib/nurse-name';
+import {
+    isValidOnboardingNurseName,
+    NURSE_NAME_MAX_LENGTH,
+    normalizeRosterNurseNameForRequest as normalizeNurseNameForRequest,
+} from '@/shared/lib/nurse-name';
 import {
     getDefaultTimeRangeForRotation,
     getRequiredRotationClassificationCounts,
@@ -229,7 +234,6 @@ const THREE_SHIFT_REQUIRED_CLASSIFICATIONS = ['DAY', 'EVENING', 'NIGHT'] as cons
 const TWO_SHIFT_CLASSIFICATIONS = ['DAY', 'NIGHT', 'NIGHT_CONTINUATION'] as const;
 const DEFAULT_TEAM_NAME_PREFIX = '\uAC04\uD638\uC0AC ';
 const DEFAULT_TEAM_NAME_SUFFIX = '\uD300';
-const DEFAULT_DIVISION_NAME_PREFIX = '\uADF8\uB8F9';
 const DEFAULT_NEW_NURSE_PREFIX = '\uC2E0\uADDC \uAC04\uD638\uC0AC';
 const DEFAULT_SAMPLE_NURSE_NAMES = {
     first: '\uD64D\uAE38\uB3D9',
@@ -323,12 +327,7 @@ const createTeamDivision = (divisionNum = DEFAULT_ONBOARDING_DIVISION_NUM, name?
     };
 };
 
-export const getDivisionFallbackLabel = (divisionNum: number) => `${DEFAULT_DIVISION_NAME_PREFIX}${normalizeDivisionNum(divisionNum)}`;
-export const getDivisionDisplayLabel = (divisionNum: number, divisionName?: string | null) => {
-    const trimmedDivisionName = trimToUndefined(divisionName);
-
-    return trimmedDivisionName ?? getDivisionFallbackLabel(divisionNum);
-};
+export const getDivisionFallbackLabel = (divisionNum: number) => getDefaultDivisionName(normalizeDivisionNum(divisionNum));
 
 const normalizeTeamDivisions = (
     divisions: TOnboardingTeamDivisionDraft[] | undefined,
@@ -2640,7 +2639,7 @@ const validateTeamsAndNurses = (draft: TOnboardingWardDraft, step: 5): TOnboardi
         nurses.forEach((nurse) => {
             if (!nurse.name.trim()) {
                 issues.push({code: 'missing-nurse-name', step, targetId: nurse.id});
-            } else if (!isValidNurseName(nurse.name)) {
+            } else if (!isValidOnboardingNurseName(nurse.name)) {
                 issues.push({code: 'invalid-nurse-name', step, targetId: nurse.id});
             }
         });

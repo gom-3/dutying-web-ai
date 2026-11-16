@@ -2430,7 +2430,17 @@ export default function AiConversationSidebar({
                         <span className="h-px flex-1 bg-gray-6" />
                     </div>
                 )}
-                <Message {...(turn.actor !== 'USER' && turn.semanticPlan ? {fullWidth: true} : {})}>
+                <Message
+                    {...(turn.actor !== 'USER' && turn.semanticPlan
+                        ? {
+                              fullWidth: true,
+                              plain:
+                                  currentRequest &&
+                                  turn.semanticPlan.state === 'PREVIEW_READY' &&
+                                  Boolean(turn.semanticPlan.modalityEditableIntentIds?.length),
+                          }
+                        : {})}
+                >
                     {turn.text && detail && (
                         <p className="whitespace-pre-wrap">
                             {turn.actor === 'USER' && turn.type !== 'CONDITION_SELECTION'
@@ -2512,7 +2522,12 @@ export default function AiConversationSidebar({
                                 nurses={doc.rows
                                     .map(({workerId}) => doc.workerMeta[workerId])
                                     .filter((meta) => meta.nurseId !== undefined)
-                                    .map((meta) => ({nurseId: meta.nurseId!, name: meta.name, divisionName: meta.divisionName}))}
+                                    .map((meta) => ({
+                                        nurseId: meta.nurseId!,
+                                        name: meta.name,
+                                        divisionNum: meta.divisionNum,
+                                        divisionName: meta.divisionName,
+                                    }))}
                                 showDetails={false}
                             />
                             {turn.interpretation.items?.some((item) => item.requiresConfirmation) && (
@@ -2525,7 +2540,12 @@ export default function AiConversationSidebar({
                                     nurses={doc.rows
                                         .map(({workerId}) => doc.workerMeta[workerId])
                                         .filter((meta) => meta.nurseId !== undefined)
-                                        .map((meta) => ({nurseId: meta.nurseId!, name: meta.name, divisionName: meta.divisionName}))}
+                                        .map((meta) => ({
+                                            nurseId: meta.nurseId!,
+                                            name: meta.name,
+                                            divisionNum: meta.divisionNum,
+                                            divisionName: meta.divisionName,
+                                        }))}
                                     disabled={
                                         busy ||
                                         running ||

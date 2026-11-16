@@ -87,6 +87,29 @@ describe('ProfilePage account actions', () => {
         });
     });
 
+    it.each(['𠮷野　髙橋', 'สมหญิง ใจดี', 'Nguyễn Thị Hương'.normalize('NFD'), "Jean-Luc O'Neill"])(
+        'preserves a global account name after onboarding and submits it without losing characters: %s',
+        async (name) => {
+            render(
+                <MemoryRouter>
+                    <ProfilePage />
+                </MemoryRouter>,
+            );
+
+            const nameInput = await screen.findByRole('textbox', {name: '이름'});
+
+            fireEvent.compositionStart(nameInput);
+            fireEvent.change(nameInput, {target: {value: name}});
+            expect(nameInput).toHaveValue(name);
+            fireEvent.compositionEnd(nameInput);
+            await userEvent.click(screen.getByRole('button', {name: '변경사항 저장'}));
+
+            await waitFor(() => {
+                expect(mockHandleEditAccountBasic).toHaveBeenCalledWith(name.replace(/\u3000/g, ' '), {}, '01012345678');
+            });
+        },
+    );
+
     it('fills the phone input from accountMe when no nurse profile is loaded', () => {
         const {container} = render(
             <MemoryRouter>
@@ -96,6 +119,55 @@ describe('ProfilePage account actions', () => {
 
         expect(container.querySelector('#phoneNum')).toHaveValue('01012345678');
         expect(container.querySelector('#phoneNum')).toBeEnabled();
+    });
+
+    it('restores the phone country from an international number independently of the profile language', async () => {
+        const auth = mockedUseAuth();
+
+        mockedUseAuth.mockReturnValue({
+            ...auth,
+            state: {
+                ...auth.state,
+                accessToken: `header.${btoa(JSON.stringify({principalType: 'WARD_ADMIN'}))}.signature`,
+                accountMe: {...auth.state.accountMe, phoneNum: '+886912345678', phoneCountry: 'TW', serviceRegion: 'KR'},
+            },
+        } as never);
+
+        render(
+            <MemoryRouter>
+                <ProfilePage />
+            </MemoryRouter>,
+        );
+        expect(screen.getByLabelText('전화번호 국가/지역')).toHaveValue('TW');
+        await userEvent.clear(screen.getByLabelText('전화번호'));
+        await userEvent.type(screen.getByLabelText('전화번호'), '0912345679');
+        await userEvent.click(screen.getByRole('button', {name: '변경사항 저장'}));
+
+        await waitFor(() => expect(mockHandleEditAccountBasic).toHaveBeenCalledWith('홍길동', {}, '0912345679', 'TW'));
+    });
+
+    it('accepts a Chinese international number while the profile UI remains Korean', async () => {
+        const auth = mockedUseAuth();
+
+        mockedUseAuth.mockReturnValue({
+            ...auth,
+            state: {
+                ...auth.state,
+                accessToken: `header.${btoa(JSON.stringify({principalType: 'WARD_ADMIN'}))}.signature`,
+            },
+        } as never);
+
+        render(
+            <MemoryRouter>
+                <ProfilePage />
+            </MemoryRouter>,
+        );
+        await userEvent.clear(screen.getByLabelText('전화번호'));
+        await userEvent.type(screen.getByLabelText('전화번호'), '+86 13800138000');
+        await userEvent.click(screen.getByRole('button', {name: '변경사항 저장'}));
+
+        await waitFor(() => expect(mockHandleEditAccountBasic).toHaveBeenCalledWith('홍길동', {}, '+86 13800138000', 'CN'));
+        expect(screen.getByLabelText('전화번호 국가/지역')).toHaveValue('CN');
     });
 
     it('updates the account phone number when no nurse profile is loaded', async () => {

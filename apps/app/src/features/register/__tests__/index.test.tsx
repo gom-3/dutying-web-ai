@@ -119,7 +119,7 @@ vi.mock('@/shared/api', () => ({
     AdminAPI: {
         createWorkspace: mockCreateWorkspace,
         joinWardByCode: mockJoinWardByCode,
-        updateMe: mockUpdateAdminMe,
+        updateMeV2: mockUpdateAdminMe,
     },
     NurseAPI: {
         updateNurseShiftType: mockUpdateNurseShiftType,
@@ -266,9 +266,9 @@ describe('useRegister', () => {
         const {result} = renderHook(() => useRegister());
 
         await act(async () => {
-            await expect(result.current.actions.createOnboardingWardDraft({name: 'ICU', hospitalName: 'Dutying Hospital'})).resolves.toEqual(
-                draftWard,
-            );
+            await expect(
+                result.current.actions.createOnboardingWardDraft({name: 'ICU', hospitalName: 'Dutying Hospital'}),
+            ).resolves.toEqual(draftWard);
         });
 
         expect(mockCreateOnboardingWardDraft).toHaveBeenCalledWith({name: 'ICU', hospitalName: 'Dutying Hospital'});
@@ -855,5 +855,35 @@ describe('useRegister', () => {
             status: 'WORKSPACE_SETUP_PENDING',
             phoneNum: '01012345678',
         });
+    });
+
+    it('sends the selected phone country to the global administrator profile API', async () => {
+        mockAccountMe.current = {accountId: 1, status: 'WORKSPACE_SETUP_PENDING'};
+        mockUpdateAdminMe.mockResolvedValue({
+            accountId: 1,
+            status: 'WORKSPACE_SETUP_PENDING',
+            phoneNum: '+886912345678',
+            phoneCountry: 'TW',
+        });
+
+        const {result} = renderHook(() => useRegister());
+
+        await act(async () => {
+            await result.current.actions.registerAccountProfile({
+                name: '陳怡君',
+                phoneNum: '0912345678',
+                phoneCountry: 'TW',
+                profileImg: {defaultProfileImgId: 1},
+            });
+        });
+
+        expect(mockUpdateAdminMe).toHaveBeenCalledWith({
+            name: '陳怡君',
+            phoneNum: '0912345678',
+            phoneCountry: 'TW',
+            defaultProfileImgId: 1,
+        });
+        expect(mockEditAccount).not.toHaveBeenCalled();
+        expect(mockEditAccountStatus).not.toHaveBeenCalled();
     });
 });

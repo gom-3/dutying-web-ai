@@ -56,6 +56,7 @@ import {
 } from './plus-checkout';
 import {PlusSubscriptionCancellation, PlusSubscriptionOverview} from './plus-subscription';
 import {Reauthenticate} from './reauthentication';
+import {UsageOverview} from './usage-overview';
 import {WardLinksPanel} from './ward-links-panel';
 import {WardPaymentHistory} from './ward-payment-history';
 import {WorkspaceActivity, countWorkspaceRequests} from './workspace-activity';
@@ -205,124 +206,7 @@ export function UsagePanel({scope, e, billingPath}: {scope: Scope; e: Entitlemen
 
     return (
         <>
-            <Section
-                title={t('현재 요금제와 한도', 'Current plan and limits')}
-                actions={
-                    <span className="hospital-current-plan">
-                        {e.plan === 'HOSPITAL' ? t('병원 계약', 'Hospital contract') : e.plan}
-                        {e.entitlementSource === 'EVENT' ? t(' · 무료 이벤트', ' · Trial') : ''}
-                    </span>
-                }
-            >
-                {e.plan === 'HOSPITAL' ? (
-                    <p>
-                        {t(
-                            '편성 인원과 AI 횟수는 병원에 연결된 병동이 함께 사용해요.',
-                            'Linked wards share the hospital’s staff capacity and AI allowance.',
-                        )}
-                    </p>
-                ) : null}
-                <div className="workspace-stats">
-                    <div>
-                        <strong>
-                            {e.capacity.used} / {e.capacity.purchased}
-                        </strong>
-                        <span>{t('활성 편성 인원 / 한도', 'Active scheduling staff / limit')}</span>
-                    </div>
-                    <div>
-                        <strong>
-                            {e.adminSeats.active} + {e.adminSeats.reserved} /{' '}
-                            {e.restrictionStates?.ADMIN_SEATS === false ? t('제한 해제', 'No plan limit') : e.adminSeats.limit}
-                        </strong>
-                        <span>{t('관리자 + 대기 초대 / 정원', 'Admins + pending invitations / seats')}</span>
-                    </div>
-                </div>
-                {e.capacity.overLimit ? (
-                    <Notice>
-                        {t(
-                            '기존 근무표의 편집·확정·내보내기는 계속 사용할 수 있습니다. 새 월과 AI를 사용하려면 활성 편성 인원을 줄이거나 계약 인원을 늘려 주세요.',
-                            'Existing schedules remain editable, confirmable and exportable. Reduce active staff or increase capacity to start a new month or use AI.',
-                        )}
-                    </Notice>
-                ) : null}
-                <div className="workspace-grid">
-                    {[aiFillUsage(e)]
-                        .filter((u) => u !== undefined)
-                        .map((u) => (
-                            <article className="workspace-usage" key={u.meter}>
-                                <div className="workspace-heading-label">
-                                    <h3>{t('AI 채우기', 'AI fill')}</h3>
-                                    {scope.type === 'HOSPITAL' && u.lots.length ? (
-                                        <InfoTip label={`${t('AI 채우기', 'AI fill')} ${t('제공량 내역', 'allowance details')}`}>
-                                            {u.lots.map((l) => (
-                                                <div key={l.id}>
-                                                    {l.source === 'PURCHASE' ? t('추가 구매', 'Purchased') : t('기본 제공', 'Included')}{' '}
-                                                    {l.available}
-                                                    {t('회', ' uses')} · {l.expiresAt ? date(l.expiresAt) : t('만료 없음', 'No expiration')}
-                                                </div>
-                                            ))}
-                                        </InfoTip>
-                                    ) : null}
-                                </div>
-                                <strong>
-                                    {u.enforced === false
-                                        ? t('요금제 횟수 제한 해제', 'Plan usage limit disabled')
-                                        : `${u.remaining}${t('회 남음', ' remaining')}`}
-                                </strong>
-                                <p>
-                                    {t('사용', 'Used')} {u.used} · {t('처리 중 예약', 'Reserved')} {u.reserved}
-                                </p>
-                                {u.enforced !== false ? (
-                                    <meter
-                                        min={0}
-                                        max={Math.max(u.granted, 1)}
-                                        value={u.remaining}
-                                        aria-label={t('남은 AI 채우기 횟수', 'AI fill uses remaining')}
-                                    />
-                                ) : null}
-                                {scope.type === 'WARD' ? (
-                                    <ul>
-                                        {u.lots.map((l) => (
-                                            <li key={l.id}>
-                                                {l.source === 'PURCHASE' ? t('추가 구매', 'Purchased') : t('기본 제공', 'Included')}{' '}
-                                                {l.available}
-                                                {t('회', ' uses')} ·{' '}
-                                                {l.expiresAt ? date(l.expiresAt) : t('최초 제공·만료 없음', 'Lifetime allocation')}
-                                            </li>
-                                        ))}
-                                    </ul>
-                                ) : null}
-                            </article>
-                        ))}
-                </div>
-                {scope.type === 'WARD' ? (
-                    <p>
-                        {t(
-                            '채우기와 수정 요청은 같은 AI 채우기 횟수를 사용합니다. 적용할 결과가 없거나 확정된 실패에는 차감하지 않습니다.',
-                            'Filling and revision requests share one AI fill allowance. No applicable result or a confirmed failure does not consume a use.',
-                        )}
-                    </p>
-                ) : null}
-                {e.promotion ? (
-                    <Notice>
-                        {t('이벤트 종료', 'Trial ends')}: {date(e.promotion.endsAt)} (KST).{' '}
-                        {t(
-                            '카드 등록 없이 종료 후 Free로 전환합니다. 자동 결제하지 않습니다.',
-                            'Returns to Free without automatic payment.',
-                        )}
-                    </Notice>
-                ) : null}
-                <Link
-                    className="workspace-button"
-                    to={billingPath ?? scopePath(scope, scope.type === 'HOSPITAL' && !e.canManageBilling ? 'support' : 'billing')}
-                >
-                    {e.canManageBilling
-                        ? t('요금제·추가 횟수 보기', 'Plans & additional uses')
-                        : scope.type === 'HOSPITAL'
-                          ? t('운영 지원 요청하기', 'Request support')
-                          : t('증설 요청하기', 'Request more capacity')}
-                </Link>
-            </Section>
+            <UsageOverview scope={scope} e={e} billingPath={billingPath} />
             {campaigns.data?.map((c) => (
                 <Section key={c.id} title={c.name}>
                     <p>

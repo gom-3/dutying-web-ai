@@ -54,6 +54,7 @@
         "immer": "^11.0.1",
         "is-mobile": "^5.0.0",
         "jszip": "^3.10.1",
+        "libphonenumber-js": "1.13.16",
         "lodash-es": "^4.17.21",
         "lottie-web": "^5.13.0",
         "lucide-react": "^0.562.0",

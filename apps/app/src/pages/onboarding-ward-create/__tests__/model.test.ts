@@ -648,7 +648,7 @@ describe('OnboardingWardCreatePage model', () => {
         expect(canGoNext(invalidDraft)).toBe(false);
     });
 
-    it('flags invalid nurse names when korean input has incomplete jamo or too short syllables', () => {
+    it('rejects incomplete jamo and accepts complete single-character names', () => {
         const draft = createInitialDraft();
         const nurseId = draft.nurses[0]?.id ?? '';
         const jamoNameDraft = updateNurseDraft(
@@ -664,7 +664,7 @@ describe('OnboardingWardCreatePage model', () => {
         expect(getStepValidation(jamoNameDraft, 5).issues).toEqual(
             expect.arrayContaining([{code: 'invalid-nurse-name', step: 5, targetId: nurseId}]),
         );
-        expect(getStepValidation(shortKoreanNameDraft, 5).issues).toEqual(
+        expect(getStepValidation(shortKoreanNameDraft, 5).issues).not.toEqual(
             expect.arrayContaining([{code: 'invalid-nurse-name', step: 5, targetId: nurseId}]),
         );
         expect(canGoNext(shortKoreanNameDraft)).toBe(false);
@@ -676,7 +676,35 @@ describe('OnboardingWardCreatePage model', () => {
             currentStep: 5 as const,
         };
         const nurseId = draft.nurses[0]?.id ?? '';
-        const validNames = ['신규 간호사 1', 'Nurse 1', '山田 花子', '　山田　花子　', '김　길동', '佐藤・美咲', 'ジョン・スミス'];
+        const validNames = [
+            '신규 간호사 1',
+            'Nurse 1',
+            '山田 花子',
+            '　山田　花子　',
+            '김　길동',
+            '佐藤・美咲',
+            'ジョン・スミス',
+            '木ノ内',
+            'サハコタ',
+            '野崎',
+            '関根昌代',
+            '佐藤蘭',
+            '増田',
+            'たなか',
+            'ヤマダ',
+            'ﾔﾏﾀﾞ･ﾀﾛｳ',
+            'ＡＢ１２',
+            '髙﨑',
+            '𠮷田',
+            '〇山',
+            '山田\u{E0100}',
+            'カ\u3099ナ',
+            'セ\u309a',
+            '山田゛',
+            'ㇷ\u309a',
+            'Nguyễn',
+            'น้ำฝน',
+        ];
 
         validNames.forEach((name) => {
             const validDraft = updateNurseDraft(draft, nurseId, {name});
@@ -693,7 +721,21 @@ describe('OnboardingWardCreatePage model', () => {
             currentStep: 5 as const,
         };
         const nurseId = draft.nurses[0]?.id ?? '';
-        const invalidNames = ['Nurse_1', '김\t길동', '김\n길동', '김\u00a0길동', '🙂', '・'];
+        const invalidNames = [
+            'Nurse_1',
+            '김\t길동',
+            '김\n길동',
+            '\t山田',
+            '山田\n',
+            '山田\u200B花子',
+            '🙂',
+            '・',
+            '\u3099',
+            '゛',
+            '\u0301山田',
+            '山田 \u3099',
+            '・ー･ｰﾞﾟ',
+        ];
 
         invalidNames.forEach((name) => {
             const invalidDraft = updateNurseDraft(draft, nurseId, {name});

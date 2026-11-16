@@ -1632,7 +1632,10 @@ export const ko = {
                     "recommendedDeleted": "권장 조건을 삭제했어요.",
                     "resetDefaults": "권장 조건 {{count}}개로 초기화했어요.",
                     "saveFailed": "근무 조건을 저장하지 못했어요. 잠시 후 다시 시도해 주세요.",
-                    "staffCountConflict": "같은 적용일과 근무의 최소·최대·정확 인원 조건이 서로 맞지 않아요.",
+                    "periodCountConflict": "같은 근무의 최소 {{minimum}}회가 최대 {{maximum}}회보다 커요. 최소 횟수를 {{maximum}}회 이하로 바꿔 주세요.",
+                    "reviewLowerBound": "최소 횟수 수정",
+                    "reviewUpperBound": "최대 횟수 수정",
+                    "staffCountConflict": "같은 대상·날짜·근무의 인원 조건이 서로 맞지 않아요. 겹치는 인원 조건을 하나로 정리해 주세요.",
                     "importSkippedAllNurseRules": "간호사별 근무 조건 {{count}}개는 다른 팀에 그대로 적용할 수 없어 불러오지 않았어요.",
                     "importedWithSkippedNurseRules": "{{teamName}} 근무 조건을 불러왔어요. 간호사별 근무 조건 {{count}}개는 제외했어요."
                 },
@@ -1653,7 +1656,21 @@ export const ko = {
                     "exact": "{{target}} 대상은 {{dateScope}}에 {{shift}} 근무자가 정확히 {{count}}명이어야 해요."
                 },
                 "savedWarnings": {
-                    "title": "저장됐지만 확인이 필요한 근무 조건이 있어요"
+                    "title": "저장했어요. 아래 조건을 확인해 주세요.",
+                    "messages": {
+                        "MAX_WORK_BELOW_WORK_OFF_TRIGGER": "연속 근무 제한보다 더 일한 뒤 쉬도록 설정되어 있어요. 휴무 기준의 근무일 수를 줄여 주세요.",
+                        "EXACT_ONE_WITH_HARD_PRECEPTEE_COVERAGE": "근무 인원이 1명이라 프리셉티를 동료와 함께 배정할 수 없어요. 근무 인원을 2명 이상으로 바꿔 주세요.",
+                        "NURSE_SHIFT_PREFER_AVOID_CONFLICT": "같은 간호사의 같은 근무에 선호와 회피가 함께 설정되어 있어요. 둘 중 하나를 삭제해 주세요.",
+                        "TWO_SHIFT_NIGHT_RECOVERY_CONFLICT": "야간근무 후 휴무 규칙이 여러 개예요. 필요한 규칙만 남겨 주세요.",
+                        "STAFF_COUNT_CONFLICT": "같은 대상·날짜·근무의 인원 조건이 서로 맞지 않아요. 겹치는 인원 조건을 하나로 정리해 주세요.",
+                        "NURSE_PAIR_SHIFT_CONFLICT": "같은 두 간호사에게 함께 근무와 같은 근무 금지가 모두 필수로 설정되어 있어요. 둘 중 하나를 삭제해 주세요.",
+                        "NURSE_PAIR_DAY_CONFLICT": "같은 두 간호사에게 같은 날 출근과 같은 날 출근 금지가 모두 필수로 설정되어 있어요. 둘 중 하나를 삭제해 주세요.",
+                        "PRECEPTOR_PAIR_CONFLICT": "프리셉터와 프리셉티를 함께 배정하도록 했지만, 같은 근무는 금지되어 있어요. 둘 중 하나를 삭제해 주세요.",
+                        "MONTHLY_QUOTA_DISALLOWED_SHIFT": "가능 근무에서 제외한 근무에 월 필수 횟수가 설정되어 있어요. 해당 간호사를 횟수 조건의 대상에서 빼 주세요.",
+                        "INDIVIDUAL_HARD_BOUNDS_CONFLICT": "같은 간호사의 최소 횟수가 최대 횟수보다 커요. 최소 횟수를 최대 횟수 이하로 바꿔 주세요.",
+                        "MIXED_PARTICIPATION_CONFLICT": "같은 간호사의 같은 날짜에 참여 방식이 여러 개예요. 해당 날짜의 참여 방식을 하나로 맞춰 주세요."
+                    },
+                    "fallback": "확인이 필요한 근무 조건이 있어요. 설정한 간호사·날짜·횟수를 확인해 주세요."
                 },
                 "mixed": {
                     "policyTitle": "혼합교대 운영 방식",
@@ -2030,7 +2047,7 @@ export const ko = {
                 "shiftTypesHint": "가능한 근무를 모두 선택해 주세요",
                 "worker": "근무투입",
                 "nameRequired": "이름을 입력해 주세요.",
-                "nameInvalid": "이름은 50자 이하의 문자, 숫자, 공백, '・', 'ー'로 입력해 주세요. '_' 등의 기호는 사용할 수 없어요."
+                "nameInvalid": "이름은 50자 이하의 다국어 문자·숫자와 공백, 하이픈, 가운데점, 아포스트로피, 마침표로 입력해 주세요."
             },
             "drawer": {
                 "deleteConfirm": "{{nurseName}} 간호사를 삭제할까요? 삭제 후에는 되돌릴 수 없어요."
@@ -2259,7 +2276,7 @@ export const ko = {
                 "duplicateRequiredShiftTypes": "중복된 필수 근무유형은 하나만 남겨 주세요: {{shiftTypes}}",
                 "emptyTeam": "팀을 추가하면 병동을 만들 수 있어요.",
                 "emptyTeamNurses": "간호사 없는 팀이 있어요. 간호사를 추가하거나 팀을 삭제해 주세요.",
-                "invalidNurseName": "간호사 이름을 확인해 주세요.",
+                "invalidNurseName": "이름은 50자 이하의 다국어 문자·숫자와 공백, 하이픈, 가운데점, 아포스트로피, 마침표로 입력해 주세요.",
                 "invalidShiftTime": "근무 시간을 확인해 주세요.",
                 "invalidShiftType": "근무 유형 정보를 확인해 주세요.",
                 "unmappedShiftType": "근무표 코드 ‘{{shiftCode}}’의 근무 의미를 선택해 주세요.",
@@ -2592,7 +2609,7 @@ export const ko = {
             "unsavedDescription": "변경사항이 저장되지 않았어요.",
             "uploadPhoto": "사진 업로드",
             "validation": {
-                "nameInvalid": "이름은 50자 이하, 한글/영문/일문과 공백, '-', '·'만 입력할 수 있어요.",
+                "nameInvalid": "이름은 50자 이하의 다국어 문자·숫자와 공백, 하이픈, 가운데점, 아포스트로피, 마침표로 입력해 주세요.",
                 "nameRequired": "이름을 입력해 주세요.",
                 "phoneInvalid": "국가번호를 포함하거나 지역 형식에 맞는 전화번호를 입력해 주세요.",
                 "phoneRequired": "전화번호를 입력해 주세요."
@@ -2641,7 +2658,7 @@ export const ko = {
                 "title": "계정 정보를 입력해 주세요",
                 "uploadPhoto": "사진 업로드",
                 "validation": {
-                    "nameInvalid": "이름은 50자 이하, 한글/영문/일문과 공백, '-', '·'만 입력할 수 있어요.",
+                    "nameInvalid": "이름은 50자 이하의 다국어 문자·숫자와 공백, 하이픈, 가운데점, 아포스트로피, 마침표로 입력해 주세요.",
                     "nameRequired": "이름을 입력해 주세요.",
                     "phoneDuplicate": "이미 사용 중인 연락처예요. 다른 번호를 입력해 주세요.",
                     "phoneInvalid": "국가번호를 포함하거나 지역 형식에 맞는 연락처를 입력해 주세요.",
@@ -3157,6 +3174,26 @@ export const ko = {
         "confirmActionDialog": {
             "cancel": "취소",
             "close": "닫기"
+        },
+        "division": {
+            "defaultName": "그룹{{number}}",
+            "add": "그룹 추가",
+            "delete": "그룹 삭제",
+            "deleteAria": "{{divisionName}} 그룹 삭제",
+            "memberCountAria": "{{group}} {{count}}명",
+            "added": "그룹을 추가했습니다.",
+            "addFailed": "그룹을 추가하지 못했습니다.",
+            "deleted": "그룹을 삭제했습니다.",
+            "deleteFailed": "그룹을 삭제하지 못했습니다.",
+            "renameFailed": "그룹 이름을 저장하지 못했습니다.",
+            "total": "그룹 합계",
+            "perNurse": "간호사별"
+        },
+        "contactPhone": {
+            "country": "전화번호 국가/지역",
+            "international": "국제번호 직접 입력 (+국가번호)",
+            "hint": "전화번호의 국가/지역을 선택해 주세요. +국가번호로 시작하는 국제번호도 입력할 수 있어요.",
+            "invalid": "선택한 국가/지역에 맞는 전화번호 또는 +국가번호로 시작하는 국제번호를 입력해 주세요."
         }
     },
     "widget": {
@@ -3247,6 +3284,9 @@ export const ko = {
         "selectedConditions": "선택한 조건만 적용하고 나머지 조건은 이번 실행에서 제외합니다.",
         "shiftEligibility": "가능한 근무 종류를 바꾸려면 간호사 설정에서 수정해 주세요. 이번 달에 실제로 배정하려는 요청이라면 근무와 날짜 또는 횟수를 알려 주세요.",
         "confirmSpelling": "말씀하신 간호사가 {{names}} 선생님인가요? 이름을 확인해 주시면 앞서 요청한 내용을 이어서 확인할게요."
+    },
+    "error": {
+        "invalidPhoneNumber": "전화번호를 확인해 주세요."
     }
 };
 
@@ -4883,7 +4923,10 @@ export const en: TLocale = {
                     "recommendedDeleted": "Recommended constraint deleted.",
                     "resetDefaults": "Reset to {{count}} recommended constraints.",
                     "saveFailed": "Could not save constraints. Please try again shortly.",
-                    "staffCountConflict": "The minimum, maximum, and exact staffing values conflict for this scope and shift.",
+                    "periodCountConflict": "The minimum of {{minimum}} shifts exceeds the maximum of {{maximum}} for the same shift. Lower the minimum to {{maximum}} or less.",
+                    "reviewLowerBound": "Edit minimum",
+                    "reviewUpperBound": "Edit maximum",
+                    "staffCountConflict": "Staffing rules conflict for the same staff group, dates, and shift. Combine the overlapping rules into one.",
                     "importSkippedAllNurseRules": "No constraints were imported because {{count}} nurse-specific constraints cannot be applied to another team.",
                     "importedWithSkippedNurseRules": "Imported constraints from {{teamName}} and skipped {{count}} nurse-specific constraints."
                 },
@@ -4904,7 +4947,21 @@ export const en: TLocale = {
                     "exact": "For {{target}} on {{dateScope}}, exactly {{count}} nurses must be assigned to {{shift}}."
                 },
                 "savedWarnings": {
-                    "title": "Saved, but some constraints need review"
+                    "title": "Saved. Review the rules below.",
+                    "messages": {
+                        "MAX_WORK_BELOW_WORK_OFF_TRIGGER": "Time off is set to start beyond the consecutive work limit. Lower the number of work days before time off.",
+                        "EXACT_ONE_WITH_HARD_PRECEPTEE_COVERAGE": "Only 1 nurse is scheduled, but a preceptee needs a colleague on the same shift. Set staffing to at least 2.",
+                        "NURSE_SHIFT_PREFER_AVOID_CONFLICT": "The same shift is both preferred and avoided for the same nurse. Delete one of these rules.",
+                        "TWO_SHIFT_NIGHT_RECOVERY_CONFLICT": "There is more than one rule for time off after night shifts. Keep only the rules you need.",
+                        "STAFF_COUNT_CONFLICT": "Staffing rules conflict for the same staff group, dates, and shift. Combine the overlapping rules into one.",
+                        "NURSE_PAIR_SHIFT_CONFLICT": "The same two nurses are required to work together and to avoid the same shift. Delete one of these rules.",
+                        "NURSE_PAIR_DAY_CONFLICT": "The same two nurses are required both to work on the same day and to work on different days. Delete one of these rules.",
+                        "PRECEPTOR_PAIR_CONFLICT": "A preceptor and preceptee must work together, but another rule keeps them off the same shift. Delete one of these rules.",
+                        "MONTHLY_QUOTA_DISALLOWED_SHIFT": "A monthly shift quota is required for a nurse who cannot work that shift. Exclude that nurse from the quota rule.",
+                        "INDIVIDUAL_HARD_BOUNDS_CONFLICT": "A nurse has a minimum count higher than the maximum. Lower the minimum to the maximum or less.",
+                        "MIXED_PARTICIPATION_CONFLICT": "The same nurse has multiple participation modes for the same dates. Choose one mode for those dates."
+                    },
+                    "fallback": "A shift rule needs review. Check its nurses, dates, and counts."
                 },
                 "mixed": {
                     "policyTitle": "Mixed-shift operating policy",
@@ -5281,7 +5338,7 @@ export const en: TLocale = {
                 "shiftTypesHint": "Select every shift this person can work",
                 "worker": "Included",
                 "nameRequired": "Enter a name.",
-                "nameInvalid": "Use up to 50 letters, numbers, spaces, '・', or 'ー'. Symbols such as '_' are not allowed."
+                "nameInvalid": "Use up to 50 characters: letters, numbers, spaces, hyphens, middle dots, apostrophes, or periods."
             },
             "drawer": {
                 "deleteConfirm": "Delete nurse {{nurseName}}? This cannot be undone."
@@ -5510,7 +5567,7 @@ export const en: TLocale = {
                 "duplicateRequiredShiftTypes": "Keep only one of each duplicated required shift type: {{shiftTypes}}",
                 "emptyTeam": "Add a team before creating the ward.",
                 "emptyTeamNurses": "Some teams have no nurses. Add a nurse or delete the team.",
-                "invalidNurseName": "Check the nurse names.",
+                "invalidNurseName": "Use up to 50 characters: letters, numbers, spaces, hyphens, middle dots, apostrophes, or periods.",
                 "invalidShiftTime": "Check the shift times.",
                 "invalidShiftType": "Check the shift type information.",
                 "unmappedShiftType": "Select a shift meaning for schedule code ‘{{shiftCode}}’.",
@@ -5843,7 +5900,7 @@ export const en: TLocale = {
             "unsavedDescription": "You have unsaved changes.",
             "uploadPhoto": "Upload photo",
             "validation": {
-                "nameInvalid": "Use up to 50 Korean, English, or Japanese characters, spaces, '-', or '·'.",
+                "nameInvalid": "Use up to 50 characters: letters, numbers, spaces, hyphens, middle dots, apostrophes, or periods.",
                 "nameRequired": "Enter your name.",
                 "phoneInvalid": "Enter a valid phone number for the selected language or region.",
                 "phoneRequired": "Enter your phone number."
@@ -5892,7 +5949,7 @@ export const en: TLocale = {
                 "title": "Enter account information",
                 "uploadPhoto": "Upload photo",
                 "validation": {
-                    "nameInvalid": "Use up to 50 characters: Korean, English, Japanese, spaces, '-', and '·'.",
+                    "nameInvalid": "Use up to 50 characters: letters, numbers, spaces, hyphens, middle dots, apostrophes, or periods.",
                     "nameRequired": "Enter a name.",
                     "phoneDuplicate": "This phone number is already in use. Enter another number.",
                     "phoneInvalid": "Enter a valid phone number for the selected language or region.",
@@ -6408,6 +6465,26 @@ export const en: TLocale = {
         "confirmActionDialog": {
             "cancel": "Cancel",
             "close": "Close"
+        },
+        "division": {
+            "defaultName": "Group {{number}}",
+            "add": "Add group",
+            "delete": "Delete group",
+            "deleteAria": "Delete group {{divisionName}}",
+            "memberCountAria": "{{group}} · Members: {{count}}",
+            "added": "Group added.",
+            "addFailed": "Could not add the group.",
+            "deleted": "Group deleted.",
+            "deleteFailed": "Could not delete the group.",
+            "renameFailed": "Could not save the group name.",
+            "total": "Group total",
+            "perNurse": "Per nurse"
+        },
+        "contactPhone": {
+            "country": "Phone country/region",
+            "international": "International number (+country code)",
+            "hint": "Choose the phone number’s country/region, or enter an international number starting with + and its country code.",
+            "invalid": "Enter a valid number for the selected country/region, or an international number starting with + and its country code."
         }
     },
     "widget": {
@@ -6498,6 +6575,9 @@ export const en: TLocale = {
         "selectedConditions": "Apply only the selected conditions in this run.",
         "shiftEligibility": "To change which shifts a nurse can work, edit their nurse settings. To assign shifts this month, tell me the shift and dates or number of shifts.",
         "confirmSpelling": "Did you mean {{names}}? Confirm the nurse’s name so I can continue with your request."
+    },
+    "error": {
+        "invalidPhoneNumber": "Please check your phone number."
     }
 };
 
@@ -8132,7 +8212,10 @@ export const ja: TLocale = {
                     "recommendedDeleted": "推奨条件を削除しました。",
                     "resetDefaults": "推奨条件{{count}}件に初期化しました。",
                     "saveFailed": "制約条件を保存できませんでした。しばらくしてからもう一度お試しください。",
-                    "staffCountConflict": "同じ適用日と勤務の最低・最大・正確な人数条件が矛盾しています。",
+                    "periodCountConflict": "同じ勤務の最低{{minimum}}回が最大{{maximum}}回を超えています。最低回数を{{maximum}}回以下にしてください。",
+                    "reviewLowerBound": "最低回数を編集",
+                    "reviewUpperBound": "最大回数を編集",
+                    "staffCountConflict": "同じ対象・日付・勤務の人数条件が矛盾しています。重複する人数条件を1つにまとめてください。",
                     "importSkippedAllNurseRules": "看護師別の制約条件{{count}}件は別のチームにそのまま適用できないため読み込みませんでした。",
                     "importedWithSkippedNurseRules": "{{teamName}}の制約条件を読み込み看護師別の{{count}}件は除外しました。"
                 },
@@ -8153,7 +8236,21 @@ export const ja: TLocale = {
                     "exact": "{{target}}は{{dateScope}}の{{shift}}勤務をちょうど{{count}}人にします。"
                 },
                 "savedWarnings": {
-                    "title": "保存しましたが、確認が必要な制約条件があります"
+                    "title": "保存しました。以下の勤務条件を確認してください。",
+                    "messages": {
+                        "MAX_WORK_BELOW_WORK_OFF_TRIGGER": "連続勤務の上限を超えてから休む設定になっています。休みまでの勤務日数を減らしてください。",
+                        "EXACT_ONE_WITH_HARD_PRECEPTEE_COVERAGE": "勤務人数は1人ですが、プリセプティには同じ勤務の同僚が必要です。人数を2人以上にしてください。",
+                        "NURSE_SHIFT_PREFER_AVOID_CONFLICT": "同じ看護師の同じ勤務に「希望」と「回避」が設定されています。どちらか一方を削除してください。",
+                        "TWO_SHIFT_NIGHT_RECOVERY_CONFLICT": "夜勤後の休みルールが複数あります。必要なルールだけ残してください。",
+                        "STAFF_COUNT_CONFLICT": "同じ対象・日付・勤務の人数条件が矛盾しています。重複する人数条件を1つにまとめてください。",
+                        "NURSE_PAIR_SHIFT_CONFLICT": "同じ2人に「同じ勤務」と「同じ勤務の禁止」が必須で設定されています。どちらか一方を削除してください。",
+                        "NURSE_PAIR_DAY_CONFLICT": "同じ2人に「同じ日に出勤」と「同じ日の出勤禁止」が必須で設定されています。どちらか一方を削除してください。",
+                        "PRECEPTOR_PAIR_CONFLICT": "プリセプターとプリセプティを同じ勤務にする条件と、それを禁止する条件があります。どちらか一方を削除してください。",
+                        "MONTHLY_QUOTA_DISALLOWED_SHIFT": "勤務できないシフトに月間の必須回数が設定されています。該当する看護師を回数条件の対象から外してください。",
+                        "INDIVIDUAL_HARD_BOUNDS_CONFLICT": "同じ看護師の最低回数が最大回数を超えています。最低回数を最大回数以下にしてください。",
+                        "MIXED_PARTICIPATION_CONFLICT": "同じ看護師の同じ日付に参加方式が複数あります。参加方式を1つにそろえてください。"
+                    },
+                    "fallback": "確認が必要な勤務条件があります。対象の看護師・日付・回数を確認してください。"
                 },
                 "mixed": {
                     "policyTitle": "混合交代の運用方式",
@@ -8530,7 +8627,7 @@ export const ja: TLocale = {
                 "shiftTypesHint": "可能な勤務をすべて選択してください",
                 "worker": "勤務投入",
                 "nameRequired": "名前を入力してください。",
-                "nameInvalid": "名前は50文字以内の文字、数字、スペース、「・」「ー」で入力してください。「_」などの記号は使えません。"
+                "nameInvalid": "名前は50文字以内で、各言語の文字・数字、スペース、ハイフン、中黒、アポストロフィ、ピリオドを使用できます。"
             },
             "drawer": {
                 "deleteConfirm": "{{nurseName}}看護師を削除しますか？削除後は元に戻せません。"
@@ -8759,7 +8856,7 @@ export const ja: TLocale = {
                 "duplicateRequiredShiftTypes": "重複している必須勤務区分は1つだけ残してください：{{shiftTypes}}",
                 "emptyTeam": "チームを追加すると病棟を作成できます。",
                 "emptyTeamNurses": "看護師がいないチームがあります。看護師を追加するかチームを削除してください。",
-                "invalidNurseName": "看護師名を確認してください。",
+                "invalidNurseName": "名前は50文字以内で、各言語の文字・数字、スペース、ハイフン、中黒、アポストロフィ、ピリオドを使用できます。",
                 "invalidShiftTime": "勤務時間を確認してください。",
                 "invalidShiftType": "勤務区分情報を確認してください。",
                 "unmappedShiftType": "勤務表コード「{{shiftCode}}」の勤務区分を選択してください。",
@@ -9092,7 +9189,7 @@ export const ja: TLocale = {
             "unsavedDescription": "保存されていない変更があります。",
             "uploadPhoto": "写真をアップロード",
             "validation": {
-                "nameInvalid": "名前は50文字以内で、韓国語・英語・日本語、スペース、'-'、'·'のみ使用できます。",
+                "nameInvalid": "名前は50文字以内で、各言語の文字・数字、スペース、ハイフン、中黒、アポストロフィ、ピリオドを使用できます。",
                 "nameRequired": "名前を入力してください。",
                 "phoneInvalid": "選択した言語または地域に合う電話番号を入力してください。",
                 "phoneRequired": "電話番号を入力してください。"
@@ -9141,7 +9238,7 @@ export const ja: TLocale = {
                 "title": "アカウント情報を入力してください",
                 "uploadPhoto": "写真をアップロード",
                 "validation": {
-                    "nameInvalid": "名前は50文字以内で、韓国語・英語・日本語、スペース、'-'、'·'のみ使用できます。",
+                    "nameInvalid": "名前は50文字以内で、各言語の文字・数字、スペース、ハイフン、中黒、アポストロフィ、ピリオドを使用できます。",
                     "nameRequired": "名前を入力してください。",
                     "phoneDuplicate": "すでに使用中の連絡先です。別の番号を入力してください。",
                     "phoneInvalid": "選択した言語または地域に合う連絡先を入力してください。",
@@ -9657,6 +9754,26 @@ export const ja: TLocale = {
         "confirmActionDialog": {
             "cancel": "キャンセル",
             "close": "閉じる"
+        },
+        "division": {
+            "defaultName": "グループ{{number}}",
+            "add": "グループを追加",
+            "delete": "グループを削除",
+            "deleteAria": "{{divisionName}}を削除",
+            "memberCountAria": "{{group}} {{count}}名",
+            "added": "グループを追加しました。",
+            "addFailed": "グループを追加できませんでした。",
+            "deleted": "グループを削除しました。",
+            "deleteFailed": "グループを削除できませんでした。",
+            "renameFailed": "グループ名を保存できませんでした。",
+            "total": "グループ合計",
+            "perNurse": "看護師ごと"
+        },
+        "contactPhone": {
+            "country": "電話番号の国・地域",
+            "international": "国際番号を入力（+国番号）",
+            "hint": "電話番号の国・地域を選んでください。「+」と国番号で始まる国際番号も入力できます。",
+            "invalid": "選択した国・地域の有効な電話番号、または「+」と国番号で始まる国際番号を入力してください。"
         }
     },
     "widget": {
@@ -9747,6 +9864,9 @@ export const ja: TLocale = {
         "selectedConditions": "今回は選択した条件だけを適用します。",
         "shiftEligibility": "勤務できるシフトを変更するには、看護師設定を編集してください。今月の勤務を割り当てる場合は、シフトと日付または回数を教えてください。",
         "confirmSpelling": "{{names}}さんのことですか？名前を確認できたら、先ほどのリクエストを続けます。"
+    },
+    "error": {
+        "invalidPhoneNumber": "電話番号を確認してください。"
     }
 };
 
@@ -11381,7 +11501,10 @@ export const zh: TLocale = {
                     "recommendedDeleted": "推荐的条件已被删除。",
                     "resetDefaults": "已初始化为推荐条件{{count}}。",
                     "saveFailed": "无法保存约束。请稍后重试。",
-                    "staffCountConflict": "相同适用日和班次的最少、最多和精确人数条件相互冲突。",
+                    "periodCountConflict": "同一班次的最少{{minimum}}次超过最多{{maximum}}次。请将最少次数改为{{maximum}}次或更少。",
+                    "reviewLowerBound": "修改最少次数",
+                    "reviewUpperBound": "修改最多次数",
+                    "staffCountConflict": "同一对象、日期和班次的人数规则互相冲突。请将重叠的人数规则合并为一条。",
                     "importSkippedAllNurseRules": "由于 {{count}} 条护士专属约束无法直接应用到其他小组因此未导入。",
                     "importedWithSkippedNurseRules": "已导入 {{teamName}} 的约束并跳过 {{count}} 条护士专属约束。"
                 },
@@ -11402,7 +11525,21 @@ export const zh: TLocale = {
                     "exact": "{{target}}在{{dateScope}}的{{shift}}班次必须正好安排{{count}}名护士。"
                 },
                 "savedWarnings": {
-                    "title": "已保存，但有些约束条件需要确认"
+                    "title": "已保存。请检查以下排班规则。",
+                    "messages": {
+                        "MAX_WORK_BELOW_WORK_OFF_TRIGGER": "休息前的工作天数超过连续工作上限。请减少休息前的工作天数。",
+                        "EXACT_ONE_WITH_HARD_PRECEPTEE_COVERAGE": "每班设为1人，但受带教护士需要同事同班。请将人数改为至少2人。",
+                        "NURSE_SHIFT_PREFER_AVOID_CONFLICT": "同一护士的同一班次同时设为偏好和回避。请删除其中一条规则。",
+                        "TWO_SHIFT_NIGHT_RECOVERY_CONFLICT": "夜班后的休息规则不止一条。请只保留需要的规则。",
+                        "STAFF_COUNT_CONFLICT": "同一对象、日期和班次的人数规则互相冲突。请将重叠的人数规则合并为一条。",
+                        "NURSE_PAIR_SHIFT_CONFLICT": "同两名护士同时被要求同班和禁止同班。请删除其中一条规则。",
+                        "NURSE_PAIR_DAY_CONFLICT": "同两名护士同时被要求同日上班和禁止同日上班。请删除其中一条规则。",
+                        "PRECEPTOR_PAIR_CONFLICT": "带教护士与受带教护士需要同班，但另一条规则禁止同班。请删除其中一条规则。",
+                        "MONTHLY_QUOTA_DISALLOWED_SHIFT": "为无法上某班次的护士设置了该班次的每月必需次数。请将该护士移出次数规则的适用对象。",
+                        "INDIVIDUAL_HARD_BOUNDS_CONFLICT": "同一护士的最少次数大于最多次数。请将最少次数改为不超过最多次数。",
+                        "MIXED_PARTICIPATION_CONFLICT": "同一护士在同一日期设有多种参与方式。请将该日期的参与方式统一为一种。"
+                    },
+                    "fallback": "有排班规则需要确认。请检查设置的护士、日期和次数。"
                 },
                 "mixed": {
                     "policyTitle": "混合轮班运行方式",
@@ -11779,7 +11916,7 @@ export const zh: TLocale = {
                 "shiftTypesHint": "请选择所有空缺职位",
                 "worker": "投入工作",
                 "nameRequired": "请输入姓名。",
-                "nameInvalid": "姓名最多50个字符，可使用文字、数字、空格、“・”和“ー”。不能使用“_”等符号。"
+                "nameInvalid": "姓名最多50个字符，可使用各语言文字、数字、空格、连字符、间隔点、撇号和句点。"
             },
             "drawer": {
                 "deleteConfirm": "{{nurseName}} 要删除护士吗？一旦删除，就无法恢复。"
@@ -12008,7 +12145,7 @@ export const zh: TLocale = {
                 "duplicateRequiredShiftTypes": "重复的必需班次类型请只保留一个：{{shiftTypes}}",
                 "emptyTeam": "您可以通过添加团队来创建守卫。",
                 "emptyTeamNurses": "有些团队没有护士。请添加护士或删除团队。",
-                "invalidNurseName": "请检查护士的姓名。",
+                "invalidNurseName": "姓名最多50个字符，可使用各语言文字、数字、空格、连字符、间隔点、撇号和句点。",
                 "invalidShiftTime": "请检查班次时间。",
                 "invalidShiftType": "请检查您的班次类型信息。",
                 "unmappedShiftType": "请选择排班代码“{{shiftCode}}”的班次含义。",
@@ -12341,7 +12478,7 @@ export const zh: TLocale = {
             "unsavedDescription": "更改未保存。",
             "uploadPhoto": "上传照片",
             "validation": {
-                "nameInvalid": "名称不得超过 50 个字符，并且只能输入韩文/英文/日文字母、空格、“-”和“·”。",
+                "nameInvalid": "姓名最多50个字符，可使用各语言文字、数字、空格、连字符、间隔点、撇号和句点。",
                 "nameRequired": "请输入您的姓名。",
                 "phoneInvalid": "请包含国家/地区代码或以正确的本地格式输入电话号码。",
                 "phoneRequired": "请输入您的电话号码。"
@@ -12390,7 +12527,7 @@ export const zh: TLocale = {
                 "title": "请输入您的账户信息",
                 "uploadPhoto": "上传照片",
                 "validation": {
-                    "nameInvalid": "名称不得超过 50 个字符，并且只能输入韩文/英文/日文字母、空格、“-”和“·”。",
+                    "nameInvalid": "姓名最多50个字符，可使用各语言文字、数字、空格、连字符、间隔点、撇号和句点。",
                     "nameRequired": "请输入您的姓名。",
                     "phoneDuplicate": "该联系电话已被使用。请输入另一个号码。",
                     "phoneInvalid": "请包含国家/地区代码或以正确的本地格式输入联系信息。",
@@ -12906,6 +13043,26 @@ export const zh: TLocale = {
         "confirmActionDialog": {
             "cancel": "消除",
             "close": "关闭"
+        },
+        "division": {
+            "defaultName": "小组{{number}}",
+            "add": "添加小组",
+            "delete": "删除小组",
+            "deleteAria": "删除小组{{divisionName}}",
+            "memberCountAria": "{{group}} {{count}}人",
+            "added": "已添加小组。",
+            "addFailed": "无法添加小组。",
+            "deleted": "已删除小组。",
+            "deleteFailed": "无法删除小组。",
+            "renameFailed": "无法保存小组名称。",
+            "total": "小组合计",
+            "perNurse": "每位护士"
+        },
+        "contactPhone": {
+            "country": "电话号码所属国家/地区",
+            "international": "输入国际号码（+国家代码）",
+            "hint": "请选择电话号码所属的国家/地区，或输入以“+”和国家代码开头的国际号码。",
+            "invalid": "请输入所选国家/地区的有效电话号码，或以“+”和国家代码开头的国际号码。"
         }
     },
     "widget": {
@@ -12996,6 +13153,9 @@ export const zh: TLocale = {
         "selectedConditions": "本次仅应用选中的条件。",
         "shiftEligibility": "如需更改护士可上的班次，请修改护士设置。如果要安排本月的班次，请告诉我班次以及日期或次数。",
         "confirmSpelling": "您指的是 {{names}} 吗？确认护士姓名后，我会继续处理刚才的请求。"
+    },
+    "error": {
+        "invalidPhoneNumber": "请检查您的电话号码。"
     }
 };
 
@@ -14630,7 +14790,10 @@ export const zhTW: TLocale = {
                     "recommendedDeleted": "推薦的條件已被刪除。",
                     "resetDefaults": "已初始化為推薦條件{{count}}。",
                     "saveFailed": "無法儲存約束。請稍後重試。",
-                    "staffCountConflict": "相同適用日和班次的最少、最多和精確人數條件相互衝突。",
+                    "periodCountConflict": "同一班別的最少{{minimum}}次超過最多{{maximum}}次。請將最少次數改為{{maximum}}次或更少。",
+                    "reviewLowerBound": "修改最少次數",
+                    "reviewUpperBound": "修改最多次數",
+                    "staffCountConflict": "同一對象、日期和班別的人數規則互相衝突。請將重疊的人數規則合併為一條。",
                     "importSkippedAllNurseRules": "由於 {{count}} 條護理師專屬約束無法直接應用到其他小組因此未匯入。",
                     "importedWithSkippedNurseRules": "已匯入 {{teamName}} 的約束並跳過 {{count}} 條護理師專屬約束。"
                 },
@@ -14651,7 +14814,21 @@ export const zhTW: TLocale = {
                     "exact": "{{target}}在{{dateScope}}的{{shift}}班次必須正好安排{{count}}名護理師。"
                 },
                 "savedWarnings": {
-                    "title": "已儲存，但有些約束條件需要確認"
+                    "title": "已儲存。請檢查以下排班規則。",
+                    "messages": {
+                        "MAX_WORK_BELOW_WORK_OFF_TRIGGER": "休息前的工作天數超過連續工作上限。請減少休息前的工作天數。",
+                        "EXACT_ONE_WITH_HARD_PRECEPTEE_COVERAGE": "每班設為1人，但受帶教護理師需要同事同班。請將人數改為至少2人。",
+                        "NURSE_SHIFT_PREFER_AVOID_CONFLICT": "同一護理師的同一班別同時設為偏好和迴避。請刪除其中一條規則。",
+                        "TWO_SHIFT_NIGHT_RECOVERY_CONFLICT": "夜班後的休息規則不只一條。請只保留需要的規則。",
+                        "STAFF_COUNT_CONFLICT": "同一對象、日期和班別的人數規則互相衝突。請將重疊的人數規則合併為一條。",
+                        "NURSE_PAIR_SHIFT_CONFLICT": "同兩名護理師同時被要求同班和禁止同班。請刪除其中一條規則。",
+                        "NURSE_PAIR_DAY_CONFLICT": "同兩名護理師同時被要求同日上班和禁止同日上班。請刪除其中一條規則。",
+                        "PRECEPTOR_PAIR_CONFLICT": "帶教護理師與受帶教護理師需要同班，但另一條規則禁止同班。請刪除其中一條規則。",
+                        "MONTHLY_QUOTA_DISALLOWED_SHIFT": "為無法上某班別的護理師設定了該班別的每月必需次數。請將該護理師移出次數規則的適用對象。",
+                        "INDIVIDUAL_HARD_BOUNDS_CONFLICT": "同一護理師的最少次數大於最多次數。請將最少次數改為不超過最多次數。",
+                        "MIXED_PARTICIPATION_CONFLICT": "同一護理師在同一日期設有多種參與方式。請將該日期的參與方式統一為一種。"
+                    },
+                    "fallback": "有排班規則需要確認。請檢查設定的護理師、日期和次數。"
                 },
                 "mixed": {
                     "policyTitle": "混合輪班執行方式",
@@ -15028,7 +15205,7 @@ export const zhTW: TLocale = {
                 "shiftTypesHint": "請選擇所有空缺職位",
                 "worker": "投入工作",
                 "nameRequired": "請輸入姓名。",
-                "nameInvalid": "姓名最多50個字元，可使用文字、數字、空格、“・”和“ー”。不能使用“_”等符號。"
+                "nameInvalid": "姓名最多50個字元，可使用各語言文字、數字、空格、連字號、間隔號、撇號和句點。"
             },
             "drawer": {
                 "deleteConfirm": "{{nurseName}} 要刪除護理師嗎？一旦刪除，就無法恢復。"
@@ -15257,7 +15434,7 @@ export const zhTW: TLocale = {
                 "duplicateRequiredShiftTypes": "重複的必需班次型別請只保留一個：{{shiftTypes}}",
                 "emptyTeam": "您可以透過新增團隊來建立守衛。",
                 "emptyTeamNurses": "有些團隊沒有護理師。請新增護理師或刪除團隊。",
-                "invalidNurseName": "請檢查護理師的姓名。",
+                "invalidNurseName": "姓名最多50個字元，可使用各語言文字、數字、空格、連字號、間隔號、撇號和句點。",
                 "invalidShiftTime": "請檢查班次時間。",
                 "invalidShiftType": "請檢查您的班次型別資訊。",
                 "unmappedShiftType": "請選擇排班程式碼“{{shiftCode}}”的班次含義。",
@@ -15590,7 +15767,7 @@ export const zhTW: TLocale = {
             "unsavedDescription": "更改未儲存。",
             "uploadPhoto": "上傳照片",
             "validation": {
-                "nameInvalid": "名稱不得超過 50 個字元，並且只能輸入韓文/英文/日文字母、空格、“-”和“·”。",
+                "nameInvalid": "姓名最多50個字元，可使用各語言文字、數字、空格、連字號、間隔號、撇號和句點。",
                 "nameRequired": "請輸入您的姓名。",
                 "phoneInvalid": "請包含國家/地區程式碼或以正確的本地格式輸入電話號碼。",
                 "phoneRequired": "請輸入您的電話號碼。"
@@ -15639,7 +15816,7 @@ export const zhTW: TLocale = {
                 "title": "請輸入您的賬戶資訊",
                 "uploadPhoto": "上傳照片",
                 "validation": {
-                    "nameInvalid": "名稱不得超過 50 個字元，並且只能輸入韓文/英文/日文字母、空格、“-”和“·”。",
+                    "nameInvalid": "姓名最多50個字元，可使用各語言文字、數字、空格、連字號、間隔號、撇號和句點。",
                     "nameRequired": "請輸入您的姓名。",
                     "phoneDuplicate": "該聯絡電話已被使用。請輸入另一個號碼。",
                     "phoneInvalid": "請包含國家/地區程式碼或以正確的本地格式輸入聯絡資訊。",
@@ -16155,6 +16332,26 @@ export const zhTW: TLocale = {
         "confirmActionDialog": {
             "cancel": "消除",
             "close": "關閉"
+        },
+        "division": {
+            "defaultName": "小組{{number}}",
+            "add": "新增小組",
+            "delete": "刪除小組",
+            "deleteAria": "刪除小組{{divisionName}}",
+            "memberCountAria": "{{group}} {{count}}人",
+            "added": "已新增小組。",
+            "addFailed": "無法新增小組。",
+            "deleted": "已刪除小組。",
+            "deleteFailed": "無法刪除小組。",
+            "renameFailed": "無法儲存小組名稱。",
+            "total": "小組合計",
+            "perNurse": "每位護理師"
+        },
+        "contactPhone": {
+            "country": "電話號碼所屬國家／地區",
+            "international": "輸入國際號碼（+國碼）",
+            "hint": "請選擇電話號碼所屬的國家／地區，或輸入以「+」及國碼開頭的國際號碼。",
+            "invalid": "請輸入所選國家／地區的有效電話號碼，或以「+」及國碼開頭的國際號碼。"
         }
     },
     "widget": {
@@ -16245,6 +16442,9 @@ export const zhTW: TLocale = {
         "selectedConditions": "本次只套用已選取的條件。",
         "shiftEligibility": "若要變更護理師可排的班別，請到護理師設定修改。若要排本月的班，請告訴我班別和日期或次數。",
         "confirmSpelling": "您指的是 {{names}} 嗎？確認護理師姓名後，我會繼續處理剛才的要求。"
+    },
+    "error": {
+        "invalidPhoneNumber": "請確認電話號碼。"
     }
 };
 
@@ -17879,7 +18079,10 @@ export const th: TLocale = {
                     "recommendedDeleted": "ลบข้อจำกัดที่แนะนำแล้ว",
                     "resetDefaults": "รีเซ็ตเป็น {{count}} ข้อจำกัดที่แนะนำ",
                     "saveFailed": "ไม่สามารถบันทึกข้อจำกัดได้ โปรดลองอีกครั้งในอีกสักครู่",
-                    "staffCountConflict": "จำนวนขั้นต่ำ สูงสุด และจำนวนที่แน่นอนของวันและเวรนี้ขัดแย้งกัน",
+                    "periodCountConflict": "จำนวนขั้นต่ำ {{minimum}} ครั้งมากกว่าสูงสุด {{maximum}} ครั้งสำหรับเวรเดียวกัน โปรดลดขั้นต่ำเหลือไม่เกิน {{maximum}} ครั้ง",
+                    "reviewLowerBound": "แก้ไขจำนวนขั้นต่ำ",
+                    "reviewUpperBound": "แก้ไขจำนวนสูงสุด",
+                    "staffCountConflict": "กฎจำนวนคนของกลุ่ม วันที่ และเวรเดียวกันขัดแย้งกัน โปรดรวมกฎที่ซ้ำซ้อนให้เหลือข้อเดียว",
                     "importSkippedAllNurseRules": "ไม่ได้นำเข้า เพราะข้อจำกัดรายพยาบาล {{count}} รายการใช้กับทีมอื่นโดยตรงไม่ได้.",
                     "importedWithSkippedNurseRules": "นำเข้าข้อจำกัดจาก {{teamName}} และข้ามข้อจำกัดรายพยาบาล {{count}} รายการ."
                 },
@@ -17900,7 +18103,21 @@ export const th: TLocale = {
                     "exact": "สำหรับ {{target}} ใน {{dateScope}} ต้องจัดพยาบาลเวร {{shift}} ให้ครบ {{count}} คนพอดี"
                 },
                 "savedWarnings": {
-                    "title": "บันทึกแล้ว แต่มีข้อจำกัดบางรายการที่ต้องตรวจสอบ"
+                    "title": "บันทึกแล้ว โปรดตรวจสอบเงื่อนไขด้านล่าง",
+                    "messages": {
+                        "MAX_WORK_BELOW_WORK_OFF_TRIGGER": "ตั้งให้หยุดหลังทำงานเกินขีดจำกัดวันทำงานต่อเนื่อง โปรดลดจำนวนวันทำงานก่อนหยุด",
+                        "EXACT_ONE_WITH_HARD_PRECEPTEE_COVERAGE": "ตั้งจำนวนพยาบาลไว้ 1 คน แต่พยาบาลที่อยู่ระหว่างการสอนงานต้องมีเพื่อนร่วมเวร โปรดเพิ่มจำนวนเป็นอย่างน้อย 2 คน",
+                        "NURSE_SHIFT_PREFER_AVOID_CONFLICT": "พยาบาลคนเดียวกันถูกตั้งให้ทั้งเลือกและหลีกเลี่ยงเวรเดียวกัน โปรดลบกฎใดกฎหนึ่ง",
+                        "TWO_SHIFT_NIGHT_RECOVERY_CONFLICT": "มีกฎวันหยุดหลังเวรดึกมากกว่าหนึ่งข้อ โปรดเก็บเฉพาะกฎที่ต้องการใช้",
+                        "STAFF_COUNT_CONFLICT": "กฎจำนวนคนของกลุ่ม วันที่ และเวรเดียวกันขัดแย้งกัน โปรดรวมกฎที่ซ้ำซ้อนให้เหลือข้อเดียว",
+                        "NURSE_PAIR_SHIFT_CONFLICT": "พยาบาลคู่เดียวกันถูกบังคับให้ทั้งขึ้นเวรด้วยกันและห้ามอยู่เวรเดียวกัน โปรดลบกฎใดกฎหนึ่ง",
+                        "NURSE_PAIR_DAY_CONFLICT": "พยาบาลคู่เดียวกันถูกบังคับให้ทั้งมาทำงานวันเดียวกันและห้ามทำงานวันเดียวกัน โปรดลบกฎใดกฎหนึ่ง",
+                        "PRECEPTOR_PAIR_CONFLICT": "ตั้งให้พยาบาลผู้สอนงานและผู้รับการสอนงานขึ้นเวรด้วยกัน แต่มีอีกกฎห้ามอยู่เวรเดียวกัน โปรดลบกฎใดกฎหนึ่ง",
+                        "MONTHLY_QUOTA_DISALLOWED_SHIFT": "กำหนดจำนวนเวรรายเดือนที่ต้องทำให้พยาบาลที่ทำเวรนั้นไม่ได้ โปรดนำพยาบาลคนนั้นออกจากกลุ่มเป้าหมายของกฎจำนวนเวร",
+                        "INDIVIDUAL_HARD_BOUNDS_CONFLICT": "จำนวนครั้งขั้นต่ำของพยาบาลคนเดียวกันมากกว่าค่าสูงสุด โปรดลดค่าขั้นต่ำให้ไม่เกินค่าสูงสุด",
+                        "MIXED_PARTICIPATION_CONFLICT": "พยาบาลคนเดียวกันมีรูปแบบเข้าร่วมหลายแบบในวันเดียวกัน โปรดเลือกเพียงรูปแบบเดียวสำหรับวันนั้น"
+                    },
+                    "fallback": "มีเงื่อนไขเวรที่ต้องตรวจสอบ โปรดตรวจสอบพยาบาล วันที่ และจำนวนครั้งที่ตั้งไว้"
                 },
                 "mixed": {
                     "policyTitle": "นโยบายการทำงานแบบผสม",
@@ -18277,7 +18494,7 @@ export const th: TLocale = {
                 "shiftTypesHint": "เลือกทุกกะที่บุคคลนี้สามารถทำงานได้",
                 "worker": "รวมอยู่ด้วย",
                 "nameRequired": "กรุณาใส่ชื่อ",
-                "nameInvalid": "ใช้ตัวอักษร ตัวเลข ช่องว่าง '・' หรือ 'ー' ได้สูงสุด 50 ตัว ไม่อนุญาตสัญลักษณ์ เช่น '_'"
+                "nameInvalid": "ชื่อยาวได้ไม่เกิน 50 อักขระ ใช้ตัวอักษรทุกภาษา ตัวเลข ช่องว่าง ยัติภังค์ จุดกลาง อัญประกาศเดี่ยว และจุดได้"
             },
             "drawer": {
                 "deleteConfirm": "ลบพยาบาล {{nurseName}} ใช่ไหม สิ่งนี้ไม่สามารถยกเลิกได้"
@@ -18506,7 +18723,7 @@ export const th: TLocale = {
                 "duplicateRequiredShiftTypes": "โปรดเก็บประเภทกะที่จำเป็นซึ่งซ้ำกันไว้เพียงหนึ่งรายการ: {{shiftTypes}}",
                 "emptyTeam": "เพิ่มทีมก่อนสร้างวอร์ด",
                 "emptyTeamNurses": "บางทีมไม่มีพยาบาล เพิ่มพยาบาลหรือลบทีม",
-                "invalidNurseName": "ตรวจสอบชื่อพยาบาล",
+                "invalidNurseName": "ชื่อยาวได้ไม่เกิน 50 อักขระ ใช้ตัวอักษรทุกภาษา ตัวเลข ช่องว่าง ยัติภังค์ จุดกลาง อัญประกาศเดี่ยว และจุดได้",
                 "invalidShiftTime": "ตรวจสอบเวลากะ",
                 "invalidShiftType": "ตรวจสอบข้อมูลประเภทกะ",
                 "unmappedShiftType": "เลือกความหมายของกะสำหรับรหัสตาราง ‘{{shiftCode}}’",
@@ -18839,7 +19056,7 @@ export const th: TLocale = {
             "unsavedDescription": "คุณมีการเปลี่ยนแปลงที่ยังไม่ได้บันทึก",
             "uploadPhoto": "อัพโหลดรูปภาพ",
             "validation": {
-                "nameInvalid": "ใช้อักขระเกาหลี อังกฤษ หรือญี่ปุ่น ช่องว่าง '-' หรือ '·' ได้สูงสุด 50 ตัว",
+                "nameInvalid": "ชื่อยาวได้ไม่เกิน 50 อักขระ ใช้ตัวอักษรทุกภาษา ตัวเลข ช่องว่าง ยัติภังค์ จุดกลาง อัญประกาศเดี่ยว และจุดได้",
                 "nameRequired": "ใส่ชื่อของคุณ",
                 "phoneInvalid": "ป้อนหมายเลขโทรศัพท์ที่ถูกต้องสำหรับภาษาหรือภูมิภาคที่เลือก",
                 "phoneRequired": "ป้อนหมายเลขโทรศัพท์ของคุณ"
@@ -18888,7 +19105,7 @@ export const th: TLocale = {
                 "title": "ป้อนข้อมูลบัญชี",
                 "uploadPhoto": "อัพโหลดรูปภาพ",
                 "validation": {
-                    "nameInvalid": "ใช้อักขระได้สูงสุด 50 ตัว: เกาหลี อังกฤษ ญี่ปุ่น ช่องว่าง '-' และ '·'",
+                    "nameInvalid": "ชื่อยาวได้ไม่เกิน 50 อักขระ ใช้ตัวอักษรทุกภาษา ตัวเลข ช่องว่าง ยัติภังค์ จุดกลาง อัญประกาศเดี่ยว และจุดได้",
                     "nameRequired": "ป้อนชื่อ",
                     "phoneDuplicate": "หมายเลขโทรศัพท์นี้มีการใช้งานแล้ว ป้อนหมายเลขอื่น",
                     "phoneInvalid": "ป้อนหมายเลขโทรศัพท์ที่ถูกต้องสำหรับภาษาหรือภูมิภาคที่เลือก",
@@ -19404,6 +19621,26 @@ export const th: TLocale = {
         "confirmActionDialog": {
             "cancel": "ยกเลิก",
             "close": "ปิด"
+        },
+        "division": {
+            "defaultName": "กลุ่ม {{number}}",
+            "add": "เพิ่มกลุ่ม",
+            "delete": "ลบกลุ่ม",
+            "deleteAria": "ลบกลุ่ม {{divisionName}}",
+            "memberCountAria": "{{group}} · สมาชิก {{count}} คน",
+            "added": "เพิ่มกลุ่มแล้ว",
+            "addFailed": "เพิ่มกลุ่มไม่สำเร็จ",
+            "deleted": "ลบกลุ่มแล้ว",
+            "deleteFailed": "ลบกลุ่มไม่สำเร็จ",
+            "renameFailed": "บันทึกชื่อกลุ่มไม่สำเร็จ",
+            "total": "ยอดรวมของกลุ่ม",
+            "perNurse": "ต่อพยาบาลแต่ละคน"
+        },
+        "contactPhone": {
+            "country": "ประเทศ/ภูมิภาคของหมายเลขโทรศัพท์",
+            "international": "หมายเลขระหว่างประเทศ (+รหัสประเทศ)",
+            "hint": "เลือกประเทศ/ภูมิภาคของหมายเลขโทรศัพท์ หรือป้อนหมายเลขระหว่างประเทศที่ขึ้นต้นด้วย + และรหัสประเทศ",
+            "invalid": "ป้อนหมายเลขโทรศัพท์ที่ถูกต้องสำหรับประเทศ/ภูมิภาคที่เลือก หรือหมายเลขระหว่างประเทศที่ขึ้นต้นด้วย + และรหัสประเทศ"
         }
     },
     "widget": {
@@ -19494,6 +19731,9 @@ export const th: TLocale = {
         "selectedConditions": "ใช้เฉพาะเงื่อนไขที่เลือกในรอบนี้",
         "shiftEligibility": "หากต้องการเปลี่ยนประเภทเวรที่พยาบาลขึ้นได้ ให้แก้ไขในการตั้งค่าพยาบาล หากต้องการจัดเวรเดือนนี้ โปรดระบุเวรและวันที่หรือจำนวนครั้ง",
         "confirmSpelling": "คุณหมายถึง {{names}} ใช่ไหม ยืนยันชื่อพยาบาลเพื่อให้ฉันดำเนินการตามคำขอก่อนหน้าต่อได้"
+    },
+    "error": {
+        "invalidPhoneNumber": "โปรดตรวจสอบหมายเลขโทรศัพท์ของคุณ"
     }
 };
 
@@ -21128,7 +21368,10 @@ export const vi: TLocale = {
                     "recommendedDeleted": "Đã xóa hạn chế được đề xuất.",
                     "resetDefaults": "Đặt lại về {{count}} các ràng buộc được đề xuất.",
                     "saveFailed": "Không thể lưu các ràng buộc. Vui lòng thử lại trong thời gian ngắn.",
-                    "staffCountConflict": "Số nhân sự tối thiểu, tối đa và chính xác của phạm vi và ca này đang mâu thuẫn.",
+                    "periodCountConflict": "Số ca tối thiểu {{minimum}} vượt mức tối đa {{maximum}} cho cùng ca làm. Hãy giảm mức tối thiểu xuống không quá {{maximum}}.",
+                    "reviewLowerBound": "Sửa số lần tối thiểu",
+                    "reviewUpperBound": "Sửa số lần tối đa",
+                    "staffCountConflict": "Các quy tắc số người cho cùng nhóm, ngày và ca làm mâu thuẫn nhau. Hãy gộp các quy tắc chồng chéo thành một.",
                     "importSkippedAllNurseRules": "Không nhập vì {{count}} ràng buộc theo điều dưỡng không thể áp dụng trực tiếp cho nhóm khác.",
                     "importedWithSkippedNurseRules": "Đã nhập ràng buộc từ {{teamName}} và bỏ qua {{count}} ràng buộc theo điều dưỡng."
                 },
@@ -21149,7 +21392,21 @@ export const vi: TLocale = {
                     "exact": "Đối với {{target}} vào {{dateScope}}, ca {{shift}} phải có chính xác {{count}} điều dưỡng."
                 },
                 "savedWarnings": {
-                    "title": "Đã lưu, nhưng có một số điều kiện cần kiểm tra"
+                    "title": "Đã lưu. Hãy kiểm tra các quy tắc bên dưới.",
+                    "messages": {
+                        "MAX_WORK_BELOW_WORK_OFF_TRIGGER": "Số ngày làm trước khi nghỉ vượt giới hạn làm liên tiếp. Hãy giảm số ngày làm trước khi nghỉ.",
+                        "EXACT_ONE_WITH_HARD_PRECEPTEE_COVERAGE": "Ca này chỉ có 1 điều dưỡng, nhưng điều dưỡng đang được hướng dẫn cần đồng nghiệp cùng ca. Hãy tăng số người lên ít nhất 2.",
+                        "NURSE_SHIFT_PREFER_AVOID_CONFLICT": "Cùng một điều dưỡng và ca làm vừa được ưu tiên vừa bị tránh. Hãy xóa một trong hai quy tắc.",
+                        "TWO_SHIFT_NIGHT_RECOVERY_CONFLICT": "Có nhiều quy tắc nghỉ sau ca đêm. Hãy chỉ giữ lại các quy tắc cần dùng.",
+                        "STAFF_COUNT_CONFLICT": "Các quy tắc số người cho cùng nhóm, ngày và ca làm mâu thuẫn nhau. Hãy gộp các quy tắc chồng chéo thành một.",
+                        "NURSE_PAIR_SHIFT_CONFLICT": "Cùng hai điều dưỡng vừa bắt buộc làm cùng ca vừa bị cấm làm cùng ca. Hãy xóa một trong hai quy tắc.",
+                        "NURSE_PAIR_DAY_CONFLICT": "Cùng hai điều dưỡng vừa bắt buộc làm cùng ngày vừa bị cấm làm cùng ngày. Hãy xóa một trong hai quy tắc.",
+                        "PRECEPTOR_PAIR_CONFLICT": "Điều dưỡng hướng dẫn và điều dưỡng đang được hướng dẫn cần làm cùng ca, nhưng quy tắc khác lại cấm cùng ca. Hãy xóa một trong hai quy tắc.",
+                        "MONTHLY_QUOTA_DISALLOWED_SHIFT": "Một điều dưỡng không thể làm ca này nhưng lại phải đủ số ca đó mỗi tháng. Hãy loại điều dưỡng này khỏi đối tượng của quy tắc số ca.",
+                        "INDIVIDUAL_HARD_BOUNDS_CONFLICT": "Số lần tối thiểu của cùng một điều dưỡng lớn hơn mức tối đa. Hãy giảm mức tối thiểu xuống không quá mức tối đa.",
+                        "MIXED_PARTICIPATION_CONFLICT": "Cùng một điều dưỡng có nhiều chế độ tham gia trong cùng ngày. Hãy chọn một chế độ cho những ngày đó."
+                    },
+                    "fallback": "Có quy tắc xếp ca cần xem lại. Hãy kiểm tra điều dưỡng, ngày và số lần đã đặt."
                 },
                 "mixed": {
                     "policyTitle": "Chính sách vận hành ca hỗn hợp",
@@ -21526,7 +21783,7 @@ export const vi: TLocale = {
                 "shiftTypesHint": "Chọn mọi ca mà người này có thể làm việc",
                 "worker": "Bao gồm",
                 "nameRequired": "Vui lòng nhập tên.",
-                "nameInvalid": "Dùng tối đa 50 chữ cái, chữ số, dấu cách, '・' hoặc 'ー'. Không được dùng ký hiệu như '_'."
+                "nameInvalid": "Tên tối đa 50 ký tự, gồm chữ cái các ngôn ngữ, chữ số, dấu cách, dấu gạch nối, dấu chấm giữa, dấu nháy đơn hoặc dấu chấm."
             },
             "drawer": {
                 "deleteConfirm": "Xóa điều dưỡng {{nurseName}}? Điều này không thể hoàn tác được."
@@ -21755,7 +22012,7 @@ export const vi: TLocale = {
                 "duplicateRequiredShiftTypes": "Chỉ giữ lại một loại cho mỗi ca bắt buộc bị trùng: {{shiftTypes}}",
                 "emptyTeam": "Thêm đội trước khi tạo khoa.",
                 "emptyTeamNurses": "Một số đội không có điều dưỡng. Thêm điều dưỡng hoặc xóa nhóm.",
-                "invalidNurseName": "Kiểm tra tên điều dưỡng.",
+                "invalidNurseName": "Tên tối đa 50 ký tự, gồm chữ cái các ngôn ngữ, chữ số, dấu cách, dấu gạch nối, dấu chấm giữa, dấu nháy đơn hoặc dấu chấm.",
                 "invalidShiftTime": "Kiểm tra thời gian thay đổi.",
                 "invalidShiftType": "Kiểm tra thông tin loại ca.",
                 "unmappedShiftType": "Chọn ý nghĩa ca cho mã lịch ‘{{shiftCode}}’.",
@@ -22088,7 +22345,7 @@ export const vi: TLocale = {
             "unsavedDescription": "Bạn có những thay đổi chưa được lưu.",
             "uploadPhoto": "Tải ảnh lên",
             "validation": {
-                "nameInvalid": "Sử dụng tối đa 50 ký tự tiếng Hàn, tiếng Anh hoặc tiếng Nhật, dấu cách, '-' hoặc '·'.",
+                "nameInvalid": "Tên tối đa 50 ký tự, gồm chữ cái các ngôn ngữ, chữ số, dấu cách, dấu gạch nối, dấu chấm giữa, dấu nháy đơn hoặc dấu chấm.",
                 "nameRequired": "Nhập tên của bạn.",
                 "phoneInvalid": "Nhập số điện thoại hợp lệ cho ngôn ngữ hoặc khu vực đã chọn.",
                 "phoneRequired": "Nhập số điện thoại của bạn."
@@ -22137,7 +22394,7 @@ export const vi: TLocale = {
                 "title": "Nhập thông tin tài khoản",
                 "uploadPhoto": "Tải ảnh lên",
                 "validation": {
-                    "nameInvalid": "Sử dụng tối đa 50 ký tự: tiếng Hàn, tiếng Anh, tiếng Nhật, dấu cách, '-' và '·'.",
+                    "nameInvalid": "Tên tối đa 50 ký tự, gồm chữ cái các ngôn ngữ, chữ số, dấu cách, dấu gạch nối, dấu chấm giữa, dấu nháy đơn hoặc dấu chấm.",
                     "nameRequired": "Nhập tên.",
                     "phoneDuplicate": "Số điện thoại này đã được sử dụng. Nhập số khác.",
                     "phoneInvalid": "Nhập số điện thoại hợp lệ cho ngôn ngữ hoặc khu vực đã chọn.",
@@ -22653,6 +22910,26 @@ export const vi: TLocale = {
         "confirmActionDialog": {
             "cancel": "Hủy bỏ",
             "close": "Đóng"
+        },
+        "division": {
+            "defaultName": "Nhóm {{number}}",
+            "add": "Thêm nhóm",
+            "delete": "Xóa nhóm",
+            "deleteAria": "Xóa nhóm {{divisionName}}",
+            "memberCountAria": "{{group}} · {{count}} thành viên",
+            "added": "Đã thêm nhóm.",
+            "addFailed": "Không thể thêm nhóm.",
+            "deleted": "Đã xóa nhóm.",
+            "deleteFailed": "Không thể xóa nhóm.",
+            "renameFailed": "Không thể lưu tên nhóm.",
+            "total": "Tổng của nhóm",
+            "perNurse": "Theo từng điều dưỡng"
+        },
+        "contactPhone": {
+            "country": "Quốc gia/vùng của số điện thoại",
+            "international": "Số quốc tế (+mã quốc gia)",
+            "hint": "Chọn quốc gia/vùng của số điện thoại hoặc nhập số quốc tế bắt đầu bằng + và mã quốc gia.",
+            "invalid": "Nhập số điện thoại hợp lệ cho quốc gia/vùng đã chọn hoặc số quốc tế bắt đầu bằng + và mã quốc gia."
         }
     },
     "widget": {
@@ -22743,6 +23020,9 @@ export const vi: TLocale = {
         "selectedConditions": "Lần này chỉ áp dụng các điều kiện đã chọn.",
         "shiftEligibility": "Để đổi loại ca mà điều dưỡng có thể trực, hãy chỉnh trong phần cài đặt điều dưỡng. Nếu muốn phân ca trong tháng này, hãy cho biết ca trực và ngày hoặc số ca.",
         "confirmSpelling": "Bạn muốn nói đến {{names}} phải không? Hãy xác nhận tên điều dưỡng để tôi tiếp tục xử lý yêu cầu trước đó."
+    },
+    "error": {
+        "invalidPhoneNumber": "Vui lòng kiểm tra số điện thoại của bạn."
     }
 };
 

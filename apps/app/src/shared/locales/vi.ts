@@ -208,10 +208,11 @@ export const vi = {
                 toast: {
                     ...generatedVi.page.makeShift.constraints.toast,
                     duplicateSkipped: 'Điều kiện này đã tồn tại.',
-                    staffCountConflict: 'Số nhân sự tối thiểu, tối đa và chính xác của phạm vi và ca này đang mâu thuẫn.',
+                    staffCountConflict:
+                        'Các quy tắc số người cho cùng nhóm, ngày và ca làm mâu thuẫn nhau. Hãy gộp các quy tắc chồng chéo thành một.',
                 },
                 savedWarnings: {
-                    title: 'Đã lưu, nhưng có một số điều kiện cần kiểm tra',
+                    title: 'Đã lưu. Hãy kiểm tra các quy tắc bên dưới.',
                 },
                 staffCountText: {
                     min: 'Đối với {{target}} vào {{dateScope}}, cần ít nhất {{count}} điều dưỡng cho ca {{shift}}.',

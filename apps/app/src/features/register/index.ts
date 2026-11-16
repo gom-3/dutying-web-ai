@@ -272,6 +272,7 @@ const useRegister = () => {
     const registerAccountProfile = async (accountProfileDTO: {
         name: string;
         phoneNum: string;
+        phoneCountry?: string;
         profileImg: {profileImgUrl?: string; defaultProfileImgId?: number};
         preferredLanguage?: TAccount['preferredLanguage'];
         serviceRegion?: TAccount['serviceRegion'];
@@ -283,9 +284,10 @@ const useRegister = () => {
         try {
             if (accountMe.status === 'WARD_SELECT_PENDING' || getIsWorkspaceSetupPending(accountMe)) {
                 if (getIsWorkspaceSetupPending(accountMe)) {
-                    const updatedAccount = await AdminAPI.updateMe({
+                    const updatedAccount = await AdminAPI.updateMeV2({
                         name: accountProfileDTO.name,
                         phoneNum: accountProfileDTO.phoneNum,
+                        ...(accountProfileDTO.phoneCountry ? {phoneCountry: accountProfileDTO.phoneCountry} : {}),
                         ...accountProfileDTO.profileImg,
                     });
 

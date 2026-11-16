@@ -9,6 +9,7 @@ type TProps = {
     rosterNurseIds: number[];
     copy: (ko: string, en: string) => string;
     showPriority: boolean;
+    compact?: boolean;
 };
 
 type TTranslate = ReturnType<typeof useTypedTranslation>['t'];
@@ -66,7 +67,7 @@ function description(condition: TProps['condition'], t: TTranslate) {
         : t('aiAutofillUi.semanticCondition.shiftsTimesEach', {shifts, operator, count});
 }
 
-export function AiSemanticCondition({condition, nurseName, rosterNurseIds, showPriority, children}: TProps) {
+export function AiSemanticCondition({condition, nurseName, rosterNurseIds, showPriority, compact = false, children}: TProps) {
     const {t} = useTypedTranslation();
     const everyone =
         rosterNurseIds.length > 0 &&
@@ -82,11 +83,13 @@ export function AiSemanticCondition({condition, nurseName, rosterNurseIds, showP
               ? t('aiAutofillUi.semanticCondition.allNurses')
               : condition.nurseIds.map((id) => t('aiAutofillUi.semanticCondition.nurseName', {name: nurseName(id)})).join(', ');
     const dates = period(condition.dates, t);
+    const title = compact && condition.action !== 'CATALOG_RULE' ? description(condition, t) : subject;
+    const context = compact && condition.action !== 'CATALOG_RULE' ? [subject, dates].filter(Boolean).join(' · ') : dates;
 
     return (
-        <li className="rounded-xl bg-white px-3.5 py-3">
+        <li className={compact ? 'min-w-0 py-1' : 'rounded-xl bg-white px-3.5 py-3'}>
             <div className="flex items-start justify-between gap-2">
-                <p className="min-w-0 text-sm leading-5 font-semibold break-keep text-[#333D4B]">{subject}</p>
+                <p className="min-w-0 text-sm leading-5 font-semibold break-keep text-[#333D4B]">{title}</p>
                 {showPriority && (
                     <span className="shrink-0 rounded-md bg-[#F1F3F5] px-2 text-[11px] leading-5 font-medium text-[#475467]">
                         {t(
@@ -97,10 +100,10 @@ export function AiSemanticCondition({condition, nurseName, rosterNurseIds, showP
                     </span>
                 )}
             </div>
-            {condition.action !== 'CATALOG_RULE' && (
+            {!compact && condition.action !== 'CATALOG_RULE' && (
                 <p className="mt-1 text-[13px] leading-5 break-keep text-[#333D4B]">{description(condition, t)}</p>
             )}
-            {dates && <p className="mt-0.5 text-xs leading-5 break-keep text-[#667085]">{dates}</p>}
+            {context && <p className="mt-0.5 text-xs leading-5 break-keep text-[#667085]">{context}</p>}
             {children}
         </li>
     );

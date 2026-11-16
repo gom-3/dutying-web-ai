@@ -66,7 +66,7 @@ type TProps = {
     conditionsVersion?: number;
     interpret: (text: string) => Promise<TScheduleAdjustInterpretRes>;
     onApply: TAdjustApply;
-    goalNurses: {nurseId: number; name: string; divisionName?: string | null}[];
+    goalNurses: {nurseId: number; name: string; divisionNum?: number; divisionName?: string | null}[];
     shiftCodes?: string[];
     requests?: TScheduleMonthRequestRes[];
     requestsLoading?: boolean;

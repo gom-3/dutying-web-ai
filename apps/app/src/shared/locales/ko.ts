@@ -941,7 +941,7 @@ export const ko = {
                     addTitle: '추가',
                 },
                 savedWarnings: {
-                    title: '저장됐지만 확인이 필요한 근무 조건이 있어요',
+                    title: '저장했어요. 아래 조건을 확인해 주세요.',
                 },
                 warning: {
                     deleteTitle: '권장 조건을 삭제할까요?',
@@ -961,10 +961,10 @@ export const ko = {
                     duplicatesRemoved: '중복 근무 조건 {{count}}개를 정리했어요.',
                     duplicateSkipped: '같은 조건이 이미 있어요.',
                     periodCountConflict:
-                        '같은 대상·근무·기간에 최소 {{minimum}}회와 최대 {{maximum}}회가 함께 설정되어 있어요. 두 조건을 동시에 맞출 수 없어요. 아래에서 조건을 확인하고 원하는 횟수로 수정해 주세요.',
-                    reviewLowerBound: '최소 횟수 조건 보기',
-                    reviewUpperBound: '최대 횟수 조건 보기',
-                    staffCountConflict: '같은 적용일과 근무의 최소·최대·정확 인원 조건이 서로 맞지 않아요.',
+                        '같은 근무의 최소 {{minimum}}회가 최대 {{maximum}}회보다 커요. 최소 횟수를 {{maximum}}회 이하로 바꿔 주세요.',
+                    reviewLowerBound: '최소 횟수 수정',
+                    reviewUpperBound: '최대 횟수 수정',
+                    staffCountConflict: '같은 대상·날짜·근무의 인원 조건이 서로 맞지 않아요. 겹치는 인원 조건을 하나로 정리해 주세요.',
                     added: '근무 조건을 추가했어요.',
                     resetDefaults: '권장 조건 {{count}}개로 초기화했어요.',
                     imported: '{{teamName}} 근무 조건을 그대로 불러왔어요.',
