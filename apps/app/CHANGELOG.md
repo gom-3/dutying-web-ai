@@ -1,5 +1,15 @@
 # @dutying/app
 
+## 1.3.52
+
+### Patch Changes
+
+- 8406a64: Display monthly days-off targets in the selected language across worker confirmation, schedule menus and tooltips.
+- 1a1edaa: Keep a declined monthly setting candidate declined after refreshing the page, and prevent its apply action and short consent replies from selecting it again.
+    - @dutying/api@1.3.52
+    - @dutying/domain@1.3.52
+    - @dutying/utils@1.3.52
+
 ## 1.3.51
 
 ### Patch Changes
