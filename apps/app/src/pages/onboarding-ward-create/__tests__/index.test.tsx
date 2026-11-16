@@ -691,6 +691,18 @@ describe('OnboardingWardCreatePage', () => {
 
         expect(screen.getByRole('button', {name: /B팀/})).toBeInTheDocument();
         expect(screen.getByDisplayValue('홍길동')).toBeInTheDocument();
+    it('does not split a supplementary kanji at the pasted name length limit', async () => {
+        render(<OnboardingWardCreatePage />);
+        await prepareValidFinalStep(userEvent.setup());
+
+        fireEvent.paste(screen.getByLabelText('1행 간호사 이름'), {
+            clipboardData: {getData: () => `${'A'.repeat(49)}𠮷\tD`},
+        });
+
+        expect(screen.getByLabelText('1행 간호사 이름')).toHaveValue('A'.repeat(49));
+        expect(screen.getByDisplayValue('D')).toBeInTheDocument();
+    });
+
         expect(screen.getByDisplayValue('D')).toBeInTheDocument();
         expect(screen.getByDisplayValue('E')).toBeInTheDocument();
         expect(screen.getByDisplayValue('N')).toBeInTheDocument();
@@ -1479,8 +1491,132 @@ describe('OnboardingWardCreatePage', () => {
                     state: {onboardingWardCreated: true, onboardingInitialSchedule: null},
                 });
             },
+            "Jean-Luc O'Neill",
+            'D’Arcy',
+            'OʼConnor',
+            'J. Smith',
+            'Jean‑Luc',
+            'Ａｎｎｅ－Ｍａｒｉｅ',
+            '阿依古丽·买买提',
+            'Nguyễn Thị Hương',
+            'José García',
+            'สมหญิง ใจดี',
+            'محمد أحمد',
+            'علی‌رضا',
+            'श्री‍राम',
+            'דָּוִד לוי',
+            'Αλέξανδρος',
+            'Мария Иванова',
+            'ნინო',
+            'ሐና',
+            'অনুষ্কা',
+            'அனுஷ்கா',
+            'Անի',
+            'សុភា',
+            'အောင်',
+            'अनुष्का शर्मा',
             {timeout: 2_000},
         );
+    }, 10_000);
+
+    it('edits Japanese names across widths and submits both name lists from the final step', async () => {
+        const user = userEvent.setup();
+        const initialDraft = createInitialDraft();
+        const team = initialDraft.teams[0]!;
+        const names = [
+            '木ノ内',
+            'サハコタ',
+            '野崎',
+            '関根昌代',
+            '佐藤蘭',
+            '増田',
+            'たなか',
+            'ヤマダ',
+            '　ＡＢ　１２　',
+            'ﾔﾏﾀﾞ･ﾀﾛｳ',
+            "Jean-Luc O'Neill",
+            'D’Arcy',
+            'OʼConnor',
+            'J. Smith',
+            'Jean‑Luc',
+            'Ａｎｎｅ－Ｍａｒｉｅ',
+            '阿依古丽·买买提',
+            'Nguyễn Thị Hương',
+            'José García',
+            'สมหญิง ใจดี',
+            'محمد أحمد',
+            'علی‌رضا',
+            'श्री‍राम',
+            'דָּוִד לוי',
+            'Αλέξανδρος',
+            'Мария Иванова',
+            'ნინო',
+            'ሐና',
+            'অনুষ্কা',
+            'அனுஷ்கா',
+            'Անի',
+            'សុភា',
+            'အောင်',
+            'अनुष्का शर्मा',
+            '髙﨑',
+            '𠮷田',
+            '山田\u{E0100}',
+            'カ\u3099ナ',
+            'セ\u309a',
+            '山田゛',
+            'ㇷ\u309a',
+        ];
+        const expected = [
+            '木ノ内',
+            'サハコタ',
+            '野崎',
+            '関根昌代',
+            '佐藤蘭',
+            '増田',
+            'たなか',
+            'ヤマダ',
+            'ＡＢ １２',
+            'ﾔﾏﾀﾞ・ﾀﾛｳ',
+            '髙﨑',
+            '𠮷田',
+            '山田\u{E0100}',
+            'ガナ',
+            'セ\u309a',
+            '山田゛',
+            'ㇷ\u309a',
+        ];
+        latestSavedDraftPayload = {
+            flowVersion: 2,
+            draftWardId: 10,
+            selectedTeamId: team.id,
+            sortMode: 'manual',
+            draft: {
+                ...goToStep(initialDraft, 5),
+                hospitalName: TEST_HOSPITAL_NAME,
+                wardName: TEST_WARD_NAME,
+                teams: [team],
+                nurses: names.map((_, index) => ({...initialDraft.nurses[0]!, id: `unicode-${index}`, teamId: team.id})),
+            },
+        };
+
+        render(<OnboardingWardCreatePage />);
+        const inputs = await screen.findAllByPlaceholderText('이름');
+
+        expect(inputs).toHaveLength(names.length);
+        inputs.forEach((input, index) => {
+            fireEvent.change(input, {target: {value: names[index]}});
+            expect(input).toHaveValue(names[index]);
+        });
+        expect(screen.getByRole('button', {name: '완료'})).toBeEnabled();
+        await user.click(screen.getByRole('button', {name: '완료'}));
+
+        await waitFor(() => expect(mockCompleteOnboardingWardDraft).toHaveBeenCalledTimes(1));
+        const payload = mockCompleteOnboardingWardDraft.mock.calls[0]![1];
+
+        expect(payload.shiftTeams[0].nurseNames).toEqual(expected);
+        expect(payload.shiftTeams[0].nurses.map((nurse: {name: string}) => nurse.name)).toEqual(expected);
+        await waitFor(() => expect(toastSuccess).toHaveBeenCalledWith('병동 생성을 완료했어요.'));
+        expect(toastError).not.toHaveBeenCalled();
     }, 10_000);
 
     it('shows toast only and allows retry when ward creation fails', async () => {

@@ -1,7 +1,11 @@
 import {type TCreateWardDTO, type TOnboardingSignals, type TShiftConstraintSeverity} from '@dutying/api/ward';
 import {type DropResult} from '@hello-pangea/dnd';
 import {getNextNewNurseNumber} from '@/shared/lib/new-nurse-name';
-import {isValidNurseName, NURSE_NAME_MAX_LENGTH, normalizeNurseNameForRequest} from '@/shared/lib/nurse-name';
+import {
+    isValidOnboardingNurseName,
+    NURSE_NAME_MAX_LENGTH,
+    normalizeRosterNurseNameForRequest as normalizeNurseNameForRequest,
+} from '@/shared/lib/nurse-name';
 import {
     getDefaultTimeRangeForRotation,
     getRequiredRotationClassificationCounts,
@@ -2650,7 +2654,7 @@ const validateTeamsAndNurses = (draft: TOnboardingWardDraft, step: 5): TOnboardi
         nurses.forEach((nurse) => {
             if (!nurse.name.trim()) {
                 issues.push({code: 'missing-nurse-name', step, targetId: nurse.id});
-            } else if (!isValidNurseName(nurse.name)) {
+            } else if (!isValidOnboardingNurseName(nurse.name)) {
                 issues.push({code: 'invalid-nurse-name', step, targetId: nurse.id});
             }
         });

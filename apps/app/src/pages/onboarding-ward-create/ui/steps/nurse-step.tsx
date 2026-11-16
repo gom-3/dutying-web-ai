@@ -4,6 +4,7 @@ import {Check, ChevronDown, Info, Plus, UsersRound, X} from 'lucide-react';
 import {useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import {PersonIcon, SixDotsIcon} from '@/shared/assets/svg';
 import {useTypedTranslation, type TI18nKey} from '@/shared/hook/use-typed-translation';
+import {sanitizeNurseNameInput} from '@/shared/lib/nurse-name';
 import {Input} from '@/shared/ui/primitives/input';
 import {Switch} from '@/shared/ui/primitives/switch';
 import {
@@ -45,7 +46,7 @@ const NURSE_GRID_PADDING_X = 'px-6';
 const NURSE_GRID_GAP_CLASS = 'gap-x-3';
 const NURSE_GRID_COLS_STEP_3 =
     'grid-cols-[32px_minmax(168px,1.08fr)_minmax(220px,1.48fr)_minmax(84px,0.58fr)_minmax(84px,0.58fr)_minmax(96px,0.68fr)_40px]';
-const limitNurseNameInput = (value: string) => value.slice(0, MAX_ONBOARDING_NURSE_NAME_LENGTH);
+const limitNurseNameInput = sanitizeNurseNameInput;
 const getOnboardingDivisionDroppableId = (teamId: string, divisionNum: number) => `${teamId},${divisionNum}`;
 
 type TNurseRoleHelp = 'preceptor' | 'preceptee';

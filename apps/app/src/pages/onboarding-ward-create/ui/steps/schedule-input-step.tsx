@@ -15,7 +15,7 @@ import {
 import whiteExcelIcon from '@/shared/assets/images/w_excel.png';
 import {PersonIcon} from '@/shared/assets/svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
-import {NURSE_NAME_MAX_LENGTH} from '@/shared/lib/nurse-name';
+import {NURSE_NAME_MAX_LENGTH, sanitizeNurseNameInput} from '@/shared/lib/nurse-name';
 import {
     getAvailableOnboardingShiftColor,
     getDefaultShiftTypeColor,
@@ -210,7 +210,7 @@ const getDayType = (year: number, month: number, day: number) => {
 };
 const limitShiftCellValue = (value: string) => Array.from(value).slice(0, MAX_SHIFT_CELL_LENGTH).join('');
 const limitCellValue = (value: string, colIndex: number) =>
-    colIndex === NAME_COLUMN_INDEX ? value.slice(0, NURSE_NAME_MAX_LENGTH) : limitShiftCellValue(value);
+    colIndex === NAME_COLUMN_INDEX ? sanitizeNurseNameInput(value) : limitShiftCellValue(value);
 const getLatestSchedule = (scheduleInputs: TOnboardingWardDraft['scheduleInputs'][string]) =>
     Object.values(scheduleInputs ?? {})
         .filter((schedule): schedule is TOnboardingTeamScheduleDraft => Boolean(schedule))
