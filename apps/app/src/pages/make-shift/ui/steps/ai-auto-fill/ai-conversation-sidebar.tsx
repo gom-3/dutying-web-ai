@@ -1395,28 +1395,45 @@ export default function AiConversationSidebar({
 
                     stage = 'GUARD';
 
-                    // Applying a result clears the server's latest interpretation. A completed
-                    // request is history, not a stale edit target for the next ordinary message.
-                    const activeReference =
-                        !editingRequest &&
-                        !current.conversation.latestInterpretationId &&
-                        current.operations.some((op) => op.interpretationId === reference && isExecutionFinished(op))
-                            ? undefined
-                            : reference;
+                    const state = current.conversationState;
+                    const latestInterpretationId = current.conversation.latestInterpretationId;
+                    const invalidatedReference = !state && Boolean(reference) && !latestInterpretationId;
 
-                    if (!current.conversationState && activeReference && current.conversation.latestInterpretationId !== activeReference) {
+                    if (before && before.conversation.conversationId !== current.conversation.conversationId)
                         throw new AiConversationInputError('staleRequest');
+
+                    if (!state && reference && latestInterpretationId && reference !== latestInterpretationId)
+                        throw new AiConversationInputError('staleRequest');
+
+                    if (invalidatedReference) {
+                        setPreviousId(undefined);
+                        setEditingRequest(null);
+                        setChange('ADD');
+                    }
+
+                    // A reply to a question that disappeared during sync needs its original context before resubmission.
+                    if (!state && !latestInterpretationId && !editingRequest && before?.conversation.latestInterpretationId) {
+                        const question = before.turns.find(
+                            (turn) =>
+                                turn.interpretationId === before.conversation.latestInterpretationId &&
+                                turn.semanticPlan?.state === 'NEEDS_CLARIFICATION',
+                        );
+                        const originalRequest = question ? requestTextForTurn(before, question) : '';
+
+                        if (originalRequest && message !== originalRequest) {
+                            setText(`${originalRequest}\n추가 답변: ${message}`);
+                            throw new AiConversationInputError('staleRequest');
+                        }
                     }
 
                     const previous =
-                        activeReference ??
+                        (invalidatedReference ? undefined : reference) ??
                         current.turns.find(
                             (turn) =>
-                                turn.interpretationId === current.conversation.latestInterpretationId &&
+                                turn.interpretationId === latestInterpretationId &&
                                 (Boolean(turn.semanticPlan) || isConversationConfirmationCurrent(current, turn, false)),
                         )?.interpretationId;
                     const priorPlan = current.turns.find((turn) => turn.interpretationId === previous && turn.semanticPlan);
-                    const state = current.conversationState;
                     const currentPlan = current.turns.find(
                         (turn) => turn.interpretationId === current.conversation.latestInterpretationId && turn.semanticPlan,
                     )?.semanticPlan;
@@ -1462,7 +1479,11 @@ export default function AiConversationSidebar({
                             surfaceVersion: 'conversation-minimal-v1',
                             entryChoice: entryChoice ?? undefined,
                             inputMode:
-                                editingRequest || removeConditionId ? 'revision' : state?.pendingQuestion ? 'clarification' : 'request',
+                                (editingRequest && !invalidatedReference) || removeConditionId
+                                    ? 'revision'
+                                    : state?.pendingQuestion
+                                      ? 'clarification'
+                                      : 'request',
                             typedText: message,
                         },
                         ...(intentFirstEnabled ? {authoringContractVersion: INTENT_FIRST_CONTRACT} : {}),

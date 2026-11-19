@@ -4179,6 +4179,104 @@ describe('persistent schedule sidebar', () => {
         },
     );
 
+    const invalidatePreviewOnDraftSync = () => {
+        mocks.sync.mockImplementationOnce(async (_id, draft) => {
+            current = {
+                ...current,
+                draft: {...current.draft, versionId: 'edited:1', cells: draft.cells},
+                conversation: {...current.conversation, revision: 1, currentVersionId: 'edited:1', latestInterpretationId: null},
+            };
+
+            return current;
+        });
+    };
+
+    it('interprets an edited request against the newly saved draft when sync invalidates its preview', async () => {
+        const {raw, proposal} = semanticRequest();
+        const edited = raw.replace('1~2일', '1~5일');
+
+        invalidatePreviewOnDraftSync();
+        mocks.interpret.mockResolvedValueOnce(proposal);
+        renderSidebar();
+
+        await userEvent.click(await screen.findByRole('button', {name: '요청 수정하기'}));
+
+        const input = screen.getByRole('textbox');
+
+        await userEvent.clear(input);
+        await userEvent.type(input, edited);
+        mocks.draftFixed = true;
+        await userEvent.click(screen.getByRole('button', {name: '수정한 요청 확인'}));
+
+        await waitFor(() => expect(mocks.interpret).toHaveBeenCalledOnce());
+        expect(mocks.sync).toHaveBeenCalledWith(1, expect.objectContaining({cells: [expect.objectContaining({fixed: true})]}));
+        const [, request] = mocks.interpret.mock.calls[0]!;
+
+        expect(request).toMatchObject({expectedRevision: 1, text: edited, clientContext: {inputMode: 'request'}});
+        expect(request).not.toHaveProperty('previousInterpretationId');
+        expect(request).not.toHaveProperty('change');
+        expect(screen.getByText(raw)).toBeVisible();
+        expect(mocks.confirmPlan).not.toHaveBeenCalled();
+        expect(mocks.execute).not.toHaveBeenCalled();
+        expect(mocks.reportClientFailure).not.toHaveBeenCalled();
+    });
+
+    it('accepts a new request when the restored composer still points at an invalidated, unexecuted preview', async () => {
+        const {raw, proposal} = semanticRequest();
+        const nextText = '변경한 근무표 기준으로 다시 짜줘';
+
+        current.conversation = {...current.conversation, latestInterpretationId: null, revision: 1};
+        localStorage.setItem(
+            'dutying:schedule-chat:v2:account:4:1:2:2026:11:server-transcript',
+            JSON.stringify({
+                conversationId: 1,
+                events: [],
+                recoveredFailures: [],
+                composer: {previousId: proposal.interpretationId, change: 'ADD'},
+            }),
+        );
+        mocks.interpret.mockResolvedValueOnce(proposal);
+        renderSidebar();
+
+        await userEvent.type(await screen.findByRole('textbox'), nextText);
+        await userEvent.click(screen.getByRole('button', {name: '요청 보내기'}));
+
+        await waitFor(() => expect(mocks.interpret).toHaveBeenCalledOnce());
+        const [, request] = mocks.interpret.mock.calls[0]!;
+
+        expect(request).toMatchObject({expectedRevision: 1, text: nextText});
+        expect(request).not.toHaveProperty('previousInterpretationId');
+        expect(screen.getByText(raw)).toBeVisible();
+        expect(mocks.execute).not.toHaveBeenCalled();
+        expect(mocks.reportClientFailure).not.toHaveBeenCalled();
+    });
+
+    it('keeps the question context editable when draft sync invalidates it before interpreting the answer', async () => {
+        const {raw, proposal} = semanticRequest('NEEDS_CLARIFICATION');
+        const answer = 'O로 배정해줘.';
+        const reviewedText = `${raw}\n추가 답변: ${answer}`;
+
+        invalidatePreviewOnDraftSync();
+        mocks.interpret.mockResolvedValueOnce(proposal);
+        renderSidebar();
+
+        await userEvent.type(await screen.findByRole('textbox'), answer);
+        mocks.draftFixed = true;
+        await userEvent.click(screen.getByRole('button', {name: '요청 보내기'}));
+
+        await screen.findByRole('alert');
+        expect(screen.getByRole('textbox')).toHaveValue(reviewedText);
+        expect(mocks.interpret).not.toHaveBeenCalled();
+
+        await userEvent.click(screen.getByRole('button', {name: '요청 보내기'}));
+        await waitFor(() => expect(mocks.interpret).toHaveBeenCalledOnce());
+        const [, request] = mocks.interpret.mock.calls[0]!;
+
+        expect(request).toMatchObject({expectedRevision: 1, text: reviewedText});
+        expect(request).not.toHaveProperty('previousInterpretationId');
+        expect(mocks.execute).not.toHaveBeenCalled();
+    });
+
     it('lets the user edit just the date while retaining every other original condition', async () => {
         const {raw, proposal} = semanticRequest();
 
