@@ -67,10 +67,11 @@ jobs:
     needs: test
     if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     permissions:
       contents: read
       deployments: write
+      checks: read
     env:
       PAGES_PROJECT: ${{ github.ref == 'refs/heads/develop' && 'dutying-web-ai-dev' || 'dutying-web-ai' }}
       PUBLIC_URL: ${{ github.ref == 'refs/heads/develop' && 'https://dev.dutying.ai' || 'https://www.dutying.ai' }}
@@ -108,23 +109,18 @@ jobs:
           command: pages deploy apps/app/dist --project-name=${{ env.PAGES_PROJECT }} --branch=${{ github.ref_name }} --commit-hash=${{ github.sha }}
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
       - name: Verify deployed commit on Pages and public domain
+        id: verification
         env:
           DEPLOYMENT_URL: ${{ steps.pages.outputs.deployment-url }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          for attempt in $(seq 1 18); do
-            if bash .codex/skills/dutying-web-release-verify/scripts/verify-public-release.sh \
-              --url "$PUBLIC_URL/release.json" --expect-text "$GITHUB_SHA"; then
-              if [ -z "$DEPLOYMENT_URL" ]; then
-                DEPLOYMENT_URL=$(node scripts/release/existing-pages-deployment.mjs \
-                  "$PUBLIC_URL" "$GITHUB_SHA" "$GITHUB_REF_NAME" "$PAGES_PROJECT") || exit 1
-              fi
-              bash .codex/skills/dutying-web-release-verify/scripts/verify-public-release.sh \
-                --url "${DEPLOYMENT_URL%/}/release.json" --expect-text "$GITHUB_SHA"
-              printf 'Published %s at %s (Pages: %s)\n' "$GITHUB_SHA" "$PUBLIC_URL" "$DEPLOYMENT_URL" >> "$GITHUB_STEP_SUMMARY"
-              exit 0
-            fi
-            sleep 10
-          done
-          echo '::error::No matching public deployment. Enable Cloudflare Git deployments or set CLOUDFLARE_API_TOKEN and re-run this job.'
-          exit 1
-          retention-days: 7
+          node scripts/release/wait-for-pages-deployment.mjs \
+            "$PUBLIC_URL" "$GITHUB_SHA" "$GITHUB_REF_NAME" "$PAGES_PROJECT" "$DEPLOYMENT_URL"
+      - name: Verify public responses
+        env:
+          DEPLOYMENT_URL: ${{ steps.verification.outputs.deployment-url }}
+        run: |
+          bash .codex/skills/dutying-web-release-verify/scripts/verify-public-release.sh \
+            --url "$PUBLIC_URL/release.json" --expect-text "$GITHUB_SHA"
+          bash .codex/skills/dutying-web-release-verify/scripts/verify-public-release.sh \
+            --url "${DEPLOYMENT_URL%/}/release.json" --expect-text "$GITHUB_SHA"
