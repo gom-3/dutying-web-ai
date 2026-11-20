@@ -1,8 +1,10 @@
 import {type TCreateWardDTO, type TShiftConstraintSeverity} from '@dutying/api/ward';
 import {v4 as uuidv4} from 'uuid';
 import {type TOnboardingWardParseApiResponse, type TOnboardingWardParseOptions} from '@/shared/api/file/type';
-import {getDefaultTimeRangeForRotation} from '@/shared/lib/shift-rotation-selection';
+import {getDefaultTimeRangeForRotation, isRestShiftOption} from '@/shared/lib/shift-rotation-selection';
+import {normalizeOnboardingDivisions} from './divisions';
 import {
+    assignImportedShiftColors,
     createEmptyShiftType,
     ensureOnboardingAnnualLeave,
     DEFAULT_OFF_SHIFT_TYPE_COLOR,
@@ -27,6 +29,7 @@ import {
     type TOnboardingWardDraft,
     type TOnboardingWardShiftType,
 } from './draft';
+import {createScheduleShiftTypeResolver} from './schedule-shift-reference';
 import {
     getAutomaticPreviousScheduleShiftMapping,
     getPreviousScheduleShiftMappingRecommendation,
@@ -37,6 +40,7 @@ import {
     type TOnboardingShiftMappingRecommendation,
     type TOnboardingShiftMappingStatus,
 } from './shift-type-mapping';
+import {buildOnboardingWardIdentityPayload} from './ward-identity';
 
 export type TOnboardingParsedShiftType = Partial<Omit<TCreateWardDTO['wardShiftTypes'][number], 'isCounted'>> & {
     name?: string;
@@ -689,14 +693,21 @@ const buildDraftTeams = (names: string[]): TOnboardingTeamDraft[] =>
     }));
 const remapPossibleShiftTypeIds = (
     nurses: TOnboardingNurseDraft[],
-    _prevShiftTypes: TOnboardingWardShiftType[],
+    previousShiftTypes: TOnboardingWardShiftType[],
     nextShiftTypes: TOnboardingWardShiftType[],
 ): TOnboardingNurseDraft[] => {
-    const defaultShiftTypeIds = nextShiftTypes.filter(isOnboardingShiftTypeActive).map((shiftType) => shiftType.id);
+    const previousIdByCode = new Map(previousShiftTypes.filter(isOnboardingShiftTypeActive).map((type) => [type.shortName, type.id]));
+    const active = nextShiftTypes.filter(isOnboardingShiftTypeActive);
 
     return nurses.map((nurse) => ({
         ...nurse,
-        possibleShiftTypeIds: defaultShiftTypeIds,
+        possibleShiftTypeIds: active
+            .filter((type) => {
+                const previousId = previousIdByCode.get(type.shortName);
+
+                return isRestShiftOption(type) || !previousId || nurse.possibleShiftTypeIds.includes(previousId);
+            })
+            .map((type) => type.id),
     }));
 };
 const remapTeamIds = (
@@ -753,11 +764,13 @@ const buildParsedNurses = (
     shiftTypes: TOnboardingWardShiftType[],
 ): TOnboardingNurseDraft[] => {
     const teamIdByName = new Map(teams.map((team) => [team.name, team.id]));
-    const defaultShiftTypeIds = shiftTypes.filter(isOnboardingShiftTypeActive).map((shiftType) => shiftType.id);
+    const activeShiftTypes = shiftTypes.filter(isOnboardingShiftTypeActive);
     const fallbackTeamId = requireFirstTeamId(teams);
 
     return parsedNurses.map((nurse, index) => {
         const legacyRoleFlags = getNurseRoleFlagsFromMemo(nurse.memo);
+        const importedCodes = new Set(nurse.possibleShiftShortNames);
+        const hasKnownCodes = activeShiftTypes.some((type) => importedCodes.has(type.shortName));
 
         return {
             id: createLocalId(`nurse-${index + 1}`),
@@ -769,7 +782,9 @@ const buildParsedNurses = (
             isPreceptee: nurse.isPreceptee ?? legacyRoleFlags.isPreceptee,
             isWorker: nurse.isWorker ?? true,
             employmentDate: nurse.employmentDate ?? getTodayDate(),
-            possibleShiftTypeIds: defaultShiftTypeIds,
+            possibleShiftTypeIds: activeShiftTypes
+                .filter((type) => !hasKnownCodes || importedCodes.has(type.shortName) || isRestShiftOption(type))
+                .map((type) => type.id),
             initialShifts: nurse.initialShifts ?? [],
         };
     });
@@ -1187,7 +1202,7 @@ const toDraftConstraintCandidate = (candidate: TOnboardingParsedConstraintCandid
     ...candidate,
     id: createLocalId(`constraint-${index + 1}`),
 });
-const buildConstraintRulePayloads = (draft: TOnboardingWardDraft) => {
+const buildConstraintRulePayloads = (draft: TOnboardingWardDraft, teamId: string) => {
     return draft.constraintCandidates
         .filter(
             (constraint) =>
@@ -1204,7 +1219,7 @@ const buildConstraintRulePayloads = (draft: TOnboardingWardDraft) => {
             // 후보 확인 UI 가 복원되기 전까지 프리필은 '확인'이 아니다.
             confirmed: false,
             selected: constraint.selected,
-            params: constraint.params,
+            params: constraint.paramsByTeamId?.[teamId] ?? constraint.params,
         }));
 };
 
@@ -1403,7 +1418,7 @@ export const applyParsedWardData = (
     const rawCodes = new Set(parsed.importedCodes);
     const nextShiftTypes = [
         ...knownShiftTypes.filter((type) => !rawCodes.has(type.shortName)),
-        ...Array.from(rawCodes, (code, index): TOnboardingWardShiftType => {
+        ...Array.from(rawCodes, (code): TOnboardingWardShiftType => {
             const configured = currentShiftTypes.find(
                 (type) =>
                     type.shortName === code &&
@@ -1416,7 +1431,8 @@ export const applyParsedWardData = (
             if (configured) return {...configured, importedCode: code, protectedByPreviousSchedule: true, mappingStatus: 'CONFIRMED'};
 
             return {
-                ...createEmptyShiftType(knownShiftTypes.length + index),
+                ...createEmptyShiftType(),
+                color: '',
                 id: createLocalId('shift'),
                 name: code,
                 shortName: code,
@@ -1435,26 +1451,25 @@ export const applyParsedWardData = (
         : remapTeamIds(remapPossibleShiftTypeIds(draft.nurses, draft.shiftTypes, nextShiftTypes), draft.teams, nextTeams);
 
     return ensureOnboardingAnnualLeave(
-        {
+        normalizeOnboardingDivisions({
             ...draft,
             uploadedFileName: parsed.fileName ?? draft.uploadedFileName,
             wardName: parsed.wardName ?? draft.wardName,
             hospitalName: parsed.hospitalName ?? draft.hospitalName,
-            shiftTypes: nextShiftTypes,
+            shiftTypes: assignImportedShiftColors(nextShiftTypes),
             teams: nextTeams,
             nurses: nextNurses,
             constraintCandidates: parsed.constraintCandidates
                 ? parsed.constraintCandidates.map(toDraftConstraintCandidate)
                 : draft.constraintCandidates,
-        },
+        }),
         labels,
     );
 };
 
-export const buildCreateWardPayload = (draft: TOnboardingWardDraft): TCreateWardDTO => {
-    const normalizedWardName = draft.wardName.trim();
-    const normalizedHospitalName = draft.hospitalName.trim();
-    const fallbackName = normalizedWardName || normalizedHospitalName || DEFAULT_WARD_FALLBACK_NAME;
+export const buildCreateWardPayload = (input: TOnboardingWardDraft, fallbackWardName = DEFAULT_WARD_FALLBACK_NAME): TCreateWardDTO => {
+    const draft = normalizeOnboardingDivisions(input);
+    const identity = buildOnboardingWardIdentityPayload(draft, fallbackWardName);
     const mappedShiftTypes = draft.shiftTypes.filter((shiftType) => isOnboardingShiftMappingResolved(shiftType.mappingStatus));
     const uniqueMappedShiftTypeByShortName = new Map<string, TOnboardingWardShiftType>();
 
@@ -1474,30 +1489,36 @@ export const buildCreateWardPayload = (draft: TOnboardingWardDraft): TCreateWard
             uniqueMappedShiftTypeByShortName.get(normalizeOnboardingShiftCode(shiftType.shortName)) ?? shiftType,
         ]),
     );
+    const getPossibleShiftShortNames = (nurse: TOnboardingNurseDraft) => {
+        const selected = new Set(nurse.possibleShiftTypeIds.map((id) => shiftTypeById.get(id)));
+
+        return uniqueMappedShiftTypes
+            .filter((type) => isOnboardingShiftTypeActive(type) && (isRestShiftOption(type) || selected.has(type)))
+            .map((type) => normalizeOnboardingShiftCode(type.shortName))
+            .filter(Boolean);
+    };
     const unresolvedPhotoCodes = new Set(
         draft.shiftTypes
             .filter((type) => type.importedCode && !isOnboardingShiftMappingResolved(type.mappingStatus))
-            .flatMap((type) => [type.shortName, ...(type.shortNameAliases ?? [])]),
+            .flatMap((type) => [type.shortName, type.importedCode!, ...(type.shortNameAliases ?? [])]),
     );
+    const resolveInitialShiftType = createScheduleShiftTypeResolver({...draft, shiftTypes: uniqueMappedShiftTypes});
     const getInitialShifts = (nurse: TOnboardingNurseDraft) => {
         const shifts = (nurse.initialShifts ?? []).flatMap((shift) => {
             if (unresolvedPhotoCodes.has(shift.shiftShortName)) return [];
 
-            const shiftShortName = normalizeOnboardingShiftCode(shift.shiftShortName);
+            const resolved = resolveInitialShiftType(shift.shiftShortName);
+            const shiftShortName = normalizeOnboardingShiftCode(resolved?.shortName ?? shift.shiftShortName);
 
             return uniqueMappedShiftTypeByShortName.has(shiftShortName) ? [{...shift, shiftShortName}] : [];
         });
 
         return shifts.length ? shifts : undefined;
     };
-    const constraintRules = buildConstraintRulePayloads(draft);
 
     return {
         ...(draft.onboardingSignals ? {onboardingSignals: draft.onboardingSignals} : {}),
-        name: normalizedWardName || normalizedHospitalName || fallbackName,
-        // 카탈로그에서 고른 병원이면 id 도 함께 보낸다. 서버가 이름을 카탈로그 기준으로 확정한다.
-        ...(typeof draft.hospitalId === 'number' ? {hospitalId: draft.hospitalId} : {}),
-        hospitalName: normalizedHospitalName || normalizedWardName || fallbackName,
+        ...identity,
         rotationMode: draft.rotationMode,
         wardShiftTypes: uniqueMappedShiftTypes.map(
             ({
@@ -1529,6 +1550,7 @@ export const buildCreateWardPayload = (draft: TOnboardingWardDraft): TCreateWard
             },
         ),
         shiftTeams: draft.teams.map((team) => {
+            const constraintRules = buildConstraintRulePayloads(draft, team.id);
             const nurses = draft.nurses
                 .filter((nurse) => nurse.teamId === team.id)
                 .map((nurse) => ({
@@ -1557,13 +1579,7 @@ export const buildCreateWardPayload = (draft: TOnboardingWardDraft): TCreateWard
                     employmentDate: nurse.employmentDate,
                     isPreceptor: nurse.isPreceptor,
                     isPreceptee: nurse.isPreceptee,
-                    possibleShiftShortNames: nurse.possibleShiftTypeIds
-                        .map((shiftTypeId) => shiftTypeById.get(shiftTypeId))
-                        .filter((shiftType): shiftType is TOnboardingWardShiftType =>
-                            Boolean(shiftType && isOnboardingShiftTypeActive(shiftType)),
-                        )
-                        .map((shiftType) => normalizeOnboardingShiftCode(shiftType.shortName))
-                        .filter((shortName): shortName is string => Boolean(shortName)),
+                    possibleShiftShortNames: getPossibleShiftShortNames(nurse),
                     initialShifts: getInitialShifts(nurse),
                 })),
             };

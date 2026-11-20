@@ -3,7 +3,7 @@ import {ArrowLeft, Trash2} from 'lucide-react';
 import {useEffect, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
 import toast from 'react-hot-toast';
-import {useTranslation} from 'react-i18next';
+import {Trans, useTranslation} from 'react-i18next';
 import {useNavigate, useSearchParams} from 'react-router';
 import {getWardDisplayTitle} from '@/entities/ward';
 import useAuth from '@/features/auth';
@@ -12,10 +12,13 @@ import {isOnboardingWardCreatePreviewAllowed} from '@/shared/config/feature-flag
 import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {getDefaultServiceRegionForLanguage, getStoredServiceRegion, normalizeServiceRegion} from '@/shared/i18n/locale';
+import {isValidOnboardingNurseName} from '@/shared/lib/nurse-name';
 import {getRequiredRotationClassificationCounts, isRequiredRotationClassificationSatisfied} from '@/shared/lib/shift-rotation-selection';
+import {HOSPITAL_NAME_MAX_LENGTH} from '@/shared/lib/ward-name';
 import PageState from '@/shared/ui/PageState';
 import {
     getOnboardingInitialScheduleTargets,
+    getScheduleInputDraft,
     isOnboardingShiftMappingResolved,
     isOnboardingShiftTypeActive,
     resolveOnboardingRotationSystem,
@@ -26,6 +29,7 @@ import HeaderLogo from './ui/header-logo';
 import OnboardingNurseOrderTutorial from './ui/onboarding-nurse-order-tutorial';
 import OnboardingStepLayout from './ui/onboarding-step-layout';
 import SectionHeader from './ui/section-header';
+import {focusShiftTypeIssue, getShiftTypeIssueMessage} from './ui/shift-type-validation';
 import NightRecoveryStep from './ui/steps/night-recovery-step';
 import NurseStep from './ui/steps/nurse-step';
 import RotationStep from './ui/steps/rotation-step';
@@ -43,7 +47,6 @@ type THospitalOnboardingContext = {organizationId: string; name: string};
 function OnboardingWardWizardPage({hospitalContext}: {hospitalContext?: THospitalOnboardingContext}) {
     const {t} = useTypedTranslation();
     const {i18n} = useTranslation();
-    const isKorean = (i18n.resolvedLanguage ?? i18n.language).startsWith('ko');
     const navigate = useNavigate();
     const {
         state: {accountMe},
@@ -70,7 +73,6 @@ function OnboardingWardWizardPage({hospitalContext}: {hospitalContext?: THospita
         skipOrComplete,
         addShiftType,
         updateShiftType,
-        mergeImportedShiftType,
         deleteShiftType,
         addTeam,
         addNurse,
@@ -241,7 +243,7 @@ function OnboardingWardWizardPage({hospitalContext}: {hospitalContext?: THospita
             .map(({label}) => label);
     const getDuplicateRequiredShiftTypeLabels = () =>
         getRequiredShiftTypeStatuses()
-            .filter((requirement) => requirement.count > 1 && !isRequiredRotationClassificationSatisfied(requirement))
+            .filter((requirement) => requirement.duplicateCount > 1 && !isRequiredRotationClassificationSatisfied(requirement))
             .map(({label}) => label);
     const getNextBlockedReasonMessage = () => {
         if (isSubmitting) {
@@ -280,8 +282,21 @@ function OnboardingWardWizardPage({hospitalContext}: {hospitalContext?: THospita
         }
 
         if (codes.has('missing-nurse-name') || codes.has('invalid-nurse-name')) {
-            return t('page.onboardingWardCreate.blocked.invalidNurseName');
+            const invalidNurseIndex = draft.nurses.findIndex((nurse) => !isValidOnboardingNurseName(nurse.name));
+            const invalidNurse = draft.nurses[invalidNurseIndex];
+            const name = invalidNurse?.name.trim() || t('page.onboardingWardCreate.defaults.newNurseName', {index: invalidNurseIndex + 1});
+
+            return t('page.onboardingWardCreate.blocked.invalidNurseNameDetail', {
+                name,
+                reason: t('page.onboardingWardCreate.blocked.invalidNurseName'),
+            });
         }
+
+        const shiftTypeIssueMessage = blockingIssues
+            .map((issue) => getShiftTypeIssueMessage(issue, draft.shiftTypes, draft.rotationMode, t))
+            .find(Boolean);
+
+        if (shiftTypeIssueMessage) return shiftTypeIssueMessage;
 
         if (codes.has('duplicate-shift-short-name')) {
             return t('page.onboardingWardCreate.blocked.duplicateShiftType');
@@ -475,7 +490,7 @@ function OnboardingWardWizardPage({hospitalContext}: {hospitalContext?: THospita
                         chooseFileButtonRef={chooseFileButtonRef}
                         isEntryDisabled={actionsDisabled}
                         onManualEntry={() => setScheduleView('editor')}
-                        draft={draft}
+                        draft={getScheduleInputDraft(draft)}
                         selectedTeamId={activeTeamId}
                         onSelectTeam={setSelectedTeamId}
                         onAddTeam={addTeam}
@@ -505,7 +520,6 @@ function OnboardingWardWizardPage({hospitalContext}: {hospitalContext?: THospita
                         allowNightContinuation={draft.rotationMode !== 'TWO' || draft.twoShiftNightRecoveryDisplay === 'NIGHT_CONTINUATION'}
                         requireNightContinuation={draft.twoShiftNightRecoveryDisplay === 'NIGHT_CONTINUATION'}
                         onChange={updateShiftType}
-                        onMergeImportedShiftType={mergeImportedShiftType}
                         onDragEnd={handleShiftTypeDragEnd}
                         onAdd={addShiftType}
                         onDelete={deleteShiftType}
@@ -546,23 +560,15 @@ function OnboardingWardWizardPage({hospitalContext}: {hospitalContext?: THospita
                     layout="screen"
                     title={
                         draftRestoreStatus === 'loading'
-                            ? isKorean
-                                ? '진행 중인 병동 설정을 확인하고 있어요'
-                                : 'Checking for ward setup in progress'
-                            : isKorean
-                              ? '병동 설정을 불러오지 못했어요'
-                              : 'Could not load ward setup'
+                            ? t('page.onboardingWardCreate.hospital.restoreLoading')
+                            : t('page.onboardingWardCreate.hospital.restoreError')
                     }
                     description={
-                        draftRestoreStatus === 'error'
-                            ? isKorean
-                                ? '기존 설정을 보호하기 위해 불러온 뒤 계속할 수 있어요.'
-                                : 'Load the saved setup before continuing to protect your changes.'
-                            : undefined
+                        draftRestoreStatus === 'error' ? t('page.onboardingWardCreate.hospital.restoreErrorDescription') : undefined
                     }
                     action={
                         draftRestoreStatus === 'error'
-                            ? {label: isKorean ? '다시 불러오기' : 'Try again', onClick: retryDraftRestore}
+                            ? {label: t('page.onboardingWardCreate.hospital.retryRestore'), onClick: retryDraftRestore}
                             : undefined
                     }
                 />
@@ -612,9 +618,7 @@ function OnboardingWardWizardPage({hospitalContext}: {hospitalContext?: THospita
                 ? createPortal(
                       <WardCreationProgressOverlay
                           isComplete={isSuccess}
-                          completionMessage={
-                              hospitalContext ? (isKorean ? '병원 관리로 이동합니다' : 'Opening hospital management') : undefined
-                          }
+                          completionMessage={hospitalContext ? t('page.onboardingWardCreate.hospital.openingManagement') : undefined}
                       />,
                       modalRoot,
                   )
@@ -645,9 +649,7 @@ function OnboardingWardWizardPage({hospitalContext}: {hospitalContext?: THospita
                     >
                         <ArrowLeft className="h-4 w-4" />
                         {hospitalContext
-                            ? isKorean
-                                ? '병원 관리로 돌아가기'
-                                : 'Back to hospital management'
+                            ? t('page.onboardingWardCreate.hospital.backToManagement')
                             : t('page.onboardingWardCreate.backToWardSelect')}
                     </button>
                 ) : null}
@@ -662,23 +664,15 @@ function OnboardingWardWizardPage({hospitalContext}: {hospitalContext?: THospita
                         </svg>
                         <div className="min-w-0 flex-1">
                             <p className="text-sm leading-6 [overflow-wrap:anywhere] break-keep text-sub-2">
-                                {isKorean ? (
-                                    <>
-                                        <strong className="font-semibold text-main-1">{hospitalContext.name}</strong>에 새 병동으로
-                                        추가돼요!
-                                    </>
-                                ) : (
-                                    <>
-                                        This ward will be added to{' '}
-                                        <strong className="font-semibold text-main-1">{hospitalContext.name}</strong>.
-                                    </>
-                                )}
+                                <Trans
+                                    i18nKey="page.onboardingWardCreate.hospital.affiliation"
+                                    values={{hospitalName: hospitalContext.name}}
+                                    components={{hospital: <strong className="font-semibold text-main-1" />}}
+                                />
                             </p>
-                            {hospitalContext.name.trim().length > 20 ? (
+                            {hospitalContext.name.trim().length > HOSPITAL_NAME_MAX_LENGTH ? (
                                 <p className="mt-2 text-[14px] leading-6 text-sub-2">
-                                    {isKorean
-                                        ? '아래 병원명은 20자 이내로 입력해 주세요.'
-                                        : 'Enter a hospital name of up to 20 characters below.'}
+                                    {t('page.onboardingWardCreate.hospital.nameLengthHint', {count: HOSPITAL_NAME_MAX_LENGTH})}
                                 </p>
                             ) : null}
                         </div>
@@ -744,6 +738,14 @@ function OnboardingWardWizardPage({hospitalContext}: {hospitalContext?: THospita
                             focusFirstInvalidIdentityField();
                         }
 
+                        if (draft.currentStep === 4 && !currentStepValidation.isValid) {
+                            focusShiftTypeIssue(
+                                currentStepValidation.issues.find((issue) => issue.code === 'duplicate-required-shift-types') ??
+                                    currentStepValidation.issues.find((issue) => issue.targetId) ??
+                                    currentStepValidation.issues[0],
+                            );
+                        }
+
                         toast.error(getNextBlockedReasonMessage());
                     }}
                     leftAction={isNurseRegistrationStep ? deleteTeamButton : undefined}
@@ -776,8 +778,7 @@ function OnboardingWardWizardPage({hospitalContext}: {hospitalContext?: THospita
 }
 
 function OnboardingWardCreatePage() {
-    const {i18n} = useTranslation();
-    const isKorean = (i18n.resolvedLanguage ?? i18n.language).startsWith('ko');
+    const {t} = useTypedTranslation();
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const commercial = useCommercialContext();
@@ -786,9 +787,7 @@ function OnboardingWardCreatePage() {
     if (!organizationId) return <OnboardingWardWizardPage />;
 
     if ((commercial.isPending && commercial.fetchStatus === 'fetching') || (commercial.isFetching && !commercial.data)) {
-        return (
-            <PageState tone="loading" layout="screen" title={isKorean ? '병원 관리 권한을 확인하고 있어요' : 'Checking hospital access'} />
-        );
+        return <PageState tone="loading" layout="screen" title={t('page.onboardingWardCreate.hospital.accessLoading')} />;
     }
 
     if (commercial.isError) {
@@ -796,9 +795,9 @@ function OnboardingWardCreatePage() {
             <PageState
                 tone="error"
                 layout="screen"
-                title={isKorean ? '병원 정보를 불러오지 못했어요' : 'Could not load the hospital'}
-                description={isKorean ? '다시 시도해 주세요.' : 'Please try again.'}
-                action={{label: isKorean ? '다시 시도' : 'Try again', onClick: () => void commercial.refetch()}}
+                title={t('page.onboardingWardCreate.hospital.loadError')}
+                description={t('page.onboardingWardCreate.hospital.loadErrorDescription')}
+                action={{label: t('page.state.retry'), onClick: () => void commercial.refetch()}}
             />
         );
     }
@@ -812,9 +811,12 @@ function OnboardingWardCreatePage() {
             <PageState
                 tone="error"
                 layout="screen"
-                title={isKorean ? '병원 최고 관리자만 병동을 만들 수 있어요' : 'Only the hospital owner can create wards'}
-                description={isKorean ? '권한이 있는 계정으로 로그인해 주세요.' : 'Sign in with an authorized account.'}
-                action={{label: isKorean ? '내 관리 공간으로' : 'My workspace', onClick: () => navigate('/workspace', {replace: true})}}
+                title={t('page.onboardingWardCreate.hospital.ownerRequired')}
+                description={t('page.onboardingWardCreate.hospital.authorizedAccount')}
+                action={{
+                    label: t('page.onboardingWardCreate.hospital.myWorkspace'),
+                    onClick: () => navigate('/workspace', {replace: true}),
+                }}
             />
         );
     }

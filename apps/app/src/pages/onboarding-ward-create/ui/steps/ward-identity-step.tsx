@@ -1,6 +1,7 @@
 import type {TServiceRegion} from '@dutying/domain';
 import type {KeyboardEvent} from 'react';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import {WARD_NAME_MAX_LENGTH} from '@/shared/lib/ward-name';
 import HospitalSearchField, {type THospitalSelection} from './hospital-search-field';
 
 interface IWardIdentityStepProps {
@@ -15,7 +16,6 @@ interface IWardIdentityStepProps {
     onIdentityNameEnter: () => void;
 }
 
-const NAME_FIELD_MAX_LENGTH = 20;
 const FIELD_CLASS =
     'h-12 w-full rounded-[14px] bg-gray-7 px-4 text-[15px] font-medium text-sub-1 caret-main-1 outline-none transition-colors placeholder:text-gray-4 hover:bg-gray-6/50 focus-visible:bg-main-light focus-visible:outline-none';
 const FIELD_LABEL_CLASS = 'font-apple text-[15px] font-semibold text-sub-2';
@@ -76,7 +76,7 @@ function WardIdentityStep({
                             aria-invalid={hasWardNameError}
                             value={wardName}
                             placeholder={t('page.onboardingWardCreate.identity.wardNamePlaceholder')}
-                            maxLength={NAME_FIELD_MAX_LENGTH}
+                            maxLength={WARD_NAME_MAX_LENGTH}
                             className={getInputClassName(hasWardNameError)}
                             onChange={(event) => onWardNameChange(event.target.value)}
                             onKeyDown={handleKeyDown}

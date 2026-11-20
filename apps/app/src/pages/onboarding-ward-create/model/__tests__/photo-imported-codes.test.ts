@@ -9,9 +9,12 @@ import {
 import {
     applyScheduleInputDraft,
     applyUploadedScheduleTemplateDraft,
+    assignImportedShiftColors,
     createEmptyShiftType,
     createInitialDraft,
+    SCHEDULE_SLASH_COLOR,
     getStepValidation,
+    goToStep,
     mergeImportedShiftTypeDraft,
     updateShiftTypeDraft,
 } from '../draft';
@@ -44,6 +47,96 @@ const response: TOnboardingWardParseApiResponse = {
 };
 
 describe('unmapped photo readings', () => {
+    it.each(['AUTO_MATCHED', 'CONFIRMED'] as const)('repairs E/N color collisions even after %s mapping', (mappingStatus) => {
+        const types = createInitialDraft().shiftTypes.map((type) => ({
+            ...type,
+            color: type.shortName === 'E' ? '#3580FF' : type.color,
+            source: 'schedule-input' as const,
+            mappingStatus,
+        }));
+        const repaired = assignImportedShiftColors(types);
+
+        expect(repaired.find((type) => type.shortName === 'E')?.color).toBe('#FF8BA5');
+        expect(repaired.find((type) => type.shortName === 'N')).toBe(types.find((type) => type.shortName === 'N'));
+        expect(new Set(repaired.map((type) => type.color.toUpperCase())).size).toBe(repaired.length);
+        expect(assignImportedShiftColors(repaired)).toEqual(repaired);
+    });
+
+    it('repairs colors supplied for recognized photo codes before entering shift types', () => {
+        const draft = importPhoto(
+            {
+                shiftTypes: [
+                    {shortName: 'E', color: '#3580FF'},
+                    {shortName: 'N', color: '#3580FF'},
+                ],
+                nurse_candidates: [{raw_name: 'Staff A', assignments: {'1': 'E', '2': 'N', '3': 'E'}}],
+            },
+            {...createInitialDraft(), shiftTypes: []},
+        );
+        const evening = draft.shiftTypes.find((type) => type.shortName === 'E')!;
+        const night = draft.shiftTypes.find((type) => type.shortName === 'N')!;
+
+        expect(evening.color).not.toBe(night.color);
+        expect(evening.color).toBe('#FF8BA5');
+        expect(night.color).toBe('#3580FF');
+    });
+
+    it('preserves an unrelated photo label color when repairing recognized custom codes', () => {
+        const custom = ['R', 'S'].map((shortName) => ({...createEmptyShiftType(), shortName, color: '#B8DC8F'}));
+        const original = {
+            ...createEmptyShiftType(),
+            shortName: 'q',
+            importedCode: 'q',
+            color: '#F7B8A8',
+            mappingStatus: 'UNASSIGNED' as const,
+        };
+        const repaired = assignImportedShiftColors([...custom, original]);
+
+        expect(repaired[2]).toBe(original);
+        expect(new Set(repaired.map((type) => type.color)).size).toBe(repaired.length);
+    });
+
+    it('replaces a saved yellow slash with gray before reserving colors for other imported labels', () => {
+        const slash = {
+            ...createEmptyShiftType(),
+            shortName: '/',
+            importedCode: '/',
+            color: '#F8D878',
+            mappingStatus: 'UNASSIGNED' as const,
+        };
+        const other = {
+            ...createEmptyShiftType(),
+            shortName: 'Ⓝ',
+            importedCode: 'Ⓝ',
+            color: SCHEDULE_SLASH_COLOR,
+            mappingStatus: 'UNASSIGNED' as const,
+        };
+        const repaired = assignImportedShiftColors([other, slash]);
+
+        expect(repaired[1]).toMatchObject({...slash, color: SCHEDULE_SLASH_COLOR});
+        expect(repaired[0]?.color).not.toBe(SCHEDULE_SLASH_COLOR);
+        expect(assignImportedShiftColors([slash])[0]?.color).toBe(SCHEDULE_SLASH_COLOR);
+        expect(assignImportedShiftColors(repaired)).toEqual(repaired);
+    });
+
+    it('repairs colliding imported colors in older drafts even when the preset palette runs out', () => {
+        const night = createInitialDraft().shiftTypes.find((type) => type.shortName === 'N')!;
+        const codes = ['Ⓝ', 'N1', 'Ｎ', 'Ⓓ', '/', '／', '-', 'Q', 'q', '★', '교육', '지원'];
+        const legacy = codes.map((code) => ({
+            ...createEmptyShiftType(),
+            shortName: code,
+            importedCode: code,
+            color: night.color,
+            mappingStatus: 'UNASSIGNED' as const,
+        }));
+        const repaired = assignImportedShiftColors([night, ...legacy]);
+
+        expect(repaired[0]).toBe(night);
+        expect(repaired.slice(1).map((type) => type.shortName)).toEqual(codes);
+        expect(new Set(repaired.map((type) => type.color)).size).toBe(repaired.length);
+        expect(assignImportedShiftColors([...repaired].reverse())).toEqual([...repaired].reverse());
+    });
+
     it('retains exact dated readings across months, separate from known shifts, including when editing the table', () => {
         const draft = importPhoto(response);
         const team = draft.teams[0]!.id;
@@ -72,7 +165,7 @@ describe('unmapped photo readings', () => {
         }
     });
 
-    it('updates only matching cells on merge or abbreviation edit, and submits resolved values', () => {
+    it('keeps imported cells unchanged on merge or abbreviation edit and submits resolved values', () => {
         const draft = importPhoto(response);
         const source = draft.shiftTypes.find((type) => type.importedCode === '/')!;
         const off = draft.shiftTypes.find((type) => type.shortName === 'O')!;
@@ -90,11 +183,11 @@ describe('unmapped photo readings', () => {
         const resolved = mergeImportedShiftTypeDraft(renamed, lower.id, long.id);
         const team = draft.teams[0]!.id;
 
-        expect(resolved.scheduleInputs[team]!['2026-12']!.rows.map((r) => r.shifts)).toEqual([
-            {'1': 'D', '2': 'O', '3': 'O', '4': 'T', '5': 'T', '6': 'Q', '7': 'Ⓓ', '8': '★'},
-            {'4': 'T', '5': 'T'},
-        ]);
-        expect(resolved.scheduleInputs[team]!['2026-11']!.rows[0]!.shifts).toEqual({'25': 'O'});
+        expect(resolved.scheduleInputs).toBe(draft.scheduleInputs);
+        expect(resolved.scheduleInputs[team]!['2026-12']!.rows.map((r) => r.shifts)).toEqual(
+            draft.scheduleInputs[team]!['2026-12']!.rows.map((r) => r.shifts),
+        );
+        expect(resolved.scheduleInputs[team]!['2026-11']!.rows[0]!.shifts).toEqual({'25': '/'});
         expect(resolved.shiftTypes.find((type) => type.id === long.id)).toMatchObject({
             importedCode: '응급지원팀',
             shortName: 'T',
@@ -139,7 +232,7 @@ describe('unmapped photo readings', () => {
         const withDay = mergeImportedShiftTypeDraft(working, source('d').id, day.id);
         const withOff = mergeImportedShiftTypeDraft(withDay, source('OFF').id, off.id);
 
-        expect(getCells(withOff)).toEqual({'1': 'D', '2': 'O', '3': 'D', '4': 'Day', '5': 'O', '6': 'Ｄ', '7': 'off'});
+        expect(getCells(withOff)).toEqual({'1': 'D', '2': 'O', '3': 'd', '4': 'Day', '5': 'OFF', '6': 'Ｄ', '7': 'off'});
         expect(withOff.nurses[0]!.initialShifts).toContainEqual({date: '2026-12-07', shiftShortName: 'off'});
     });
 
@@ -151,6 +244,31 @@ describe('unmapped photo readings', () => {
 
         expect(payload.wardShiftTypes.find((type) => type.shortName === '/')).toMatchObject({classification: 'OTHER_LEAVE', isOff: true});
         expect(payload.shiftTeams[0]!.nurses![0]!.initialShifts).toEqual([{date: '2026-12-01', shiftShortName: '/'}]);
+    });
+
+    it('uses the final classifications for each photo row and includes every active leave code for everyone', () => {
+        const photo = importPhoto({
+            nurses: [
+                {name: 'Kim', assignments: {'1': 'N', '2': 'O'}},
+                {name: 'Lee', unmapped_assignments: {'1': 'Ⓝ', '2': '/'}},
+                {name: 'Park', unmapped_assignments: {'1': '/'}},
+            ],
+        });
+        const custom = photo.shiftTypes.find((type) => type.importedCode === 'Ⓝ')!;
+        const slash = photo.shiftTypes.find((type) => type.importedCode === '/')!;
+        const classified = updateShiftTypeDraft(
+            updateShiftTypeDraft(photo, custom.id, {classification: 'OTHER_WORK', shortName: 'X', isOff: false}),
+            slash.id,
+            {classification: 'OTHER_LEAVE', isOff: true},
+        );
+        const payload = buildCreateWardPayload(goToStep(classified, 5));
+        const selections = payload.shiftTeams[0]!.nurses!.map((nurse) => [...nurse.possibleShiftShortNames!].sort());
+
+        expect(selections).toEqual([
+            ['/', 'A', 'N', 'O'],
+            ['/', 'A', 'O', 'X'],
+            ['/', 'A', 'O'],
+        ]);
     });
 
     it('reuses an existing user-defined shift when the photo contains the exact same abbreviation', () => {

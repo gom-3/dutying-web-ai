@@ -18,11 +18,13 @@ import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {getDivisionCustomName} from '@/shared/lib/division-label';
 import {NURSE_NAME_MAX_LENGTH, sanitizeNurseNameInput} from '@/shared/lib/nurse-name';
 import {
+    assignImportedShiftColors,
     getAvailableOnboardingShiftColor,
     getDefaultShiftTypeColor,
     groupItemsByDivision,
     isOnboardingShiftMappingResolved,
     normalizeOnboardingShiftCode,
+    SCHEDULE_SLASH_COLOR,
     type TOnboardingNurseDraft,
     type TOnboardingScheduleRowDraft,
     type TOnboardingTeamScheduleDraft,
@@ -115,10 +117,7 @@ const SHIFT_BADGE_CELL_WRAP =
 const SHIFT_INPUT_CLASS =
     'make-shift-calendar__shift-badge relative z-[20] h-full w-full min-h-0 min-w-0 rounded-[.375rem] border-0 px-0 text-center font-poppins text-[clamp(9px,0.82vw,18px)] leading-none outline-none';
 const FALLBACK_SHIFT_COLOR = '#D6D6DE';
-const EMPTY_SHIFT_TEXT_COLOR = '#FFFFFF';
 const SHIFT_TERM_TEXT_COLOR = '#384255';
-const SYMBOL_OFF_SHIFT_COLOR = '#555A64';
-const SYMBOL_OFF_SHIFT_TEXT_COLOR = '#FFFFFF';
 const FIXED_SHIFT_TEXT_COLOR = '#FFFFFF';
 const CORE_SHIFT_TERMS = new Set(['D', 'E', 'N', 'O']);
 const SYMBOL_OFF_SHIFT_TERMS = new Set(['/', '-']);
@@ -233,6 +232,16 @@ const getCanonicalShiftColorTerm = (value: string) => {
     return OFF_SHIFT_TERMS.has(term) ? 'O' : term;
 };
 const isCoreShiftTerm = (value: string) => CORE_SHIFT_TERMS.has(getCanonicalShiftColorTerm(value));
+const getScheduleShiftColors = (value: string, termColorMap: ReadonlyMap<string, string>) => {
+    const term = getCanonicalShiftColorTerm(value);
+    const backgroundColor = termColorMap.get(value) ?? termColorMap.get(term) ?? FALLBACK_SHIFT_COLOR;
+    const isCoreColor = CORE_SHIFT_TERMS.has(term) && termColorMap.get(term) === backgroundColor;
+
+    return {
+        backgroundColor,
+        color: !term || isCoreColor || backgroundColor === SCHEDULE_SLASH_COLOR ? FIXED_SHIFT_TEXT_COLOR : SHIFT_TERM_TEXT_COLOR,
+    };
+};
 const normalizeColorKey = (color: string) => color.trim().toUpperCase();
 const collectCustomShiftTerms = (rows: TOnboardingScheduleRowDraft[]) => {
     const terms: string[] = [];
@@ -274,21 +283,22 @@ const buildShiftTermColorMap = (shiftTypes: TOnboardingWardDraft['shiftTypes'], 
     const usedColors = new Set<string>();
     const termColorMap = new Map<string, string>();
     const setTermColor = (term: string, color: string) => {
-        const normalizedTerm = normalizeShiftCode(term);
-
-        if (!normalizedTerm) {
+        if (!term) {
             return;
         }
 
-        if (!termColorMap.has(normalizedTerm)) {
-            termColorMap.set(normalizedTerm, color);
+        if (!termColorMap.has(term)) {
+            termColorMap.set(term, color);
         }
 
         usedColors.add(normalizeColorKey(color));
     };
 
-    shiftTypes.forEach((shiftType) => {
-        setTermColor(shiftType.shortName, shiftType.color);
+    assignImportedShiftColors(shiftTypes).forEach((shiftType) => {
+        const term = shiftType.importedCode ? shiftType.shortName : normalizeShiftCode(shiftType.shortName);
+        const color = !shiftType.importedCode && isSymbolOffShiftCode(term) ? SCHEDULE_SLASH_COLOR : shiftType.color;
+
+        setTermColor(term, color);
     });
 
     ['D', 'E', 'N', 'O'].forEach((term, index) => {
@@ -300,6 +310,7 @@ const buildShiftTermColorMap = (shiftTypes: TOnboardingWardDraft['shiftTypes'], 
     const offColor = termColorMap.get('O') ?? getDefaultShiftTypeColor('O', 3);
 
     OFF_SHIFT_TERMS.forEach((term) => setTermColor(term, offColor));
+    SYMBOL_OFF_SHIFT_TERMS.forEach((term) => setTermColor(term, SCHEDULE_SLASH_COLOR));
 
     termOrder.forEach((term, index) => {
         if (termColorMap.has(term)) {
@@ -962,21 +973,6 @@ function ScheduleInputStep({
             }}
         >
             <div className="space-y-5">
-                {draft.uploadedFileName && !!draft.importWarnings?.length && (
-                    <details
-                        open={draft.importWarnings.length < 3}
-                        className="rounded-xl bg-[#fff7e8] px-4 py-3 text-sm leading-6 text-[#684617]"
-                    >
-                        <summary className="cursor-pointer font-semibold">
-                            {t('page.onboardingWardCreate.scheduleEntry.reviewNotes')} ({draft.importWarnings.length})
-                        </summary>
-                        <ul className="mt-1 list-disc space-y-1 pl-5">
-                            {draft.importWarnings.map((warning) => (
-                                <li key={warning}>{warning}</li>
-                            ))}
-                        </ul>
-                    </details>
-                )}
                 <div className="flex w-full flex-wrap items-center justify-between gap-3">
                     <ScheduleMonthSelector
                         year={activeMonthOption.year}
@@ -998,14 +994,27 @@ function ScheduleInputStep({
                     )}
                 </div>
                 {pendingImportedCodes.length > 0 && (
-                    <div className="rounded-xl bg-main-light px-4 py-3 text-sm text-sub-1">
-                        <p>{t('page.onboardingWardCreate.scheduleEntry.rawCodesHint')}</p>
-                        <ul className="mt-2 flex flex-wrap gap-1.5">
-                            {pendingImportedCodes.map((type) => (
-                                <li key={type.id} className="max-w-full rounded-md bg-white px-2 py-0.5 font-medium break-all text-main-1">
-                                    <bdi>{type.importedCode}</bdi>
-                                </li>
-                            ))}
+                    <div className="flex max-w-full min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1.5">
+                        <h2 id="schedule-imported-codes-title" className="text-sm leading-5 font-semibold text-sub-1">
+                            {t('page.onboardingWardCreate.scheduleEntry.rawCodesTitle')}
+                        </h2>
+                        <ul aria-labelledby="schedule-imported-codes-title" className="flex max-w-full min-w-0 flex-wrap gap-1">
+                            {pendingImportedCodes.map((type) => {
+                                const {backgroundColor} = getScheduleShiftColors(type.shortName, shiftTermColorMap);
+
+                                return (
+                                    <li
+                                        key={type.id}
+                                        className="max-w-full min-w-7 rounded-md px-2 py-1 text-center text-base leading-5 font-semibold [overflow-wrap:anywhere]"
+                                        style={{
+                                            backgroundColor: `color-mix(in srgb, ${backgroundColor} 16%, white)`,
+                                            color: `color-mix(in srgb, ${backgroundColor} 40%, #18212F)`,
+                                        }}
+                                    >
+                                        <bdi>{type.importedCode}</bdi>
+                                    </li>
+                                );
+                            })}
                         </ul>
                     </div>
                 )}
@@ -1020,146 +1029,149 @@ function ScheduleInputStep({
                 />
                 {hasActiveTeam ? (
                     <>
-                        <div className="make-shift-calendar @container flex w-full min-w-0 flex-col gap-3">
-                            <div className="make-shift-calendar__header flex w-full min-w-0 items-center py-1" style={{gap: 0}}>
-                                <div
-                                    className="make-shift-calendar__header-left grid min-w-0 flex-1 items-center"
-                                    style={{
-                                        gridTemplateColumns: LEFT_GRID_TEMPLATE_COLUMNS,
-                                        columnGap: ROW_GAP_X,
-                                        paddingLeft: DIVISION_PADDING_X,
-                                        paddingRight: DIVISION_PADDING_X,
-                                    }}
-                                >
-                                    <HeaderLabel
-                                        className={cn('make-shift-calendar__header-label--name font-semibold text-sub-2', NAME_TEXT_CLASS)}
-                                    >
-                                        <span className="flex min-w-0 items-center justify-center gap-1.5">
-                                            <span>{t('page.member.table.name')}</span>
-                                            <span className="inline-flex h-4 items-center gap-0.5 align-middle font-poppins text-[clamp(11px,0.8cqw,13px)] leading-none font-semibold text-[#6B7280]">
-                                                <PersonIcon className="block h-3.5 w-3.5 shrink-0 text-[#7B8494]" aria-hidden="true" />
-                                                <span className="block leading-none tabular-nums">{activeTeamNurseCount}</span>
-                                            </span>
-                                        </span>
-                                    </HeaderLabel>
+                        <div className="max-w-full overflow-x-auto pb-2">
+                            <div className="make-shift-calendar @container flex w-full min-w-[960px] flex-col gap-3">
+                                <div className="make-shift-calendar__header flex w-full min-w-0 items-center py-1" style={{gap: 0}}>
                                     <div
-                                        className="make-shift-calendar__day-header-pill grid min-w-0 rounded-[12px] bg-gray-7 px-0 py-1"
-                                        style={{gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))`}}
+                                        className="make-shift-calendar__header-left grid min-w-0 flex-1 items-center"
+                                        style={{
+                                            gridTemplateColumns: LEFT_GRID_TEMPLATE_COLUMNS,
+                                            columnGap: ROW_GAP_X,
+                                            paddingLeft: DIVISION_PADDING_X,
+                                            paddingRight: DIVISION_PADDING_X,
+                                        }}
                                     >
-                                        {days.map((day) => {
-                                            const dayType = getDayType(activeMonthOption.year, activeMonthOption.month, day);
+                                        <HeaderLabel
+                                            className={cn(
+                                                'make-shift-calendar__header-label--name font-semibold text-sub-2',
+                                                NAME_TEXT_CLASS,
+                                            )}
+                                        >
+                                            <span className="flex min-w-0 items-center justify-center gap-1.5">
+                                                <span>{t('page.member.table.name')}</span>
+                                                <span className="inline-flex h-4 items-center gap-0.5 align-middle font-poppins text-[clamp(11px,0.8cqw,13px)] leading-none font-semibold text-[#6B7280]">
+                                                    <PersonIcon className="block h-3.5 w-3.5 shrink-0 text-[#7B8494]" aria-hidden="true" />
+                                                    <span className="block leading-none tabular-nums">{activeTeamNurseCount}</span>
+                                                </span>
+                                            </span>
+                                        </HeaderLabel>
+                                        <div
+                                            className="make-shift-calendar__day-header-pill grid min-w-0 rounded-[12px] bg-gray-7 px-0 py-1"
+                                            style={{gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))`}}
+                                        >
+                                            {days.map((day) => {
+                                                const dayType = getDayType(activeMonthOption.year, activeMonthOption.month, day);
 
-                                            return (
-                                                <button
-                                                    key={day}
-                                                    type="button"
-                                                    tabIndex={-1}
-                                                    className={cn(
-                                                        'make-shift-calendar__day-header-cell relative min-w-0 rounded-full text-center font-poppins text-[12px] leading-5 font-semibold tabular-nums',
-                                                        'cursor-default',
-                                                        dayType === 'saturday'
-                                                            ? 'text-blue'
-                                                            : dayType === 'sunday'
-                                                              ? 'text-red'
-                                                              : 'text-sub-2.5',
-                                                    )}
-                                                >
-                                                    {day}
-                                                </button>
-                                            );
-                                        })}
+                                                return (
+                                                    <button
+                                                        key={day}
+                                                        type="button"
+                                                        tabIndex={-1}
+                                                        className={cn(
+                                                            'make-shift-calendar__day-header-cell relative min-w-0 rounded-full text-center font-poppins text-[12px] leading-5 font-semibold tabular-nums',
+                                                            'cursor-default',
+                                                            dayType === 'saturday'
+                                                                ? 'text-blue'
+                                                                : dayType === 'sunday'
+                                                                  ? 'text-red'
+                                                                  : 'text-sub-2.5',
+                                                        )}
+                                                    >
+                                                        {day}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                        <div aria-hidden="true" />
                                     </div>
-                                    <div aria-hidden="true" />
                                 </div>
-                            </div>
-                            <div className="make-shift-calendar__body flex w-full min-w-0 flex-col gap-2">
-                                <div className="make-shift-calendar__division flex w-full min-w-0 items-stretch" style={{gap: 0}}>
-                                    <div className="make-shift-calendar__division-card relative flex min-w-0 flex-1 flex-col overflow-hidden rounded-[16px] bg-white">
-                                        {rowDivisionGroups.map((group, groupIndex) => {
-                                            const isEditingDivision = editingDivisionNum === group.divisionNum;
-                                            const canDeleteDivision = groupIndex > 0;
+                                <div className="make-shift-calendar__body flex w-full min-w-0 flex-col gap-2">
+                                    <div className="make-shift-calendar__division flex w-full min-w-0 items-stretch" style={{gap: 0}}>
+                                        <div className="make-shift-calendar__division-card relative flex min-w-0 flex-1 flex-col overflow-hidden rounded-[16px] bg-white">
+                                            {rowDivisionGroups.map((group, groupIndex) => {
+                                                const isEditingDivision = editingDivisionNum === group.divisionNum;
+                                                const canDeleteDivision = groupIndex > 0;
 
-                                            return (
-                                                <div key={`${selectedTeamId}:${group.divisionNum}`} className="flex flex-col">
-                                                    <div style={{paddingLeft: DIVISION_PADDING_X, paddingRight: DIVISION_PADDING_X}}>
-                                                        <OnboardingDivisionHeader
-                                                            divisionNum={group.divisionNum}
-                                                            divisionName={group.divisionName}
-                                                            itemCount={group.items.filter(({row}) => row.name.trim()).length}
-                                                            isEditing={isEditingDivision}
-                                                            draftName={editingDivisionName}
-                                                            canDelete={canDeleteDivision}
-                                                            onStartEdit={() => {
-                                                                setEditingDivisionNum(group.divisionNum);
-                                                                setEditingDivisionName(
-                                                                    getDivisionCustomName(group.divisionNum, group.divisionName),
-                                                                );
-                                                            }}
-                                                            onDraftNameChange={setEditingDivisionName}
-                                                            onSubmit={handleSubmitDivisionName}
-                                                            onCancel={handleCancelDivisionName}
-                                                            onDelete={() =>
-                                                                onDeleteDivision(selectedTeamId, activeScheduleDraft, group.divisionNum)
-                                                            }
-                                                        />
-                                                    </div>
-                                                    {group.items.map(({row, rowIndex}, groupRowIndex) => (
-                                                        <div
-                                                            key={row.id}
-                                                            style={{paddingLeft: DIVISION_PADDING_X, paddingRight: DIVISION_PADDING_X}}
-                                                        >
+                                                return (
+                                                    <div key={`${selectedTeamId}:${group.divisionNum}`} className="flex flex-col">
+                                                        <div style={{paddingLeft: DIVISION_PADDING_X, paddingRight: DIVISION_PADDING_X}}>
+                                                            <OnboardingDivisionHeader
+                                                                divisionNum={group.divisionNum}
+                                                                divisionName={group.divisionName}
+                                                                itemCount={group.items.filter(({row}) => row.name.trim()).length}
+                                                                isEditing={isEditingDivision}
+                                                                draftName={editingDivisionName}
+                                                                canDelete={canDeleteDivision}
+                                                                onStartEdit={() => {
+                                                                    setEditingDivisionNum(group.divisionNum);
+                                                                    setEditingDivisionName(
+                                                                        getDivisionCustomName(group.divisionNum, group.divisionName),
+                                                                    );
+                                                                }}
+                                                                onDraftNameChange={setEditingDivisionName}
+                                                                onSubmit={handleSubmitDivisionName}
+                                                                onCancel={handleCancelDivisionName}
+                                                                onDelete={() =>
+                                                                    onDeleteDivision(selectedTeamId, activeScheduleDraft, group.divisionNum)
+                                                                }
+                                                            />
+                                                        </div>
+                                                        <div className="relative">
                                                             <div
-                                                                data-row-index={rowIndex}
-                                                                className="make-shift-calendar__row make-shift-calendar__row-left grid h-[clamp(32px,2.7cqw,44px)] w-full min-w-0 items-stretch"
+                                                                aria-hidden="true"
+                                                                className="pointer-events-none absolute inset-0 grid"
                                                                 style={{
                                                                     gridTemplateColumns: LEFT_GRID_TEMPLATE_COLUMNS,
                                                                     columnGap: ROW_GAP_X,
+                                                                    paddingInline: DIVISION_PADDING_X,
                                                                 }}
                                                             >
-                                                                <NameCell
-                                                                    row={row}
-                                                                    rowIndex={rowIndex}
-                                                                    selection={selection}
-                                                                    isSelectionVisible={isSelectionVisible}
-                                                                    selectedRange={selectedRange}
-                                                                    fillRange={fillRange}
-                                                                    inputRefByCell={inputRefByCell}
-                                                                    isSelecting={isSelecting}
-                                                                    fillDrag={fillDrag}
-                                                                    onFocusCell={focusCell}
-                                                                    onShowSelection={() => setIsSelectionVisible(true)}
-                                                                    onSetSelection={setSelection}
-                                                                    onSetIsSelecting={setIsSelecting}
-                                                                    onSetFillDrag={setFillDrag}
-                                                                    onUpdate={updateCellValue}
-                                                                    onMove={moveSelection}
-                                                                    onClearSelection={clearSelectedCells}
-                                                                    onCopySelection={buildSelectionText}
-                                                                    onUndo={undoLastScheduleEdit}
-                                                                    onQueueCompositionMove={queueCompositionMove}
-                                                                    onFlushCompositionMove={flushCompositionMove}
-                                                                />
+                                                                <div />
                                                                 <div
-                                                                    className="make-shift-calendar__row-days grid h-full min-w-0 items-stretch px-0"
+                                                                    className="grid"
                                                                     style={{gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))`}}
                                                                 >
-                                                                    {days.map((day, dayIndex) => (
-                                                                        <ShiftCell
-                                                                            key={day}
+                                                                    {days.map((day) => {
+                                                                        const dayType = getDayType(
+                                                                            activeMonthOption.year,
+                                                                            activeMonthOption.month,
+                                                                            day,
+                                                                        );
+
+                                                                        return (
+                                                                            <div
+                                                                                key={day}
+                                                                                className={
+                                                                                    dayType === 'saturday'
+                                                                                        ? 'bg-blue/10'
+                                                                                        : dayType === 'sunday'
+                                                                                          ? 'bg-red/10'
+                                                                                          : ''
+                                                                                }
+                                                                            />
+                                                                        );
+                                                                    })}
+                                                                </div>
+                                                            </div>
+                                                            {group.items.map(({row, rowIndex}, groupRowIndex) => (
+                                                                <div
+                                                                    key={row.id}
+                                                                    style={{
+                                                                        paddingLeft: DIVISION_PADDING_X,
+                                                                        paddingRight: DIVISION_PADDING_X,
+                                                                    }}
+                                                                >
+                                                                    <div
+                                                                        data-row-index={rowIndex}
+                                                                        className="make-shift-calendar__row make-shift-calendar__row-left grid h-[clamp(32px,2.7cqw,44px)] w-full min-w-0 items-stretch"
+                                                                        style={{
+                                                                            gridTemplateColumns: LEFT_GRID_TEMPLATE_COLUMNS,
+                                                                            columnGap: ROW_GAP_X,
+                                                                        }}
+                                                                    >
+                                                                        <NameCell
                                                                             row={row}
                                                                             rowIndex={rowIndex}
-                                                                            colIndex={dayIndex + 1}
-                                                                            day={day}
-                                                                            dayType={getDayType(
-                                                                                activeMonthOption.year,
-                                                                                activeMonthOption.month,
-                                                                                day,
-                                                                            )}
-                                                                            value={getCellValue(rows, rowIndex, dayIndex + 1)}
-                                                                            pendingImport={pendingCellCodes.has(
-                                                                                row.shifts[String(day)] ?? '',
-                                                                            )}
-                                                                            termColorMap={shiftTermColorMap}
                                                                             selection={selection}
                                                                             isSelectionVisible={isSelectionVisible}
                                                                             selectedRange={selectedRange}
@@ -1180,32 +1192,79 @@ function ScheduleInputStep({
                                                                             onQueueCompositionMove={queueCompositionMove}
                                                                             onFlushCompositionMove={flushCompositionMove}
                                                                         />
-                                                                    ))}
+                                                                        <div
+                                                                            className="make-shift-calendar__row-days grid h-full min-w-0 items-stretch px-0"
+                                                                            style={{
+                                                                                gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))`,
+                                                                            }}
+                                                                        >
+                                                                            {days.map((day, dayIndex) => (
+                                                                                <ShiftCell
+                                                                                    key={day}
+                                                                                    row={row}
+                                                                                    rowIndex={rowIndex}
+                                                                                    colIndex={dayIndex + 1}
+                                                                                    day={day}
+                                                                                    value={getCellValue(rows, rowIndex, dayIndex + 1)}
+                                                                                    pendingImport={pendingCellCodes.has(
+                                                                                        row.shifts[String(day)] ?? '',
+                                                                                    )}
+                                                                                    termColorMap={shiftTermColorMap}
+                                                                                    selection={selection}
+                                                                                    isSelectionVisible={isSelectionVisible}
+                                                                                    selectedRange={selectedRange}
+                                                                                    fillRange={fillRange}
+                                                                                    inputRefByCell={inputRefByCell}
+                                                                                    isSelecting={isSelecting}
+                                                                                    fillDrag={fillDrag}
+                                                                                    onFocusCell={focusCell}
+                                                                                    onShowSelection={() => setIsSelectionVisible(true)}
+                                                                                    onSetSelection={setSelection}
+                                                                                    onSetIsSelecting={setIsSelecting}
+                                                                                    onSetFillDrag={setFillDrag}
+                                                                                    onUpdate={updateCellValue}
+                                                                                    onMove={moveSelection}
+                                                                                    onClearSelection={clearSelectedCells}
+                                                                                    onCopySelection={buildSelectionText}
+                                                                                    onUndo={undoLastScheduleEdit}
+                                                                                    onQueueCompositionMove={queueCompositionMove}
+                                                                                    onFlushCompositionMove={flushCompositionMove}
+                                                                                />
+                                                                            ))}
+                                                                        </div>
+                                                                        <RowDeleteCell row={row} rowIndex={rowIndex} onDelete={deleteRow} />
+                                                                    </div>
+                                                                    {groupRowIndex < group.items.length - 1 ? (
+                                                                        <OnboardingAddDivisionButton
+                                                                            onClick={() =>
+                                                                                onAddDivisionAfterRow(
+                                                                                    selectedTeamId,
+                                                                                    activeScheduleDraft,
+                                                                                    row.id,
+                                                                                )
+                                                                            }
+                                                                        />
+                                                                    ) : null}
                                                                 </div>
-                                                                <RowDeleteCell row={row} rowIndex={rowIndex} onDelete={deleteRow} />
-                                                            </div>
-                                                            {groupRowIndex < group.items.length - 1 ? (
-                                                                <OnboardingAddDivisionButton
-                                                                    onClick={() =>
-                                                                        onAddDivisionAfterRow(selectedTeamId, activeScheduleDraft, row.id)
-                                                                    }
-                                                                />
-                                                            ) : null}
+                                                            ))}
                                                         </div>
-                                                    ))}
-                                                </div>
-                                            );
-                                        })}
-                                        <div className="pt-3" style={{paddingLeft: DIVISION_PADDING_X, paddingRight: DIVISION_PADDING_X}}>
-                                            <button
-                                                type="button"
-                                                aria-label={t('page.onboardingWardCreate.schedule.addRow')}
-                                                className="mx-auto flex h-9 w-fit min-w-[104px] items-center justify-center gap-1.5 rounded-full bg-[#F2F4F6] px-4 font-apple text-[14px] font-semibold text-[#4E5968] transition-colors hover:bg-[#E5E8EB] focus-visible:outline-2 focus-visible:outline-main-1 active:bg-[#DDE3E8]"
-                                                onClick={addRow}
+                                                    </div>
+                                                );
+                                            })}
+                                            <div
+                                                className="pt-3"
+                                                style={{paddingLeft: DIVISION_PADDING_X, paddingRight: DIVISION_PADDING_X}}
                                             >
-                                                <Plus className="h-3.5 w-3.5 text-[#8B95A1]" strokeWidth={2.8} />
-                                                {t('page.onboardingWardCreate.schedule.addRow')}
-                                            </button>
+                                                <button
+                                                    type="button"
+                                                    aria-label={t('page.onboardingWardCreate.schedule.addRow')}
+                                                    className="mx-auto flex h-9 w-fit min-w-[104px] items-center justify-center gap-1.5 rounded-full bg-[#F2F4F6] px-4 font-apple text-[14px] font-semibold text-[#4E5968] transition-colors hover:bg-[#E5E8EB] focus-visible:outline-2 focus-visible:outline-main-1 active:bg-[#DDE3E8]"
+                                                    onClick={addRow}
+                                                >
+                                                    <Plus className="h-3.5 w-3.5 text-[#8B95A1]" strokeWidth={2.8} />
+                                                    {t('page.onboardingWardCreate.schedule.addRow')}
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -1464,7 +1523,6 @@ function RowDeleteCell({
 type TShiftCellProps = TEditableCellProps & {
     row: TOnboardingScheduleRowDraft;
     day: number;
-    dayType: 'weekday' | 'saturday' | 'sunday';
     value: string;
     pendingImport: boolean;
     termColorMap: Map<string, string>;
@@ -1474,7 +1532,6 @@ function ShiftCell({
     rowIndex,
     colIndex,
     day,
-    dayType,
     value,
     pendingImport,
     termColorMap,
@@ -1504,27 +1561,6 @@ function ShiftCell({
     const isSelected = isSelectionVisible && isCellInRange(cell, selectedRange);
     const isFillHighlighted = fillRange ? isCellInRange(cell, fillRange) : false;
     const isFillHandleCell = isSelectionVisible && selectedRange.maxRow === rowIndex && selectedRange.maxCol === colIndex && !fillDrag;
-    const normalizedValue = normalizeShiftCode(value);
-    const hasValue = Boolean(normalizedValue);
-    const isSymbolOffValue = isSymbolOffShiftCode(value);
-    const shiftColorTerm = getCanonicalShiftColorTerm(value);
-    const shiftTypeColor = shiftColorTerm ? (termColorMap.get(shiftColorTerm) ?? null) : null;
-    const isFixedShiftValue = shiftColorTerm ? CORE_SHIFT_TERMS.has(shiftColorTerm) : false;
-    const backgroundColor = pendingImport
-        ? '#EEE9FF'
-        : isSymbolOffValue
-          ? SYMBOL_OFF_SHIFT_COLOR
-          : (shiftTypeColor ?? FALLBACK_SHIFT_COLOR);
-    const textColor = pendingImport
-        ? '#4C308E'
-        : isSymbolOffValue
-          ? SYMBOL_OFF_SHIFT_TEXT_COLOR
-          : isFixedShiftValue
-            ? FIXED_SHIFT_TEXT_COLOR
-            : hasValue
-              ? SHIFT_TERM_TEXT_COLOR
-              : EMPTY_SHIFT_TEXT_COLOR;
-    const weekendBg = dayType === 'saturday' ? 'bg-blue/5' : dayType === 'sunday' ? 'bg-red/5' : '';
 
     return (
         <div
@@ -1532,7 +1568,6 @@ function ShiftCell({
             data-day-index={day - 1}
             className={cn(
                 'make-shift-calendar__day-cell group relative z-[10] flex h-full min-w-0 cursor-pointer items-center justify-center',
-                weekendBg,
                 isSelected && 'outline outline-1 -outline-offset-1 outline-[#8AB4FF]',
                 isActive && 'z-20 outline-2 -outline-offset-2 outline-main-1',
                 isFillHighlighted && 'bg-main-light/60',
@@ -1573,7 +1608,7 @@ function ShiftCell({
                     title={value || undefined}
                     maxLength={Math.max(MAX_SHIFT_CELL_LENGTH, value.length)}
                     className={cn(SHIFT_INPUT_CLASS, isActive && 'outline outline-2 outline-main-1')}
-                    style={{backgroundColor, color: textColor}}
+                    style={getScheduleShiftColors(value, termColorMap)}
                     onFocus={() => {
                         onShowSelection();
                         onSetSelection({start: cell, end: cell});

@@ -57,4 +57,14 @@ describe('sortNursesByMode', () => {
             'off-홍길동',
         ]);
     });
+
+    it.each([
+        {language: 'zh', names: ['张伟', '阿明', '李敏'], expected: ['阿明', '李敏', '张伟']},
+        {language: 'ja', names: ['佐藤', '山田', '阿部'], expected: ['阿部', '佐藤', '山田']},
+        {language: 'vi', names: ['Ân', 'Ăn', 'Anh', 'Đặng', 'Dương'], expected: ['Anh', 'Ăn', 'Ân', 'Dương', 'Đặng']},
+    ])('sorts names according to the selected $language language', ({language, names, expected}) => {
+        const nurses = names.map((name, index) => createNurse({id: String(index), name}));
+
+        expect(sortNursesByMode(nurses, 'name', language).map((nurse) => nurse.name)).toEqual(expected);
+    });
 });

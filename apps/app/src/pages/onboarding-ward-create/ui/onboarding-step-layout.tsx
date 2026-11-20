@@ -36,7 +36,12 @@ function OnboardingStepLayout({
             {children}
             <div className="mt-14 flex items-center justify-between">
                 {leftAction ?? <div />}
-                <div className={cn('flex items-center', nextAction ? 'gap-4' : 'gap-[42px]')}>
+                <div
+                    className={cn(
+                        'flex max-w-full min-w-0 flex-wrap items-center justify-end gap-y-3',
+                        nextAction ? 'gap-4' : 'gap-x-[42px]',
+                    )}
+                >
                     {step > 1 ? (
                         <WizardButton variant="secondary" onClick={onPrev} disabled={actionsDisabled}>
                             {t('page.onboardingWardCreate.action.previous')}

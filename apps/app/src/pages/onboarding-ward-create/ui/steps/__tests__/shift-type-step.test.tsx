@@ -26,25 +26,23 @@ const createUnassignedNightShiftType = (): TOnboardingWardShiftType => ({
 });
 
 describe('ShiftTypeStep', () => {
-    it('keeps the original photo label visible while the user sets a valid abbreviation or explicitly links it to an existing shift', async () => {
-        const user = userEvent.setup();
+    it('allows correcting imported abbreviations without displaying source details', () => {
         const original = '별도·야간지원★보조전담근무';
         const imported = {...createUnassignedNightShiftType(), name: original, shortName: original, importedCode: original};
         const day = createInitialDraft().shiftTypes[0]!;
         const onChange = vi.fn();
-        const onMerge = vi.fn();
         const props = {
             rotationMode: 'THREE' as const,
             onChange,
             onDragEnd: vi.fn(),
             onAdd: vi.fn(),
             onDelete: vi.fn(),
-            onMergeImportedShiftType: onMerge,
         };
         const {rerender} = render(<ShiftTypeStep {...props} shiftTypes={[day, imported]} />);
-        const code = screen.getByRole('textbox', {name: '약자', description: '공백 없이 2글자까지 입력해 주세요.'});
+        const code = screen.getByRole('textbox', {name: '약자', description: '약자는 공백 없이 2자까지 입력해 주세요.'});
 
-        expect(screen.getByText(`${original} · 확인 필요`)).toBeVisible();
+        expect(screen.queryByText(`원본 표기 · ${original}`)).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: '사진 표기 보기'})).not.toBeInTheDocument();
         expect(code).toHaveValue(original);
         expect(screen.getByRole('textbox', {name: '근무명', description: /12자/})).toHaveValue(original);
         fireEvent.focus(code);
@@ -56,48 +54,84 @@ describe('ShiftTypeStep', () => {
         expect(onChange).toHaveBeenCalledWith(imported.id, {shortName: 'X2'});
 
         rerender(<ShiftTypeStep {...props} shiftTypes={[day, {...imported, shortName: 'X2', mappingStatus: 'CONFIRMED'}]} />);
-        expect(screen.getByText(`원본 표기 · ${original}`)).toBeVisible();
-        await user.selectOptions(screen.getByRole('combobox', {name: `${original} · 기존 근무유형에 연결`}), day.id);
-        expect(onMerge).toHaveBeenCalledExactlyOnceWith(imported.id, day.id);
+        expect(screen.queryByRole('button', {name: '사진 표기 보기'})).not.toBeInTheDocument();
+        expect(code).toHaveValue('X2');
+        expect(screen.queryByRole('combobox', {name: `${original} · 기존 근무유형에 연결`})).not.toBeInTheDocument();
     });
 
-    it.each(['THREE', 'MIXED'] as const)(
-        'puts the code before its editable name in %s rotation and explains provisional names',
-        (rotationMode) => {
-            const onChange = vi.fn();
-            const shift = {...createUnassignedNightShiftType(), shortName: 'V', name: '기타 휴가'};
+    it('does not add source controls when an imported abbreviation changes', () => {
+        const shift = {...createUnassignedNightShiftType(), importedCode: 'N', shortName: 'N2'};
 
-            render(
-                <ShiftTypeStep
-                    shiftTypes={[shift]}
-                    rotationMode={rotationMode}
-                    onChange={onChange}
-                    onDelete={vi.fn()}
-                    onAdd={vi.fn()}
-                    onDragEnd={vi.fn()}
-                />,
-            );
+        render(
+            <ShiftTypeStep
+                shiftTypes={[shift]}
+                rotationMode="THREE"
+                onChange={vi.fn()}
+                onDelete={vi.fn()}
+                onAdd={vi.fn()}
+                onDragEnd={vi.fn()}
+            />,
+        );
 
-            const code = screen.getByRole('textbox', {name: '약자'});
-            const name = screen.getByRole('textbox', {name: '근무명'});
+        expect(screen.queryByRole('button', {name: '사진 표기 보기'})).not.toBeInTheDocument();
+    });
 
-            expect(code).toHaveValue('V');
-            expect(name).toHaveValue('기타 휴가');
-            expect(code.compareDocumentPosition(name) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    it('groups missing fields in one hint while keeping each input description and clears the hint after correction', () => {
+        const blank = {
+            ...createUnassignedNightShiftType(),
+            mappingStatus: 'CONFIRMED' as const,
+            name: '',
+            shortName: '',
+            startTime: '',
+            endTime: '',
+        };
+        const props = {rotationMode: 'THREE' as const, onChange: vi.fn(), onDelete: vi.fn(), onAdd: vi.fn(), onDragEnd: vi.fn()};
+        const {rerender} = render(<ShiftTypeStep {...props} shiftTypes={[blank]} />);
 
-            const codeLabel = document.getElementById('onboarding-shift-short-name-label')!;
-            const nameLabel = document.getElementById('onboarding-shift-name-label')!;
+        expect(screen.getAllByRole('alert')).toHaveLength(1);
+        expect(screen.getByRole('alert')).toHaveTextContent('약자 · 근무명 · 근무 시간 입력이 필요해요.');
+        expect(screen.getByRole('textbox', {name: '약자'})).toHaveAccessibleDescription('약자를 입력해 주세요.');
+        expect(screen.getByRole('textbox', {name: '근무명'})).toHaveAccessibleDescription('근무명을 입력해 주세요.');
+        rerender(
+            <ShiftTypeStep {...props} shiftTypes={[{...blank, name: '지원', shortName: 'X', startTime: '09:00', endTime: '18:00'}]} />,
+        );
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    });
 
-            expect(codeLabel.compareDocumentPosition(nameLabel) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-            expect(name).toHaveAccessibleDescription(/D·E·N·O 외 근무명은 자동으로 붙인 임시 설명일 수 있어요/);
+    it.each(['THREE', 'MIXED'] as const)('puts the code before its editable name in %s rotation', (rotationMode) => {
+        const onChange = vi.fn();
+        const shift = {...createUnassignedNightShiftType(), shortName: 'V', name: '기타 휴가'};
 
-            fireEvent.change(name, {target: {value: '병동 휴가'}});
-            expect(onChange).toHaveBeenCalledWith(shift.id, {name: '병동 휴가'});
-            expect(onChange).not.toHaveBeenCalledWith(shift.id, expect.objectContaining({shortName: expect.anything()}));
-        },
-    );
+        render(
+            <ShiftTypeStep
+                shiftTypes={[shift]}
+                rotationMode={rotationMode}
+                onChange={onChange}
+                onDelete={vi.fn()}
+                onAdd={vi.fn()}
+                onDragEnd={vi.fn()}
+            />,
+        );
 
-    it('highlights only unresolved rows and clears the review state after selecting a type', async () => {
+        const code = screen.getByRole('textbox', {name: '약자'});
+        const name = screen.getByRole('textbox', {name: '근무명'});
+
+        expect(code).toHaveValue('V');
+        expect(name).toHaveValue('기타 휴가');
+        expect(code.compareDocumentPosition(name) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+        const codeLabel = document.getElementById('onboarding-shift-short-name-label')!;
+        const nameLabel = document.getElementById('onboarding-shift-name-label')!;
+
+        expect(codeLabel.compareDocumentPosition(nameLabel) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+        expect(name).not.toHaveAccessibleDescription();
+
+        fireEvent.change(name, {target: {value: '병동 휴가'}});
+        expect(onChange).toHaveBeenCalledWith(shift.id, {name: '병동 휴가'});
+        expect(onChange).not.toHaveBeenCalledWith(shift.id, expect.objectContaining({shortName: expect.anything()}));
+    });
+
+    it('marks an unresolved selection and clears that state after choosing a type', async () => {
         const user = userEvent.setup();
         const shift = {...createUnassignedNightShiftType(), shortName: 'V', name: '기타 휴가'};
         const day = {...createInitialDraft().shiftTypes[0]!, mappingStatus: 'AUTO_MATCHED' as const};
@@ -119,20 +153,21 @@ describe('ShiftTypeStep', () => {
 
         render(<ReviewExample />);
 
-        const pending = screen.getByText('V · 확인 필요');
-        const row = pending.parentElement!.parentElement!;
+        const pending = screen.getByRole('combobox', {name: '기타 휴가 근무 의미 선택'});
+        const row = pending.closest('[data-pending]')!;
 
-        expect(row).toHaveClass('bg-amber-50', 'border-amber-400');
-        expect(screen.getByText('확인이 필요한 근무 유형 1개')).toBeInTheDocument();
+        expect(row).toHaveAttribute('data-pending', 'true');
+        expect(pending).toHaveTextContent('유형 선택');
+        expect(screen.getByText('유형 미선택 1개')).toBeInTheDocument();
         expect(screen.queryByText('D · 확인 필요')).not.toBeInTheDocument();
         fireEvent.change(screen.getByDisplayValue('기타 휴가'), {target: {value: '병동 휴가'}});
-        expect(screen.getByText('V · 확인 필요')).toBeInTheDocument();
+        expect(row).toHaveAttribute('data-pending', 'true');
         await user.click(screen.getByRole('combobox', {name: '병동 휴가 근무 의미 선택'}));
         await user.click(screen.getByRole('option', {name: '기타 휴무'}));
 
         expect(screen.queryByText('V · 확인 필요')).not.toBeInTheDocument();
-        expect(screen.queryByText('확인이 필요한 근무 유형 1개')).not.toBeInTheDocument();
-        expect(row).not.toHaveClass('bg-amber-50');
+        expect(screen.queryByText('유형 미선택 1개')).not.toBeInTheDocument();
+        expect(row).not.toHaveAttribute('data-pending');
         expect(screen.getByDisplayValue('병동 휴가')).toBeInTheDocument();
         expect(screen.getByDisplayValue('V')).toBeInTheDocument();
     });
@@ -346,7 +381,7 @@ describe('ShiftTypeStep', () => {
         expect(screen.queryByRole('option', {name: '퇴근일 근무'})).not.toBeInTheDocument();
     });
 
-    it('기타 휴무는 저장된 isOff 값과 관계없이 근무시간을 하이픈으로 고정한다', () => {
+    it('shows an empty time for leave regardless of the stored isOff value', () => {
         const otherLeaveShiftType: TOnboardingWardShiftType = {
             ...createUnassignedNightShiftType(),
             id: 'other-leave',
@@ -372,9 +407,8 @@ describe('ShiftTypeStep', () => {
             />,
         );
 
-        const timeInputs = screen.getAllByDisplayValue('-');
-
-        expect(timeInputs).toHaveLength(2);
-        expect(timeInputs.every((input) => input.hasAttribute('disabled'))).toBe(true);
+        expect(screen.getByText('—')).toBeVisible();
+        expect(screen.queryByDisplayValue(otherLeaveShiftType.startTime)).not.toBeInTheDocument();
+        expect(screen.queryByDisplayValue(otherLeaveShiftType.endTime)).not.toBeInTheDocument();
     });
 });

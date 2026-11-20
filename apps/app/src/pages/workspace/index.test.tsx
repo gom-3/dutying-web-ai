@@ -240,7 +240,15 @@ describe('ward management workspace', () => {
         const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
 
         mocks.context = {enabled: true, scopes: [{...wardScope, role: 'EDITOR'}]};
-        mocks.get.mockImplementation((path: string) => Promise.resolve(path.includes('/entitlements') ? wardEntitlement() : []));
+        mocks.get.mockImplementation((path: string) =>
+            Promise.resolve(
+                path.endsWith('/support')
+                    ? {allowance: {includedSeconds: 0, usedSeconds: 0, remainingSeconds: 0}, offers: []}
+                    : path.includes('/entitlements')
+                      ? wardEntitlement()
+                      : [],
+            ),
+        );
         mocks.legacyDelete.mockImplementationOnce(async () => {
             mocks.context = {enabled: true, scopes: [wardScope]};
             throw Object.assign(new Error('Owner transfer required'), {code: 409, serverCode: 'OWNER_TRANSFER_REQUIRED'});
@@ -256,7 +264,15 @@ describe('ward management workspace', () => {
 
     it('opens and focuses the ward closure request from its direct link', async () => {
         mocks.context = {enabled: true, scopes: [wardScope]};
-        mocks.get.mockImplementation((path: string) => Promise.resolve(path.includes('/entitlements') ? wardEntitlement() : []));
+        mocks.get.mockImplementation((path: string) =>
+            Promise.resolve(
+                path.endsWith('/support')
+                    ? {allowance: {includedSeconds: 0, usedSeconds: 0, remainingSeconds: 0}, offers: []}
+                    : path.includes('/entitlements')
+                      ? wardEntitlement()
+                      : [],
+            ),
+        );
         mount('/workspace/WARD/11/support#ward-closure');
 
         const summary = await screen.findByText('병동 이용 종료');

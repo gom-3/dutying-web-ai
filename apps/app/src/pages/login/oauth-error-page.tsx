@@ -15,7 +15,7 @@ const OAuthErrorPage = () => {
             tone="error"
             layout="screen"
             title={t('page.login.redirect.errorTitle')}
-            description={error || t('page.login.redirect.adminTokenMissing')}
+            description={error?.length ? error : t('page.login.redirect.adminTokenMissing')}
             action={{
                 label: t('page.login.loginLink'),
                 onClick: () => navigate(ROUTE.LOGIN, {replace: true}),

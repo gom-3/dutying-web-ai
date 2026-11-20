@@ -50,14 +50,14 @@ const getRelativeScheduleMonth = (offset: number) => {
         dayCount: new Date(year, month, 0).getDate(),
     };
 };
-const createScheduleTemplateFile = async (firstNurseName = '홍길동') => {
+const createScheduleTemplateFile = async (firstNurseName = '홍길동', firstShifts = ['D', 'E', 'N'], secondShifts = ['O', 'D', 'E']) => {
     const Excel = await import('exceljs');
     const workbook = new Excel.Workbook();
     const worksheet = workbook.addWorksheet('schedule');
 
     worksheet.addRow(['간호사', '팀명', '1', '2', '3']);
-    worksheet.addRow([firstNurseName, 'A팀', 'D', 'E', 'N']);
-    worksheet.addRow(['김철수', 'B팀', 'O', 'D', 'E']);
+    worksheet.addRow([firstNurseName, 'A팀', ...firstShifts]);
+    worksheet.addRow(['김철수', 'B팀', ...secondShifts]);
 
     const buffer = await workbook.xlsx.writeBuffer();
 
@@ -452,7 +452,7 @@ describe('OnboardingWardCreatePage', () => {
 
         await user.click(screen.getByRole('button', {name: '다음'}));
 
-        expect(screen.getByText('약자')).toBeInTheDocument();
+        expect(screen.getByText('약자', {selector: '#onboarding-shift-short-name-label'})).toBeInTheDocument();
 
         await user.click(screen.getByRole('button', {name: '다음'}));
 
@@ -543,7 +543,7 @@ describe('OnboardingWardCreatePage', () => {
         expect(payload.shiftTeams[0]?.nurses?.[0]).toEqual(
             expect.objectContaining({
                 name: '김하늘',
-                possibleShiftShortNames: expect.arrayContaining(['D', 'E', 'N', 'O']),
+                possibleShiftShortNames: ['D', 'E', 'O', 'A'],
                 initialShifts: [
                     {
                         date: `${currentMonth.year}-${String(currentMonth.month).padStart(2, '0')}-01`,
@@ -556,6 +556,7 @@ describe('OnboardingWardCreatePage', () => {
                 ],
             }),
         );
+        expect(payload.shiftTeams[1]?.nurses?.[0]?.possibleShiftShortNames).toEqual(['N', 'O', 'A']);
     });
 
     it('keeps row count fixed after direct input and adds rows from the bottom button', async () => {
@@ -758,13 +759,126 @@ describe('OnboardingWardCreatePage', () => {
         expect(screen.getByDisplayValue('O')).toBeInTheDocument();
     });
 
-    it('shows the dated photo assignments and keeps unresolved marks visible in review', async () => {
+    it('restores a manual restriction from an older draft while replacing its blanket defaults for other nurses', async () => {
+        const user = userEvent.setup();
+        const draft = createInitialDraft();
+        const team = draft.teams[0]!;
+        const [first, second] = draft.nurses;
+        const workIds = draft.shiftTypes.filter((type) => ['D', 'N'].includes(type.shortName)).map((type) => type.id);
+
+        latestSavedDraftPayload = {
+            flowVersion: 2,
+            draftWardId: 10,
+            selectedTeamId: team.id,
+            sortMode: 'manual',
+            draft: {
+                ...goToStep(draft, 4),
+                hospitalName: TEST_HOSPITAL_NAME,
+                wardName: TEST_WARD_NAME,
+                uploadedFileName: 'previous.xlsx',
+                onboardingSignals: {...draft.onboardingSignals, possibleShiftsEdited: true},
+                nurses: [{...first, possibleShiftTypeIds: workIds}, second],
+                scheduleInputs: {
+                    [team.id]: {
+                        '2026-11': {
+                            year: 2026,
+                            month: 11,
+                            rows: [
+                                {id: 'legacy-1', nurseId: null, name: first!.name, shifts: {'1': 'N'}},
+                                {id: 'legacy-2', nurseId: null, name: second!.name, shifts: {'1': 'E'}},
+                            ],
+                        },
+                    },
+                },
+            },
+        };
+        render(<OnboardingWardCreatePage />);
+        await screen.findByRole('button', {name: '근무 유형 추가하기'});
+        await user.click(screen.getByRole('button', {name: '다음'}));
+
+        const pressed = (name: string) => {
+            const row = screen.getByDisplayValue(name).closest<HTMLElement>('[data-rfd-draggable-id]')!;
+
+            return within(row)
+                .getAllByRole('button', {pressed: true})
+                .map((button) => button.textContent);
+        };
+
+        expect(pressed(first!.name)).toEqual(['D', 'N']);
+        expect(pressed(second!.name)).toEqual(['E']);
+    });
+
+    it('preselects individual work shifts, keeps edits on return, and refreshes them when the workbook is replaced', async () => {
+        const user = userEvent.setup();
+        const next = () => user.click(screen.getByRole('button', {name: '다음'}));
+        const previous = () => user.click(screen.getByRole('button', {name: '이전'}));
+        const upload = async (file: File) => {
+            fireEvent.change(screen.getByTestId('schedule-entry-upload-input'), {target: {files: [file]}});
+            await screen.findByRole('heading', {name: '불러온 근무표를 확인해 주세요'});
+            await next();
+            await next();
+            await screen.findByRole('button', {name: '완료'});
+        };
+        const selectedWork = () =>
+            screen
+                .getAllByRole('button', {pressed: true})
+                .map((button) => button.textContent)
+                .filter((code) => ['D', 'E', 'N'].includes(code ?? ''));
+        const page = render(<OnboardingWardCreatePage />);
+
+        await prepareScheduleUploadStep(user);
+        await upload(await createScheduleTemplateFile('홍길동', ['N', 'O', 'N']));
+        expect(selectedWork()).toEqual(['N']);
+        expect(screen.queryByRole('button', {name: 'O'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: 'A'})).not.toBeInTheDocument();
+
+        await user.click(screen.getByRole('button', {name: 'D'}));
+        await previous();
+        await previous();
+        await next();
+        await next();
+        expect(selectedWork()).toEqual(['D', 'N']);
+
+        page.unmount();
+        render(<OnboardingWardCreatePage />);
+        await screen.findByRole('button', {name: '완료'});
+        expect(selectedWork()).toEqual(['D', 'N']);
+
+        await previous();
+        await previous();
+        await user.click(screen.getByRole('button', {name: '다시 불러오기'}));
+        await upload(await createScheduleTemplateFile('홍길동', ['E', 'O', 'E'], ['D', 'N', 'O']));
+        expect(selectedWork()).toEqual(['E']);
+        await user.click(screen.getByRole('button', {name: 'B팀'}));
+        expect(selectedWork()).toEqual(['D', 'N']);
+        await user.click(screen.getByRole('button', {name: '완료'}));
+        expect(mockCompleteOnboardingWardDraft.mock.calls[0]?.[1]?.shiftTeams[0]?.nurses[0]?.possibleShiftShortNames).toEqual([
+            'E',
+            'O',
+            'A',
+        ]);
+    });
+
+    it('shows distinct colors for different original photo labels and keeps repeated labels consistent', async () => {
         const user = userEvent.setup();
         const warning = '빗금의 의미를 확인해 주세요.';
         const file = new File(['image'], 'ward.jpg', {type: 'image/jpeg'});
 
         mockParseOnboardingWardExcel.mockResolvedValueOnce({
-            nurses: [{name: '근무자', assignments: {'2025-03-01': 'O', '2025-03-02': 'N'}}],
+            nurses: [
+                {
+                    name: '근무자',
+                    assignments: {'2025-03-01': 'O', '2025-03-02': 'N', '2025-03-03': 'D'},
+                    unmapped_assignments: {
+                        '2025-03-04': 'Ⓝ',
+                        '2025-03-05': 'Ⓓ',
+                        '2025-03-06': '/',
+                        '2025-03-07': 'q',
+                        '2025-03-08': 'Q',
+                        '2025-03-09': 'Ⓝ',
+                    },
+                },
+            ],
             quality_report: {warnings: [warning]},
             warnings: [warning],
         });
@@ -772,14 +886,97 @@ describe('OnboardingWardCreatePage', () => {
         await user.click(screen.getByRole('button', {name: '다시 불러오기'}));
         fireEvent.change(screen.getByTestId('schedule-entry-upload-input'), {target: {files: [file]}});
 
-        expect(await screen.findByText(warning)).toBeVisible();
-        expect(screen.getByText('2025년 3월')).toBeInTheDocument();
-        expect(screen.getByLabelText('1행 1일 근무')).toHaveValue('O');
-        expect(screen.getByLabelText('1행 2일 근무')).toHaveValue('N');
-        expect(screen.getByLabelText('1행 3일 근무')).toHaveValue('');
+        await screen.findByText('2025년 3월');
+        expect(screen.queryByText(warning)).not.toBeInTheDocument();
+
+        const colors = ['O', 'N', 'D', 'Ⓝ', 'Ⓓ', '/', 'q', 'Q', 'Ⓝ'].map((label, index) => {
+            const cell = screen.getByLabelText(`1행 ${index + 1}일 근무`) as HTMLInputElement;
+
+            expect(cell).toHaveValue(label);
+
+            return cell.style.backgroundColor;
+        });
+
+        expect(new Set(colors.slice(0, 8)).size).toBe(8);
+        expect(colors[8]).toBe(colors[3]);
     });
 
-    it('carries original photo labels through review, reload, abbreviation editing and an explicit match', async () => {
+    it('separates recognized photo colors on replacement, reload and entry to shift types', async () => {
+        const user = userEvent.setup();
+
+        mockParseOnboardingWardExcel
+            .mockResolvedValueOnce({
+                shiftTypes: [{shortName: 'N', color: '#3580FF'}],
+                nurses: [{name: '근무자', assignments: {'2025-03-01': 'N'}}],
+            })
+            .mockResolvedValueOnce({
+                shiftTypes: [
+                    {shortName: 'E', color: '#3580FF'},
+                    {shortName: 'N', color: '#3580FF'},
+                ],
+                nurses: [{name: '근무자', assignments: {'2025-03-01': 'E', '2025-03-02': 'N', '2025-03-03': 'E'}}],
+            });
+
+        const view = await renderScheduleReviewStep();
+        const uploadPhoto = async (name: string) => {
+            await user.click(screen.getByRole('button', {name: '다시 불러오기'}));
+            fireEvent.change(screen.getByTestId('schedule-entry-upload-input'), {
+                target: {files: [new File(['image'], name, {type: 'image/jpeg'})]},
+            });
+        };
+
+        await uploadPhoto('first.jpg');
+        await waitFor(() => expect(screen.getByLabelText('1행 1일 근무')).toHaveValue('N'));
+        await uploadPhoto('replacement.jpg');
+        await waitFor(() => expect(screen.getByLabelText('1행 1일 근무')).toHaveValue('E'));
+
+        const getCellColor = (day: number) => (screen.getByLabelText(`1행 ${day}일 근무`) as HTMLInputElement).style.backgroundColor;
+
+        expect(getCellColor(1)).toBe('rgb(255, 139, 165)');
+        expect(getCellColor(2)).toBe('rgb(53, 128, 255)');
+        expect(getCellColor(3)).toBe(getCellColor(1));
+
+        await waitFor(() =>
+            expect((latestSavedDraftPayload as {draft?: {uploadedFileName?: string}})?.draft?.uploadedFileName).toBe('replacement.jpg'),
+        );
+        view.unmount();
+
+        // Restore a source catalog saved before duplicate-color repair was added.
+        const saved = latestSavedDraftPayload as {draft: ReturnType<typeof createInitialDraft>};
+
+        latestSavedDraftPayload = {
+            ...saved,
+            draft: {
+                ...saved.draft,
+                scheduleInputState: {
+                    ...saved.draft.scheduleInputState!,
+                    shiftTypes: saved.draft.scheduleInputState!.shiftTypes.map((type) =>
+                        type.shortName === 'E' ? {...type, color: '#3580FF'} : type,
+                    ),
+                },
+            },
+        };
+        render(<OnboardingWardCreatePage />);
+        await screen.findByLabelText('1행 1일 근무');
+        expect(getCellColor(1)).toBe('rgb(255, 139, 165)');
+        expect(getCellColor(2)).toBe('rgb(53, 128, 255)');
+        await user.click(screen.getByRole('button', {name: '다음'}));
+        await screen.findAllByRole('textbox', {name: '약자'});
+
+        const getSwatchColor = (code: string) => {
+            const input = screen.getAllByRole('textbox', {name: '약자'}).find((element) => (element as HTMLInputElement).value === code)!;
+
+            return input.closest('[data-rfd-draggable-id]')?.querySelector('button span[style]')?.getAttribute('style');
+        };
+
+        expect(getSwatchColor('E')).toContain('rgb(255, 139, 165)');
+        expect(getSwatchColor('N')).toContain('rgb(53, 128, 255)');
+        await user.click(screen.getByRole('button', {name: '이전'}));
+        expect(getCellColor(1)).toBe('rgb(255, 139, 165)');
+        expect(getCellColor(2)).toBe('rgb(53, 128, 255)');
+    });
+
+    it('keeps imported labels and colors independent from shift type edits across back, reload and reentry', async () => {
         const user = userEvent.setup();
         const original = '야간교육지원근무';
         const file = new File(['photo'], 'ward.jpeg', {type: 'image/jpeg'});
@@ -802,31 +999,59 @@ describe('OnboardingWardCreatePage', () => {
         const first = await screen.findByLabelText('1행 1일 근무');
 
         expect(first).toHaveValue(original);
+
+        const sourceColor = (first as HTMLInputElement).style.backgroundColor;
+
         await user.click(first);
         await user.tab();
         fireEvent.change(screen.getByLabelText('1행 5일 근무'), {target: {value: 'D'}});
         expect(first).toHaveValue(original);
         expect(screen.getByLabelText('1행 3일 근무')).toHaveValue('/');
         await user.click(screen.getByRole('button', {name: '다음'}));
-        await screen.findByRole('combobox', {name: '/ · 기존 근무유형에 연결'});
+        await screen.findAllByRole('textbox', {name: '약자'});
         view.unmount();
-        render(<OnboardingWardCreatePage />);
 
-        const link = await screen.findByRole('combobox', {name: '/ · 기존 근무유형에 연결'});
-        const off = within(link).getByRole('option', {name: /^O · /});
+        const restoredView = render(<OnboardingWardCreatePage />);
 
-        await user.selectOptions(link, off);
+        await screen.findAllByRole('textbox', {name: '약자'});
 
         const abbreviation = screen.getAllByRole('textbox', {name: '약자'}).find((input) => (input as HTMLInputElement).value === original);
 
         expect(abbreviation).toBeDefined();
         fireEvent.change(abbreviation!, {target: {value: 'Q2'}});
+        await user.click(screen.getByRole('button', {name: `${original} 색상 선택`}));
+
+        const palette = screen.getByRole('group', {name: '색상'});
+        const differentColor = within(palette)
+            .getAllByRole('button')
+            .find((button) => button.style.backgroundColor !== sourceColor)!;
+        const configuredColor = differentColor.style.backgroundColor;
+
+        await user.click(differentColor);
+        await user.click(screen.getByRole('button', {name: '근무 유형 추가하기'}));
+
+        const configuredRowCount = screen.getAllByRole('textbox', {name: '약자'}).length;
+
         await user.click(screen.getByRole('button', {name: '이전'}));
-        await waitFor(() => expect(screen.getByLabelText('1행 1일 근무')).toHaveValue('Q2'));
+        await waitFor(() => expect(screen.getByLabelText('1행 1일 근무')).toHaveValue(original));
+        expect((screen.getByLabelText('1행 1일 근무') as HTMLInputElement).style.backgroundColor).toBe(sourceColor);
         expect(screen.getByLabelText('1행 2일 근무')).toHaveValue('O');
-        expect(screen.getByLabelText('1행 3일 근무')).toHaveValue('O');
-        expect(screen.getByLabelText('1행 4일 근무')).toHaveValue('Q2');
+        expect(screen.getByLabelText('1행 3일 근무')).toHaveValue('/');
+        expect(screen.getByLabelText('1행 4일 근무')).toHaveValue(original);
         expect(screen.getByLabelText('1행 5일 근무')).toHaveValue('D');
+
+        await waitFor(() => expect((latestSavedDraftPayload as {draft?: {currentStep?: number}})?.draft?.currentStep).toBe(3));
+        restoredView.unmount();
+        render(<OnboardingWardCreatePage />);
+        await screen.findByLabelText('1행 1일 근무');
+        expect(screen.getByLabelText('1행 1일 근무')).toHaveValue(original);
+        expect((screen.getByLabelText('1행 1일 근무') as HTMLInputElement).style.backgroundColor).toBe(sourceColor);
+        await user.click(screen.getByRole('button', {name: '다음'}));
+        expect(await screen.findByDisplayValue('Q2')).toBeInTheDocument();
+        expect(screen.getAllByRole('textbox', {name: '약자'})).toHaveLength(configuredRowCount);
+        expect(screen.getByRole('button', {name: `${original} 색상 선택`}).querySelector('span')?.style.backgroundColor).toBe(
+            configuredColor,
+        );
     });
 
     it('preserves the edited review when a replacement contains no roster rows and clears the error on the next attempt', async () => {
@@ -1013,7 +1238,7 @@ describe('OnboardingWardCreatePage', () => {
         ]);
         const getShiftTypeSwatchColor = (shortName: string) => {
             const shiftTypeInput = screen.getAllByDisplayValue(shortName)[0];
-            const row = shiftTypeInput?.closest('.grid');
+            const row = shiftTypeInput?.closest('[data-rfd-draggable-id]');
             const swatch = row?.querySelector('button span[style]') as HTMLElement | null;
 
             return swatch?.style.backgroundColor;
@@ -1189,7 +1414,7 @@ describe('OnboardingWardCreatePage', () => {
     it('3교대와 2교대를 함께 운영하는 병동은 근무유형의 교대제 칼럼을 표시한다', async () => {
         await renderShiftTypeStepFromRestoredDraft('MIXED');
 
-        expect(screen.getByText('교대제')).toBeInTheDocument();
+        expect(screen.getByText('교대제', {selector: 'span:not([aria-hidden])'})).toBeInTheDocument();
         expect(screen.getByRole('combobox', {name: '데이 교대제 선택'})).toBeInTheDocument();
         expect(screen.getByRole('combobox', {name: '2교대 주간 교대제 선택'})).toBeInTheDocument();
         expect(screen.getByDisplayValue('1')).toBeInTheDocument();
@@ -1227,7 +1452,7 @@ describe('OnboardingWardCreatePage', () => {
         expect(nextButton).toHaveAttribute('aria-disabled', 'true');
         await user.click(nextButton);
 
-        expect(toastError).toHaveBeenCalledWith(expect.stringContaining('중복된 필수 근무유형은 하나만 남겨 주세요'));
+        expect(toastError).toHaveBeenCalledWith('주간 근무 (Day) 유형이 중복돼요. D · E 중 하나만 이 유형으로 남겨 주세요.');
         expect(screen.getByRole('region', {name: '3교대 필수 근무유형'})).toBeInTheDocument();
     });
 
@@ -1279,7 +1504,7 @@ describe('OnboardingWardCreatePage', () => {
         expect(toastError).toHaveBeenCalledWith('이전 근무표에서 사용한 근무 유형은 삭제할 수 없어요.');
     });
 
-    it('미매핑 근무유형의 선택 안내를 오류 문구로 표시한다', async () => {
+    it('shows an unresolved type as a selection without an initial error message', async () => {
         const user = userEvent.setup();
 
         await renderScheduleReviewStep();
@@ -1291,11 +1516,11 @@ describe('OnboardingWardCreatePage', () => {
         });
         await user.click(screen.getByRole('button', {name: '다음'}));
 
-        const mappingRequired = await screen.findByText('근무 유형을 선택해 주세요.');
+        const mappingRequired = await screen.findByRole('combobox', {name: 'X 근무 의미 선택'});
 
-        expect(mappingRequired).toHaveClass('text-red');
-        expect(mappingRequired).toHaveAttribute('role', 'alert');
-        expect(screen.queryByText('근무 의미를 선택해 주세요.')).not.toBeInTheDocument();
+        expect(mappingRequired).toHaveTextContent('유형 선택');
+        expect(screen.queryByText('근무 유형을 선택해 주세요.')).not.toBeInTheDocument();
+        expect(screen.getByRole('button', {name: '다음'})).toHaveAttribute('aria-disabled', 'true');
     });
 
     it('does not auto-add missing required shift types when next is clicked', async () => {
@@ -1331,8 +1556,105 @@ describe('OnboardingWardCreatePage', () => {
         await user.clear(shiftShortNameInputs[1] as HTMLInputElement);
         await user.type(shiftShortNameInputs[1] as HTMLInputElement, 'D');
 
-        expect(screen.getAllByText('약자의 첫 글자가 겹치지 않게 입력해 주세요.')).toHaveLength(2);
+        expect(screen.getAllByText('약자 첫 글자가 겹쳐요. 첫 글자를 바꿔 주세요.')).toHaveLength(2);
         expect(screen.getByRole('button', {name: '다음'})).toHaveAttribute('aria-disabled', 'true');
+    });
+
+    it('shows compact duplicate indicators for circled shifts, with details on hover or click', async () => {
+        const user = userEvent.setup();
+        const draft = createInitialDraft();
+        const day = draft.shiftTypes.find((shift) => shift.classification === 'DAY')!;
+        const night = draft.shiftTypes.find((shift) => shift.classification === 'NIGHT')!;
+
+        latestSavedDraftPayload = {
+            flowVersion: 2,
+            draft: {
+                ...goToStep(draft, 4),
+                hospitalName: TEST_HOSPITAL_NAME,
+                shiftTypes: [
+                    ...draft.shiftTypes,
+                    {...night, id: 'circled-night', name: 'ⓝ', shortName: 'ⓝ', rotationSystem: 'TWO', startTime: '19:00'},
+                    {...day, id: 'circled-day', name: 'ⓓ', shortName: 'ⓓ', rotationSystem: 'TWO', endTime: '19:00'},
+                ],
+            },
+            draftWardId: 10,
+            selectedTeamId: draft.teams[0]?.id ?? '',
+            sortMode: 'manual',
+        };
+
+        render(<OnboardingWardCreatePage />);
+
+        const nightType = await screen.findByRole('combobox', {name: 'ⓝ 근무 의미 선택'});
+        const dayType = screen.getByRole('combobox', {name: 'ⓓ 근무 의미 선택'});
+        const next = screen.getByRole('button', {name: '다음'});
+
+        expect(nightType).toHaveAttribute('aria-invalid', 'true');
+        expect(nightType).toHaveAccessibleDescription(/야간 근무 \(Night\) 유형이 중복돼요\. N · ⓝ/);
+        expect(dayType).toHaveAttribute('aria-invalid', 'true');
+        expect(screen.getAllByText('2개 설정됨 · 하나만 남겨 주세요')).toHaveLength(2);
+        expect(screen.queryByText(/3교대 병동에서 이 2교대 근무/)).not.toBeInTheDocument();
+        expect(screen.getByRole('combobox', {name: '데이 근무 의미 선택'})).toHaveAttribute('aria-invalid', 'true');
+        expect(next).toHaveAttribute('aria-disabled', 'true');
+        await user.click(next);
+
+        expect(toastError).toHaveBeenLastCalledWith('주간 근무 (Day) 유형이 중복돼요. D · ⓓ 중 하나만 이 유형으로 남겨 주세요.');
+        expect(screen.getByRole('combobox', {name: '데이 근무 의미 선택'})).toHaveFocus();
+
+        const details = screen.getByRole('button', {name: 'ⓝ 오류 안내'});
+
+        await user.hover(details);
+        expect(await screen.findByRole('tooltip')).toHaveTextContent('N · ⓝ 중 하나만 이 유형으로 남겨 주세요.');
+        await user.unhover(details);
+        await user.keyboard('{Escape}');
+        await waitFor(() => expect(screen.queryByRole('tooltip')).not.toBeInTheDocument());
+        await user.click(details);
+        expect(await screen.findByRole('tooltip')).toHaveTextContent('N · ⓝ');
+        await user.keyboard('{Escape}');
+        await waitFor(() => expect(screen.queryByRole('tooltip')).not.toBeInTheDocument());
+
+        const touchDown = () => fireEvent(details, Object.assign(new Event('pointerdown', {bubbles: true}), {pointerType: 'touch'}));
+
+        touchDown();
+        fireEvent.pointerUp(details, {pointerType: 'touch'});
+        fireEvent.focus(details);
+        fireEvent.click(details);
+        expect(await screen.findByRole('tooltip')).toHaveTextContent('N · ⓝ');
+        touchDown();
+        fireEvent.pointerUp(details, {pointerType: 'touch'});
+        fireEvent.click(details);
+        await waitFor(() => expect(screen.queryByRole('tooltip')).not.toBeInTheDocument());
+
+        for (const type of [nightType, dayType]) {
+            await user.click(type);
+            await user.click(screen.getByRole('option', {name: '기타 근무'}));
+        }
+
+        expect(nightType).toHaveAttribute('aria-invalid', 'false');
+        expect(nightType).not.toHaveAccessibleDescription();
+        expect(screen.queryByRole('button', {name: 'ⓝ 오류 안내'})).not.toBeInTheDocument();
+        expect(screen.queryByText('2개 설정됨 · 하나만 남겨 주세요')).not.toBeInTheDocument();
+        expect(next).toHaveAttribute('aria-disabled', 'false');
+        await user.click(next);
+        await screen.findByRole('button', {name: '완료'});
+    });
+
+    it.each([
+        {field: 'code', value: '한', expected: '‘데이 (한)’: 약자는 영문·숫자·일본어·기호로 시작해 주세요.'},
+        {field: 'name', value: '', expected: '‘D’: 근무명을 입력해 주세요.'},
+        {field: 'time', value: '', expected: '‘데이 (D)’: 시간을 입력해 주세요.'},
+    ])('names the affected shift and focuses its invalid $field', async ({field, value, expected}) => {
+        const user = userEvent.setup();
+
+        await renderShiftTypeStepFromRestoredDraft('THREE');
+
+        const input = screen.getAllByDisplayValue(field === 'code' ? 'D' : field === 'name' ? '데이' : '15:00')[0]!;
+
+        fireEvent.change(input, {target: {value}});
+        await user.click(screen.getByRole('button', {name: '다음'}));
+
+        expect(toastError).toHaveBeenLastCalledWith(expected);
+        // Time validation applies to the pair and focuses its start input.
+        expect(field === 'time' ? screen.getAllByDisplayValue('07:00')[0] : input).toHaveFocus();
     });
 
     it('auto formats numeric shift time input to HH:mm', async () => {
@@ -1507,7 +1829,7 @@ describe('OnboardingWardCreatePage', () => {
         await user.click(precepteeHelpButton);
 
         expect(precepteeHelpButton).toHaveAttribute('aria-expanded', 'true');
-        expect(screen.getByText('프리셉터에게 교육과 적응 지원을 받는 신규 또는 저연차 간호사예요.')).toBeInTheDocument();
+        expect(await screen.findByRole('tooltip')).toHaveTextContent('프리셉터에게 교육과 적응 지원을 받는 신규 또는 저연차 간호사예요.');
 
         const preceptorCheckbox = screen.getByRole('checkbox', {name: '신규 간호사 1 프리셉터'});
         const precepteeCheckbox = screen.getByRole('checkbox', {name: '신규 간호사 1 프리셉티'});
@@ -1552,9 +1874,9 @@ describe('OnboardingWardCreatePage', () => {
         screen.getByTestId('schedule-entry-upload-input').addEventListener('click', selectFile);
         await user.click(skip);
 
-        const dialog = screen.getByRole('dialog', {name: '이전 근무표 없이 넘어갈까요?'});
+        const dialog = screen.getByRole('dialog', {name: '이전 근무표를 되도록 불러와 주세요'});
 
-        expect(dialog).toHaveAccessibleDescription(/AI.*패턴.*학습/);
+        expect(dialog).toHaveAccessibleDescription(/최근 확정된 한 달치 근무표.*엑셀.*선명한 사진/);
         await user.keyboard('{Escape}');
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
         await waitFor(() => expect(skip).toHaveFocus());
@@ -1578,7 +1900,7 @@ describe('OnboardingWardCreatePage', () => {
         expect(screen.queryByText('약자')).not.toBeInTheDocument();
         await user.click(within(screen.getByRole('dialog')).getByRole('button', {name: '그래도 건너뛰기'}));
 
-        expect(await screen.findByText('약자')).toBeInTheDocument();
+        expect(await screen.findByText('약자', {selector: '#onboarding-shift-short-name-label'})).toBeInTheDocument();
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
         expect(mockPreviewOnboardingScheduleInput).not.toHaveBeenCalled();
         expect(mockParseOnboardingWardExcel).not.toHaveBeenCalled();
@@ -1594,7 +1916,7 @@ describe('OnboardingWardCreatePage', () => {
         expect(screen.getByLabelText('1행 간호사 이름')).toHaveValue('');
         await user.click(screen.getByRole('button', {name: '다음'}));
 
-        expect(screen.getByText('약자')).toBeInTheDocument();
+        expect(screen.getByText('약자', {selector: '#onboarding-shift-short-name-label'})).toBeInTheDocument();
         expect(screen.queryByTestId('schedule-entry-upload-input')).not.toBeInTheDocument();
         expect(screen.queryByRole('button', {name: '건너뛰기'})).not.toBeInTheDocument();
         expect(toastError).not.toHaveBeenCalled();

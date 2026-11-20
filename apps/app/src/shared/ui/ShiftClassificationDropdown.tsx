@@ -1,6 +1,16 @@
 import {cn} from '@dutying/utils/style';
 import {ChevronDown} from 'lucide-react';
-import {type KeyboardEvent as ReactKeyboardEvent, type ReactNode, useCallback, useEffect, useId, useRef, useState} from 'react';
+import {
+    type KeyboardEvent as ReactKeyboardEvent,
+    type PointerEvent as ReactPointerEvent,
+    type ReactNode,
+    useCallback,
+    useEffect,
+    useId,
+    useLayoutEffect,
+    useRef,
+    useState,
+} from 'react';
 import {createPortal} from 'react-dom';
 import {dropdownItemClassName, dropdownSurfaceClassName} from './dropdown-styles';
 
@@ -13,6 +23,8 @@ type TShiftClassificationDropdownProps = {
     value: string;
     options: readonly TShiftClassificationDropdownOption[];
     ariaLabel: string;
+    ariaInvalid?: boolean;
+    ariaDescribedBy?: string;
     onChange: (value: string) => void;
     disabled?: boolean;
     onDisabledClick?: () => void;
@@ -36,6 +48,8 @@ export default function ShiftClassificationDropdown({
     value,
     options,
     ariaLabel,
+    ariaInvalid,
+    ariaDescribedBy,
     onChange,
     disabled = false,
     onDisabledClick,
@@ -50,6 +64,18 @@ export default function ShiftClassificationDropdown({
     const menuId = useId();
     const triggerRef = useRef<HTMLDivElement>(null);
     const menuRef = useRef<HTMLDivElement>(null);
+    const scrollbarDragRef = useRef<{y: number; scrollTop: number} | null>(null);
+    const [scrollMetrics, setScrollMetrics] = useState({top: 0, height: 0, contentHeight: 0});
+    const syncScrollMetrics = useCallback(() => {
+        const menu = menuRef.current;
+
+        if (menu) setScrollMetrics({top: menu.scrollTop, height: menu.clientHeight, contentHeight: menu.scrollHeight});
+    }, []);
+    const scrollRange = scrollMetrics.contentHeight - scrollMetrics.height;
+    const trackHeight = Math.max(0, scrollMetrics.height - 8);
+    const thumbHeight = Math.max(24, trackHeight * (scrollMetrics.height / (scrollMetrics.contentHeight || 1)));
+    const thumbTravel = Math.max(0, trackHeight - thumbHeight);
+    const thumbTop = scrollRange > 0 ? (scrollMetrics.top / scrollRange) * thumbTravel : 0;
     const selectedOption = options.find((option) => option.value === value) ?? options[0];
     const updateMenuPosition = useCallback(() => {
         if (!triggerRef.current) return;
@@ -81,9 +107,32 @@ export default function ShiftClassificationDropdown({
     }, [options.length, portalled]);
 
     useEffect(() => {
-        if (open) menuRef.current?.children.item(activeIndex)?.scrollIntoView?.({block: 'nearest'});
+        if (open) menuRef.current?.querySelectorAll('[role="option"]').item(activeIndex)?.scrollIntoView?.({block: 'nearest'});
     }, [activeIndex, open]);
 
+    useLayoutEffect(() => {
+        if (!open) scrollbarDragRef.current = null;
+        else if (menuPosition) syncScrollMetrics();
+    }, [open, menuPosition, options.length, syncScrollMetrics]);
+
+    const startScrollbarDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
+        const menu = menuRef.current;
+
+        if (!menu || event.button !== 0 || thumbTravel <= 0) return;
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (event.target === event.currentTarget) {
+            const offset = event.clientY - event.currentTarget.getBoundingClientRect().top - thumbHeight / 2;
+
+            menu.scrollTop = (offset / thumbTravel) * scrollRange;
+        }
+
+        scrollbarDragRef.current = {y: event.clientY, scrollTop: menu.scrollTop};
+        event.currentTarget.setPointerCapture(event.pointerId);
+        syncScrollMetrics();
+    };
     const openMenu = () => {
         updateMenuPosition();
         setActiveIndex(
@@ -167,13 +216,43 @@ export default function ShiftClassificationDropdown({
                 id={menuId}
                 role="listbox"
                 aria-label={ariaLabel}
-                style={menuStyle}
+                onScroll={syncScrollMetrics}
+                style={{...menuStyle, scrollbarWidth: 'none', scrollbarGutter: 'auto'}}
                 className={cn(
                     dropdownSurfaceClassName,
+                    'pr-2.5',
                     portalled ? 'fixed' : 'absolute',
                     openUpward ? 'slide-in-from-bottom-1' : 'slide-in-from-top-1',
                 )}
             >
+                {scrollRange > 0 && (
+                    <div aria-hidden="true" className="sticky top-0 z-10 ml-auto h-0 w-0">
+                        <div
+                            data-dropdown-scrollbar
+                            className="absolute top-0 left-px w-2 touch-none rounded-full bg-[#F3F5F9]"
+                            style={{height: trackHeight}}
+                            onPointerDown={startScrollbarDrag}
+                            onPointerMove={(event) => {
+                                const drag = scrollbarDragRef.current;
+
+                                if (drag && menuRef.current && thumbTravel > 0) {
+                                    menuRef.current.scrollTop = drag.scrollTop + ((event.clientY - drag.y) / thumbTravel) * scrollRange;
+                                }
+                            }}
+                            onPointerUp={() => {
+                                scrollbarDragRef.current = null;
+                            }}
+                            onLostPointerCapture={() => {
+                                scrollbarDragRef.current = null;
+                            }}
+                        >
+                            <div
+                                className="w-full rounded-full bg-[#AAB2C0] hover:bg-[#8F98A8]"
+                                style={{height: thumbHeight, transform: `translateY(${thumbTop}px)`}}
+                            />
+                        </div>
+                    </div>
+                )}
                 {options.map((option, index) => {
                     const isSelected = option.value === selectedOption?.value;
 
@@ -207,6 +286,8 @@ export default function ShiftClassificationDropdown({
                 type="button"
                 role="combobox"
                 aria-label={ariaLabel}
+                aria-invalid={ariaInvalid}
+                aria-describedby={ariaDescribedBy}
                 aria-haspopup="listbox"
                 aria-expanded={open}
                 aria-controls={open ? menuId : undefined}

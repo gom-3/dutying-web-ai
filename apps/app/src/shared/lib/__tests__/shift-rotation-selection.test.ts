@@ -96,13 +96,39 @@ describe('shift rotation selection', () => {
                 {rotationSystem: 'NONE', classification: 'OFF'},
             ]),
         ).toEqual([
-            {rotationSystem: 'THREE', classification: 'DAY', count: 2},
-            {rotationSystem: 'THREE', classification: 'EVENING', count: 0},
-            {rotationSystem: 'THREE', classification: 'NIGHT', count: 0},
-            {rotationSystem: 'TWO', classification: 'DAY', count: 1},
-            {rotationSystem: 'TWO', classification: 'NIGHT', count: 0},
-            {rotationSystem: 'NONE', classification: 'OFF', count: 1},
+            {rotationSystem: 'THREE', classification: 'DAY', count: 2, duplicateCount: 2},
+            {rotationSystem: 'THREE', classification: 'EVENING', count: 0, duplicateCount: 0},
+            {rotationSystem: 'THREE', classification: 'NIGHT', count: 0, duplicateCount: 0},
+            {rotationSystem: 'TWO', classification: 'DAY', count: 1, duplicateCount: 1},
+            {rotationSystem: 'TWO', classification: 'NIGHT', count: 0, duplicateCount: 0},
+            {rotationSystem: 'NONE', classification: 'OFF', count: 1, duplicateCount: 1},
         ]);
+    });
+
+    it.each(['THREE', 'TWO'] as const)('detects duplicate types across imported rotations in a %s ward', (rotationMode) => {
+        const shifts = [
+            {rotationSystem: 'THREE' as const, classification: 'DAY' as const},
+            {rotationSystem: 'TWO' as const, classification: 'DAY' as const},
+        ];
+        const day = getRequiredRotationClassificationCounts(rotationMode, shifts).find((slot) => slot.classification === 'DAY')!;
+
+        expect(day.count).toBe(1);
+        expect(day.duplicateCount).toBe(2);
+        expect(isRequiredRotationClassificationSatisfied(day)).toBe(false);
+
+        const mixedDays = getRequiredRotationClassificationCounts('MIXED', shifts).filter((slot) => slot.classification === 'DAY');
+
+        expect(mixedDays.every(isRequiredRotationClassificationSatisfied)).toBe(true);
+    });
+
+    it('does not mark a required type ready when only an incompatible rotation exists', () => {
+        const day = getRequiredRotationClassificationCounts('THREE', [{rotationSystem: 'TWO', classification: 'DAY'}]).find(
+            (slot) => slot.classification === 'DAY',
+        )!;
+
+        expect(day.count).toBe(0);
+        expect(day.duplicateCount).toBe(1);
+        expect(isRequiredRotationClassificationSatisfied(day)).toBe(false);
     });
 
     it('provides canonical two-shift time ranges', () => {

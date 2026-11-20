@@ -32,7 +32,6 @@ const STEP_LABELS: Record<TOnboardingStep, TStepLabel> = {
     },
     4: {
         titleKey: 'page.onboardingWardCreate.section.shiftType.title',
-        descriptionKey: 'page.onboardingWardCreate.section.shiftType.description',
         titleHighlightKeys: ['page.onboardingWardCreate.section.shiftType.highlight'],
     },
     5: {
@@ -143,10 +142,14 @@ function SectionHeader({step, nightRecovery = false, titleOverride}: ISectionHea
             tabIndex={step === 3 ? -1 : undefined}
             className={`${headerClassName} rounded-xl focus-visible:bg-main-light focus-visible:outline-none focus-visible:[&_h1]:text-main-1`}
             title={renderedTitle}
-            titleClassName={nightRecovery ? 'text-[clamp(12px,4.7vw,30px)] leading-[1.18] tracking-[-0.04em] whitespace-nowrap' : undefined}
+            titleClassName={
+                nightRecovery
+                    ? 'text-[clamp(12px,4.7vw,30px)] leading-[1.18] tracking-[-0.04em] [overflow-wrap:anywhere] whitespace-normal'
+                    : '[overflow-wrap:anywhere]'
+            }
             description={description}
             descriptionClassName={
-                isIdentityStep || nightRecovery ? 'text-sm leading-5 whitespace-normal' : 'whitespace-normal sm:whitespace-nowrap'
+                isIdentityStep || nightRecovery ? 'text-sm leading-5 whitespace-normal' : '[overflow-wrap:anywhere] whitespace-normal'
             }
         />
     );

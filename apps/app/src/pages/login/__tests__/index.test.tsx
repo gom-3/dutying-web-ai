@@ -53,15 +53,16 @@ const openPasswordResetAfterInvalidLogin = async (user: ReturnType<typeof userEv
     await user.type(screen.getByLabelText('이메일'), 'admin@example.com');
     await user.type(screen.getByLabelText('비밀번호'), 'wrong-password');
     await user.click(screen.getByRole('button', {name: '로그인'}));
-    await screen.findByText(INVALID_LOGIN_CREDENTIALS_MESSAGE);
+    await screen.findByText(i18n.t('page.login.feedback.invalidCredentials'));
     await user.click(screen.getByRole('button', {name: '비밀번호 찾기'}));
 };
 
 describe('LoginPage', () => {
-    afterEach(() => {
+    afterEach(async () => {
         vi.useRealTimers();
         vi.unstubAllEnvs();
         window.localStorage.removeItem(SERVICE_REGION_STORAGE_KEY);
+        await i18n.changeLanguage('ko');
     });
 
     beforeEach(() => {
@@ -242,9 +243,31 @@ describe('LoginPage', () => {
         const loginError = await screen.findByRole('alert');
         const passwordResetButton = screen.getByRole('button', {name: '비밀번호 찾기'});
 
-        expect(loginError).toHaveTextContent(INVALID_LOGIN_CREDENTIALS_MESSAGE);
+        expect(loginError).toHaveTextContent(i18n.t('page.login.feedback.invalidCredentials'));
         expect(loginError.nextElementSibling).toContainElement(passwordResetButton);
     });
+
+    it.each(['ko', 'en', 'ja', 'zh', 'zh-TW', 'th', 'vi'])(
+        'translates a legacy Korean credential error and keeps password recovery available in %s',
+        async (language) => {
+            await i18n.changeLanguage(language);
+            mockPasswordLogin.mockRejectedValueOnce(new Error(INVALID_LOGIN_CREDENTIALS_MESSAGE));
+            render(
+                <MemoryRouter initialEntries={[ROUTE.SIGN_IN]}>
+                    <LoginPage />
+                </MemoryRouter>,
+            );
+
+            const email = screen.getByLabelText(i18n.t('page.login.email'));
+
+            fireEvent.change(email, {target: {value: 'admin@example.com'}});
+            fireEvent.change(screen.getByLabelText(i18n.t('page.login.password')), {target: {value: 'wrong-password'}});
+            fireEvent.submit(email.closest('form')!);
+
+            expect(await screen.findByRole('alert')).toHaveTextContent(i18n.t('page.login.feedback.invalidCredentials'));
+            expect(screen.getByRole('button', {name: i18n.t('page.login.forgotPassword')})).toBeInTheDocument();
+        },
+    );
 
     it('renders sign-up as a separate account page with social buttons', () => {
         render(
