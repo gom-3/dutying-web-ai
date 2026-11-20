@@ -84,7 +84,6 @@ import {useMakeShiftNurseOrder} from '../../../model/use-make-shift-nurse-order'
 import {useScheduleCarryOverCandidates, useScheduleMonthRequests} from '../../../model/use-schedule-month-requests';
 import {
     invalidateConfirmedScheduleContext,
-    MAX_SCHEDULE_SNAPSHOT_COUNT,
     normalizeScheduleSnapshots,
     prependSnapshotToListCache,
     removeSnapshotFromListCache,
@@ -119,11 +118,6 @@ import {findFirstBlankLastShiftCell, getBlankLastShiftCellsWarningKey} from './l
 const AI_SNAPSHOT_SIDEBAR_WIDTH = 304;
 const AI_CALENDAR_EFFECT_SETTLE_MS = 900;
 
-type TSnapshotLimitContext = {
-    snapshots: TSnapshotSummaryDto[];
-    oldestSnapshot: TSnapshotSummaryDto;
-    intent: 'save' | 'confirm';
-};
 type TLastShiftBlankWarningIntent = 'aiFill' | 'confirm';
 type TAiFillDecisionContext = {cellCount: number};
 
@@ -275,24 +269,6 @@ function getSelectionFixedStats(doc: TDutyDoc, selectionCells: TCellPos[]): TSel
     }
 
     return {fixableFilledCount, fixedCount};
-}
-
-function getSnapshotTimeValue(snapshot: TSnapshotSummaryDto) {
-    const updatedAt = new Date(snapshot.updatedAt).getTime();
-
-    if (!Number.isNaN(updatedAt)) return updatedAt;
-
-    const createdAt = new Date(snapshot.createdAt).getTime();
-
-    return Number.isNaN(createdAt) ? 0 : createdAt;
-}
-
-function getOldestSnapshot(snapshots: TSnapshotSummaryDto[]): TSnapshotSummaryDto | null {
-    return snapshots.reduce<TSnapshotSummaryDto | null>((oldest, snapshot) => {
-        if (!oldest) return snapshot;
-
-        return getSnapshotTimeValue(snapshot) < getSnapshotTimeValue(oldest) ? snapshot : oldest;
-    }, null);
 }
 
 function getNextSnapshotTitle(snapshots: TSnapshotSummaryDto[]): string {
@@ -474,7 +450,6 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
     const [deletingSnapshotId, setDeletingSnapshotId] = useState<number | null>(null);
     const [snapshotLoadTarget, setSnapshotLoadTarget] = useState<TSnapshotSummaryDto | null>(null);
     const [snapshotDeleteTarget, setSnapshotDeleteTarget] = useState<TSnapshotSummaryDto | null>(null);
-    const [snapshotLimitContext, setSnapshotLimitContext] = useState<TSnapshotLimitContext | null>(null);
     const [clearUnlockedCellsConfirmOpen, setClearUnlockedCellsConfirmOpen] = useState(false);
     const [finalValidationReview, setFinalValidationReview] = useState<{validation: TValidationRes; emptyCount: number} | null>(null);
     const resolveFinalValidationReview = useRef<((accepted: boolean) => void) | null>(null);
@@ -863,7 +838,6 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
         setIsSnapshotSidebarOpen(false);
         setSnapshotLoadTarget(null);
         setSnapshotDeleteTarget(null);
-        setSnapshotLimitContext(null);
         setClearUnlockedCellsConfirmOpen(false);
         setPublishConfirmOpen(false);
         setLastShiftBlankWarningIntent(null);
@@ -1027,7 +1001,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
         setIsAiBlankPreviewVisible(false);
     }, [aiFillDecisionContext, isAiBlankPreviewVisible, isAiGenerating, lastShiftBlankWarningIntent]);
 
-    const saveSnapshotFromList = async (snapshots: TSnapshotSummaryDto[], snapshotToDelete?: TSnapshotSummaryDto) => {
+    const saveSnapshotFromList = async (snapshots: TSnapshotSummaryDto[]) => {
         if (!isCurrentShiftTeamReady || !wardId || !currentShiftTeamId || !orderedShift) return;
 
         const progressToastId = 'make-shift-snapshot-save-progress';
@@ -1037,36 +1011,25 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
 
         toast.loading(t('page.makeShift.aiRefill.savingSnapshot'), {id: progressToastId});
 
-        try {
-            if (snapshotToDelete) {
-                setDeletingSnapshotId(snapshotToDelete.snapshotId);
-                await WardAPI.deleteSnapshot(wardId, currentShiftTeamId, snapshotToDelete.snapshotId);
-                removeSnapshotFromListCache(queryClient, wardId, currentShiftTeamId, year, month, snapshotToDelete.snapshotId);
-            }
+        const saved = await WardAPI.saveSnapshot(
+            wardId,
+            currentShiftTeamId,
+            buildSaveSnapshotDTO({
+                title: getNextSnapshotTitle(snapshots),
+                year,
+                month,
+                doc: docToSave,
+                originalShift: orderedShift,
+            }),
+        );
 
-            const saved = await WardAPI.saveSnapshot(
-                wardId,
-                currentShiftTeamId,
-                buildSaveSnapshotDTO({
-                    title: getNextSnapshotTitle(snapshots),
-                    year,
-                    month,
-                    doc: docToSave,
-                    originalShift: orderedShift,
-                }),
-            );
-
-            prependSnapshotToListCache(queryClient, wardId, currentShiftTeamId, year, month, saved);
-            invalidateSnapshots(wardId, currentShiftTeamId, year, month);
-            markEditableDocSaved(docToSave);
-            toast.success(t('page.makeShift.aiRefill.saveSnapshotSuccess'), {id: progressToastId});
-        } finally {
-            if (snapshotToDelete) {
-                setDeletingSnapshotId(null);
-            }
-        }
+        prependSnapshotToListCache(queryClient, wardId, currentShiftTeamId, year, month, saved);
+        invalidateSnapshots(wardId, currentShiftTeamId, year, month);
+        markEditableDocSaved(docToSave);
+        toast.success(t('page.makeShift.aiRefill.saveSnapshotSuccess'), {id: progressToastId});
     };
-    const publishCurrentSchedule = async (snapshots: TSnapshotSummaryDto[], snapshotToDelete?: TSnapshotSummaryDto) => {
+
+    const publishCurrentSchedule = async (snapshots: TSnapshotSummaryDto[]) => {
         if (!isCurrentShiftTeamReady || !wardId || !currentShiftTeamId || !orderedShift) return;
 
         const docToPublish = useShiftEditorStore.getState().doc;
@@ -1143,12 +1106,6 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
 
                 return false;
             }
-        }
-
-        if (snapshotToDelete) {
-            setDeletingSnapshotId(snapshotToDelete.snapshotId);
-            await WardAPI.deleteSnapshot(wardId, currentShiftTeamId, snapshotToDelete.snapshotId);
-            removeSnapshotFromListCache(queryClient, wardId, currentShiftTeamId, year, month, snapshotToDelete.snapshotId);
         }
 
         if (!isCurrent()) return false;
@@ -1257,18 +1214,6 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                 scheduleSnapshotsQueryKey(wardId, currentShiftTeamId, year, month),
                 normalizeScheduleSnapshots(snapshots),
             );
-
-            if (snapshots.length >= MAX_SCHEDULE_SNAPSHOT_COUNT) {
-                const oldestSnapshot = getOldestSnapshot(snapshots);
-
-                if (oldestSnapshot) {
-                    setSnapshotLimitContext({snapshots, oldestSnapshot, intent: 'save'});
-                } else {
-                    toast.error(t('page.makeShift.aiRefill.snapshotLimitReached'));
-                }
-
-                return;
-            }
 
             await saveSnapshotFromList(snapshots);
         } catch (error) {
@@ -1385,19 +1330,6 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
 
             queryClient.setQueryData(scheduleSnapshotsQueryKey(wardId, currentShiftTeamId, year, month), normalizedSnapshots);
 
-            if (snapshots.length >= MAX_SCHEDULE_SNAPSHOT_COUNT) {
-                const oldestSnapshot = getOldestSnapshot(snapshots);
-
-                if (oldestSnapshot) {
-                    toast.dismiss(progressToastId);
-                    setSnapshotLimitContext({snapshots, oldestSnapshot, intent: 'confirm'});
-                } else {
-                    toast.error(t('page.makeShift.aiRefill.snapshotLimitReached'), {id: progressToastId});
-                }
-
-                return;
-            }
-
             if (!(await publishCurrentSchedule(snapshots))) return;
 
             toast.dismiss(progressToastId);
@@ -1490,56 +1422,6 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
         } catch {
             toast.error(t('page.makeShift.aiRefill.snapshotSidebar.deleteFailed'));
         } finally {
-            setDeletingSnapshotId(null);
-        }
-    };
-    const handleConfirmDeleteOldestAndSave = async () => {
-        if (!snapshotLimitContext) return;
-
-        const {snapshots, oldestSnapshot, intent} = snapshotLimitContext;
-
-        setSnapshotLimitContext(null);
-
-        if (intent === 'save') {
-            if (isSavingSnapshot) return;
-
-            setIsSavingSnapshot(true);
-
-            try {
-                await saveSnapshotFromList(snapshots, oldestSnapshot);
-            } catch (error) {
-                if (!isScheduleRosterChangedApiError(error)) {
-                    toast.error(t('page.makeShift.aiRefill.saveSnapshotFailed'), {id: 'make-shift-snapshot-save-progress'});
-                }
-            } finally {
-                setIsSavingSnapshot(false);
-            }
-
-            return;
-        }
-
-        if (isWorking) return;
-
-        setIsWorking(true);
-
-        const progressToastId = 'make-shift-confirm-progress';
-
-        toast.loading(t('page.makeShift.navigation.saving'), {id: progressToastId});
-
-        try {
-            if (!(await publishCurrentSchedule(snapshots, oldestSnapshot))) return;
-
-            toast.dismiss(progressToastId);
-            useSchedulePublishSuccessStore.getState().show({
-                connectedNurseCount,
-                showConnectionHint: hasNursesToConnect,
-            });
-        } catch (error) {
-            if (!isScheduleRosterChangedApiError(error)) {
-                toast.error(t('page.makeShift.aiRefill.saveFailed'), {id: progressToastId});
-            }
-        } finally {
-            setIsWorking(false);
             setDeletingSnapshotId(null);
         }
     };
@@ -2853,7 +2735,6 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
           })
         : fallbackHistoryTitle;
     const snapshotDeleteTargetTitle = resolveHistoryTitle(snapshotDeleteTarget?.title, fallbackHistoryTitle);
-    const limitOldestSnapshotTitle = resolveHistoryTitle(snapshotLimitContext?.oldestSnapshot.title, fallbackHistoryTitle);
     const lastShiftBlankDialogDescription = (
         <>
             <span>{t('page.makeShift.aiRefill.lastShiftBlankDialog.descriptionLead')}</span>
@@ -3526,16 +3407,6 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                 tone="danger"
                 onClose={() => setSnapshotDeleteTarget(null)}
                 onConfirm={() => void handleConfirmDeleteSnapshot()}
-            />
-            <ConfirmActionDialog
-                open={snapshotLimitContext != null}
-                title={t('page.makeShift.aiRefill.snapshotLimitDialog.title')}
-                description={t('page.makeShift.aiRefill.snapshotLimitDialog.description', {title: limitOldestSnapshotTitle})}
-                confirmLabel={t('page.makeShift.aiRefill.snapshotLimitDialog.confirm')}
-                cancelLabel={t('page.makeShift.aiRefill.snapshotLimitDialog.cancel')}
-                tone="danger"
-                onClose={() => setSnapshotLimitContext(null)}
-                onConfirm={() => void handleConfirmDeleteOldestAndSave()}
             />
             {(isAiGenerating || isAiLoadingOverlayFinishing) && (!conversationEnabled || !isAiExecutionDismissed) ? (
                 <AiAutofillLoadingOverlay

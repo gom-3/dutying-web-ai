@@ -3,8 +3,6 @@ import {type QueryClient, useQuery, useQueryClient} from '@tanstack/react-query'
 import {wardQueryKeys} from '@/entities/ward/model/queries';
 import WardAPI from '@/shared/api/ward';
 
-export const MAX_SCHEDULE_SNAPSHOT_COUNT = 10;
-
 export function invalidateConfirmedScheduleContext(
     queryClient: QueryClient,
     wardId: number,
@@ -28,9 +26,7 @@ export const scheduleSnapshotDetailQueryKey = (wardId: number, shiftTeamId: numb
     ['schedule', 'snapshot', wardId, shiftTeamId, snapshotId] as const;
 
 export function normalizeScheduleSnapshots(snapshots: TSnapshotSummaryDto[]): TSnapshotSummaryDto[] {
-    return [...snapshots]
-        .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-        .slice(0, MAX_SCHEDULE_SNAPSHOT_COUNT);
+    return [...snapshots].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
 }
 
 export function useScheduleSnapshots(params: {

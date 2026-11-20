@@ -134,7 +134,6 @@ vi.mock('../../../../model/rest-target-days', () => ({
 
 vi.mock('../../../../model/use-schedule-snapshots', () => ({
     invalidateConfirmedScheduleContext: mocks.invalidateConfirmedScheduleContext,
-    MAX_SCHEDULE_SNAPSHOT_COUNT: 5,
     normalizeScheduleSnapshots: (snapshots: unknown) => snapshots,
     prependSnapshotToListCache: vi.fn(),
     removeSnapshotFromListCache: vi.fn(),
