@@ -2369,7 +2369,7 @@ export const ko = {
                 "description": "엑셀이나 이미지에서 이름과 날짜별 근무를 읽어 병동 초안에 채워요.",
                 "downloadTemplate": "양식 다운로드",
                 "dropzoneTitle": "엑셀이나 근무표 이미지를 선택해 주세요.",
-                "fileSupport": "엑셀(.xlsx, .xls) · 이미지(JPG, PNG, 최대 12MB)",
+                "fileSupport": "엑셀(.xlsx, .xls) · 이미지(JPG, PNG)",
                 "submit": "파일 적용",
                 "submitting": "업로드 중",
                 "template": {
@@ -5666,7 +5666,7 @@ export const en: TLocale = {
                 "description": "Read names and daily shifts from an Excel file or image to fill the ward draft.",
                 "downloadTemplate": "Download template",
                 "dropzoneTitle": "Choose or drop an Excel file or roster image.",
-                "fileSupport": "Excel (.xlsx, .xls) · Images (JPG, PNG, up to 12 MB)",
+                "fileSupport": "Excel (.xlsx, .xls) · Images (JPG, PNG)",
                 "submit": "Apply file",
                 "submitting": "Uploading",
                 "template": {
@@ -8961,7 +8961,7 @@ export const ja: TLocale = {
                 "description": "Excelまたは画像から氏名と日別勤務を読み取り、病棟の下書きに入力します。",
                 "downloadTemplate": "テンプレートをダウンロード",
                 "dropzoneTitle": "Excelファイルまたは勤務表の画像を選択してください。",
-                "fileSupport": "Excel（.xlsx、.xls）・画像（JPG、PNG、最大12MB）",
+                "fileSupport": "Excel（.xlsx、.xls）・画像（JPG、PNG）",
                 "submit": "ファイルを適用",
                 "submitting": "アップロード中",
                 "template": {
@@ -12256,7 +12256,7 @@ export const zh: TLocale = {
                 "description": "从 Excel 或图片读取姓名和每日班次，填入病区草稿。",
                 "downloadTemplate": "下载表格",
                 "dropzoneTitle": "请选择或拖放 Excel 文件或排班表图片。",
-                "fileSupport": "Excel（.xlsx、.xls）· 图片（JPG、PNG，最大 12 MB）",
+                "fileSupport": "Excel（.xlsx、.xls）· 图片（JPG、PNG）",
                 "submit": "申请文件",
                 "submitting": "上传中",
                 "template": {
@@ -15551,7 +15551,7 @@ export const zhTW: TLocale = {
                 "description": "從 Excel 或圖片讀取姓名與每日班別，填入病房草稿。",
                 "downloadTemplate": "下載表格",
                 "dropzoneTitle": "請選擇或拖放 Excel 檔案或班表圖片。",
-                "fileSupport": "Excel（.xlsx、.xls）· 圖片（JPG、PNG，最大 12MB）",
+                "fileSupport": "Excel（.xlsx、.xls）· 圖片（JPG、PNG）",
                 "submit": "申請檔案",
                 "submitting": "上傳中",
                 "template": {
@@ -18846,7 +18846,7 @@ export const th: TLocale = {
                 "description": "อ่านชื่อและกะรายวันจาก Excel หรือรูปภาพเพื่อกรอกแบบร่างวอร์ด",
                 "downloadTemplate": "ดาวน์โหลดเทมเพลต",
                 "dropzoneTitle": "เลือกหรือลากไฟล์ Excel หรือรูปตารางเวร",
-                "fileSupport": "Excel (.xlsx, .xls) · รูปภาพ (JPG, PNG ไม่เกิน 12 MB)",
+                "fileSupport": "Excel (.xlsx, .xls) · รูปภาพ (JPG, PNG)",
                 "submit": "ไฟล์ Apply",
                 "submitting": "กำลังอัพโหลด",
                 "template": {
@@ -22141,7 +22141,7 @@ export const vi: TLocale = {
                 "description": "Đọc tên và ca làm từng ngày từ Excel hoặc ảnh để điền vào bản nháp khoa.",
                 "downloadTemplate": "Tải xuống mẫu",
                 "dropzoneTitle": "Chọn hoặc thả tệp Excel hoặc ảnh lịch trực.",
-                "fileSupport": "Excel (.xlsx, .xls) · Ảnh (JPG, PNG, tối đa 12 MB)",
+                "fileSupport": "Excel (.xlsx, .xls) · Ảnh (JPG, PNG)",
                 "submit": "Áp dụng tập tin",
                 "submitting": "Đang tải lên",
                 "template": {

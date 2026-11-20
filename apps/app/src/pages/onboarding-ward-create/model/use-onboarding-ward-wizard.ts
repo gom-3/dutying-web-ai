@@ -69,6 +69,7 @@ import {
     updateTeamNameDraft,
 } from './draft';
 import {withOnboardingEdit, withOnboardingImport, normalizeOnboardingSignals} from './onboarding-measurement';
+import {prepareOnboardingPhoto} from './prepare-onboarding-photo';
 import {normalizeOnboardingScheduleFile, parseOnboardingScheduleTemplate} from './schedule-template-parser';
 import {sortNursesByMode} from './sort';
 import {createOnboardingWardCreateExecutor, type TOnboardingWardCreateSubmission} from './submission';
@@ -1579,7 +1580,9 @@ function useOnboardingWardWizard(options: TOnboardingWardWizardOptions = {}) {
 
         try {
             const image = isOnboardingImageFile(file.name);
-            const fileForParsing = image ? file : await normalizeOnboardingScheduleFile(file);
+            const fileForParsing = image
+                ? await prepareOnboardingPhoto(file, t('page.onboardingWardCreate.upload.parseFailed'))
+                : await normalizeOnboardingScheduleFile(file);
             const scheduleTemplate = image ? [] : await parseScheduleTemplateSafely(fileForParsing, options);
             const targetYear = options?.targetYear;
             const targetMonth = options?.targetMonth;

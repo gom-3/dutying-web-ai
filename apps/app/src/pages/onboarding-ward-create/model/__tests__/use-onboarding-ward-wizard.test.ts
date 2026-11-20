@@ -898,6 +898,39 @@ describe('useOnboardingWardWizard upload flow', () => {
         expect(result.current.uploadStatus).toBe('warning');
     });
 
+    it('sends a readable JPEG with the selected month for photos larger than the API limit', async () => {
+        const file = new File([new Uint8Array(13 * 1024 * 1024)], 'large.png', {type: 'image/png'});
+        const jpeg = new Blob(['compressed'], {type: 'image/jpeg'});
+        const close = vi.fn();
+        const bitmap = {width: 4000, height: 3000, close};
+        const createBitmap = vi.fn().mockResolvedValue(bitmap);
+        const drawImage = vi.fn();
+        const getContext = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({fillRect: vi.fn(), drawImage} as never);
+        const encode = vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation((callback) => callback(jpeg));
+        vi.stubGlobal('createImageBitmap', createBitmap);
+
+        try {
+            mockParseOnboardingWardExcel.mockResolvedValue({
+                nurses: [{name: '홍길동', assignments: {'2026-11-01': 'D'}}],
+            });
+            const {result} = renderHook(() => useOnboardingWardWizard());
+            const options = {targetYear: 2026, targetMonth: 11};
+            await uploadFile(result.current.applyUploadedFile, file, options);
+
+            expect(createBitmap).toHaveBeenCalledWith(file);
+            expect(drawImage).toHaveBeenCalledWith(bitmap, 0, 0, 2048, 1536);
+            expect(close).toHaveBeenCalledOnce();
+            const [upload, period] = mockParseOnboardingWardExcel.mock.calls[0];
+            expect(upload).toMatchObject({name: 'large.jpg', type: 'image/jpeg', size: jpeg.size});
+            expect(period).toEqual(options);
+            expect(result.current.uploadStatus).toBe('success');
+        } finally {
+            vi.unstubAllGlobals();
+            getContext.mockRestore();
+            encode.mockRestore();
+        }
+    });
+
     it('passes target month options to onboarding upload parsing', async () => {
         mockParseOnboardingWardExcel.mockResolvedValue({
             nurse_candidates: [],
