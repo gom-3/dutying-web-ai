@@ -2121,14 +2121,19 @@ describe('Constraints', () => {
         });
     });
 
-    it('supports TIME slots and keeps unknown MIXED templates out of the explicit allowlist', async () => {
+    it.each([false, true])('preserves optional time-window candidates when configured=%s', async (configured) => {
         wardApiMocks.getShiftTypes.mockResolvedValueOnce([...threeShiftWardShiftTypes, ...twoShiftWardShiftTypes] as never);
         wardApiMocks.getShiftConstraintRuleCandidates.mockResolvedValueOnce({
             schemaVersion: 1,
             wardId: 1,
             shiftTeamId: 10,
             rotationMode: 'MIXED',
-            options: {},
+            options: {
+                nurses: [
+                    {type: 'NURSE', nurseId: 1, label: 'Nurse A'},
+                    {type: 'NURSE', nurseId: 2, label: 'Nurse B'},
+                ],
+            },
             templates: [
                 {
                     templateCode: 'TIME_WINDOW_STAFF_COUNT',
@@ -2140,6 +2145,8 @@ describe('Constraints', () => {
                     supportedInValidator: true,
                     slots: [
                         {key: 'dateScope', label: 'Date', inputType: 'SELECT', optionGroup: 'dateScopes'},
+                        {key: 'nurseIds', label: '집계할 간호사', inputType: 'MULTI_SELECT', optionGroup: 'nurses', required: false},
+                        {key: 'backupNurseIds', label: '대체 팀차지', inputType: 'MULTI_SELECT', optionGroup: 'nurses', required: false},
                         {key: 'startTime', label: '시작 시간', inputType: 'TIME'},
                         {key: 'endTime', label: '종료 시간', inputType: 'TIME'},
                         {key: 'operator', label: 'Operator', inputType: 'SELECT', optionGroup: 'staffCountOperators'},
@@ -2167,6 +2174,15 @@ describe('Constraints', () => {
         expect(screen.getByLabelText('시간대별 필요 인원: 시작 시각')).toHaveValue('07:00');
         expect(screen.getByLabelText('시간대별 필요 인원: 종료 시각')).toHaveValue('15:00');
 
+        if (configured) {
+            const candidates = screen.getByRole('button', {name: /시간대별 필요 인원: 집계할 간호사/});
+            await userEvent.click(candidates);
+            await userEvent.click(screen.getByRole('option', {name: 'Nurse A'}));
+            await userEvent.click(screen.getByRole('option', {name: 'Nurse B'}));
+            const backup = screen.getByRole('button', {name: /시간대별 필요 인원: 대체 팀차지/});
+            await userEvent.click(backup);
+            await userEvent.click(screen.getByRole('option', {name: 'Nurse B'}));
+        }
         await userEvent.click(screen.getByTitle('추가'));
 
         await waitFor(() => {
@@ -2179,6 +2195,15 @@ describe('Constraints', () => {
                         endTime: '15:00',
                         operator: {type: 'MIN'},
                         count: 1,
+                        ...(configured
+                            ? {
+                                  nurseIds: [
+                                      {type: 'NURSE', nurseId: 1},
+                                      {type: 'NURSE', nurseId: 2},
+                                  ],
+                                  backupNurseIds: [{type: 'NURSE', nurseId: 2}],
+                              }
+                            : {}),
                     },
                 }),
             ]);

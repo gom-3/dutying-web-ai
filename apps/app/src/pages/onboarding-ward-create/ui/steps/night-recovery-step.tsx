@@ -11,14 +11,14 @@ function ShiftChip({children, emphasis = false, exampleLabel}: {children: string
     return (
         <span
             className={cn(
-                'inline-flex min-h-8 items-center justify-center gap-1 rounded-[10px] px-2.5 py-1.5 font-apple text-[12px] leading-5 font-semibold whitespace-nowrap transition-colors sm:px-3 sm:text-[13px]',
+                'inline-flex min-h-8 max-w-full min-w-0 flex-wrap items-center justify-center gap-x-1 rounded-[10px] px-2.5 py-1.5 text-center font-apple text-[12px] leading-5 font-semibold [overflow-wrap:anywhere] break-keep whitespace-normal transition-colors sm:px-3 sm:text-[13px]',
                 emphasis ? 'bg-[#FFF3C4] text-[#6F4D00]' : 'text-gray-2 bg-gray-7 group-hover:bg-white group-focus-visible:bg-white',
             )}
         >
             {exampleLabel ? (
                 <>
-                    <span className="text-[9px] leading-3 font-bold text-[#8A6200] sm:text-[10px]">{exampleLabel} ·</span>
-                    <span>{children}</span>
+                    <span className="min-w-0 text-[9px] leading-3 font-bold text-[#8A6200] sm:text-[10px]">{exampleLabel} ·</span>
+                    <span className="min-w-0">{children}</span>
                 </>
             ) : (
                 children
@@ -38,7 +38,7 @@ function RecoveryExample({steps}: {steps: IExampleStep[]}) {
     return (
         <span
             className={cn(
-                'grid w-full max-w-[440px] items-end gap-x-1 sm:gap-x-1.5',
+                'grid w-full max-w-[440px] items-start gap-x-1 sm:gap-x-1.5',
                 steps.length === 3
                     ? 'grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)_auto_minmax(0,1fr)]'
                     : 'grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]',
@@ -53,7 +53,7 @@ function RecoveryExample({steps}: {steps: IExampleStep[]}) {
                             {step.shift}
                         </ShiftChip>
                     </span>
-                    {index < steps.length - 1 ? <span className="mb-2 text-center text-[14px] text-gray-4 sm:text-[16px]">→</span> : null}
+                    {index < steps.length - 1 ? <span className="mt-7 text-center text-[14px] text-gray-4 sm:text-[16px]">→</span> : null}
                 </span>
             ))}
         </span>

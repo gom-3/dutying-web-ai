@@ -6,6 +6,7 @@ import {useNavigate} from 'react-router';
 import {type TNurse} from '@/entities/nurse';
 import useAuth from '@/features/auth';
 import {isWardAdminAccessToken} from '@/features/auth/model/admin-token';
+import {getWardClosurePath} from '@/features/commercial/ward-closure-path';
 import useEditWard from '@/features/edit-ward';
 import useLoadingUseCase from '@/features/loading';
 import {AccountAPI, AdminAPI, NurseAPI, WardAPI} from '@/shared/api';
@@ -171,6 +172,14 @@ const useEditAccount = () => {
             await handleGetAccountMe();
             navigate(ROUTE.REGISTER, {replace: true, state: {fromQuitWard: true}});
         } catch (e) {
+            const closurePath = isWardAdmin ? getWardClosurePath(e, accountMe.wardId) : undefined;
+
+            if (closurePath) {
+                navigate(closurePath);
+
+                return;
+            }
+
             Sentry.captureException(e, {
                 tags: {feature: 'account', action: 'quit-ward'},
                 extra: {wardId: accountMe.wardId, accountId: accountMe.accountId},

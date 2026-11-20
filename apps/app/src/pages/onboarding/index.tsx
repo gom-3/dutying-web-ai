@@ -1,6 +1,6 @@
-import {useCommercialContext} from '@/features/commercial/api';
 import {Navigate} from 'react-router';
 import useAuth from '@/features/auth';
+import {useCommercialContext} from '@/features/commercial/api';
 import RegisterShell from '@/pages/register/ui/register-shell';
 import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';

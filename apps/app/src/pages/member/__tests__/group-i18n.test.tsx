@@ -91,6 +91,15 @@ describe('group internationalization', () => {
         expect(getDivisionCustomName(1, '나이트킵')).toBe('나이트킵');
     });
 
+    it.each(languages)('localizes default names previously saved in any supported language in %s', async (language, label) => {
+        await i18n.changeLanguage(language);
+
+        for (const [, storedLabel] of languages) {
+            expect(getDivisionDisplayLabel(1, storedLabel, i18n.t.bind(i18n))).toBe(label);
+            expect(getDivisionCustomName(1, storedLabel)).toBe('');
+        }
+    });
+
     it.each(languages)('localizes a stored default group in the AI target summary in %s', async (language, label) => {
         await i18n.changeLanguage(language);
 

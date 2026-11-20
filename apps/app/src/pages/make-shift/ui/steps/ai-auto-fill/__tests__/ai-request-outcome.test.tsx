@@ -35,7 +35,7 @@ describe('nurse request outcomes', () => {
         expect(screen.getByText('확인 필요')).toBeVisible();
         expect(screen.getAllByText('5회 → 2회')).toHaveLength(1);
     });
-    it('groups repeated request text while keeping the count of each result', () => {
+    it('groups repeated request text without internal clause counts', () => {
         const request = {...measured, kind: 'EXACT' as const, displayText: '화요일에 D 근무로 배정해 줘'};
 
         render(
@@ -52,9 +52,53 @@ describe('nurse request outcomes', () => {
             />,
         );
         expect(screen.getAllByText(request.displayText)).toHaveLength(1);
-        expect(screen.getByText('새로 맞춘 조건')).toHaveTextContent('2개');
-        expect(screen.getByText('이미 맞았던 조건')).toHaveTextContent('1개');
+        expect(screen.getByText('새로 맞춘 조건')).not.toHaveTextContent('2개');
+        expect(screen.getByText('이미 맞았던 조건')).not.toHaveTextContent('1개');
         expect(screen.queryByText(/회 →/)).not.toBeInTheDocument();
+    });
+    it('shows named dated assignment changes and already-matching off instead of repeating source text and clause totals', () => {
+        const result = response({
+            authoringOutcome: outcome({
+                clauses: [
+                    {...measured, clauseId: 'a', kind: 'EXACT', status: 'SATISFIED'},
+                    {...measured, clauseId: 'c', kind: 'EXACT', status: 'ALREADY_SATISFIED'},
+                ],
+                requestPriority: {
+                    version: 'request-first-v2',
+                    requestedAssignments: [
+                        {
+                            clauseId: 'a',
+                            coversWholeClause: true,
+                            shiftNurseId: 1,
+                            nurseName: '가상하나',
+                            date: '2026-10-31',
+                            beforeShiftName: '주간',
+                            afterShiftName: '긴밤',
+                            beforeWardShiftTypeId: 1,
+                            afterWardShiftTypeId: 3,
+                            alreadyMatched: false,
+                        },
+                        {
+                            clauseId: 'c',
+                            coversWholeClause: true,
+                            shiftNurseId: 3,
+                            nurseName: '가상셋',
+                            date: '2026-10-31',
+                            beforeShiftName: '휴무',
+                            afterShiftName: '휴무',
+                            beforeWardShiftTypeId: 4,
+                            afterWardShiftTypeId: 4,
+                            alreadyMatched: true,
+                        },
+                    ],
+                },
+            }),
+        });
+        render(<AiRequestOutcome result={result} />);
+        expect(screen.getByText('10/31 가상하나: 주간 → 긴밤')).toBeVisible();
+        expect(screen.getByText('10/31 가상셋: 이미 휴무예요')).toBeVisible();
+        expect(screen.queryByText(measured.displayText)).not.toBeInTheDocument();
+        expect(screen.queryByText(/새로 맞춘 조건|이미 맞았던 조건|개$/)).not.toBeInTheDocument();
     });
     it.each(['EXACT', 'REVIEW'] as const)('never formats a %s verification score as shift occurrences', (kind) => {
         render(<AiRequestOutcome result={response({authoringOutcome: outcome({clauses: [{...measured, kind}]})})} />);

@@ -13,7 +13,7 @@ import {AppleIcon, KakaoIcon, LineIcon} from '@/shared/assets/svg';
 import {buildAuthAuthorizeUrl, buildLineAuthAuthorizeUrl, sanitizeInternalPath} from '@/shared/config/runtime';
 import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
-import {getStoredServiceRegion, normalizePreferredLanguage} from '@/shared/i18n/locale';
+import {getStoredServiceRegion, normalizePreferredLanguage, WEB_LANGUAGES} from '@/shared/i18n/locale';
 import {createMarketingAgreementRecord, createTermsAgreementRecord} from '@/shared/legal/agreements';
 import {trackProductOutcome} from '@/shared/util/growth-analytics';
 import './index.css';
@@ -232,7 +232,6 @@ function LoginPage() {
     }
 
     const invalidLoginCredentialsMessage = t('page.login.feedback.invalidCredentials');
-    const legacyInvalidLoginCredentialsServerText = t('page.login.feedback.legacyInvalidCredentialsServerText');
     const title = isSignupPage
         ? t('page.login.signupTitle')
         : isPasswordResetMode
@@ -261,7 +260,15 @@ function LoginPage() {
     };
 
     const shouldShowPasswordResetFromLoginError =
-        loginError === invalidLoginCredentialsMessage || loginError === legacyInvalidLoginCredentialsServerText;
+        loginError !== null &&
+        WEB_LANGUAGES.some((language) => {
+            const translate = i18n.getFixedT(language);
+
+            return (
+                loginError === translate('page.login.feedback.invalidCredentials') ||
+                loginError === translate('page.login.feedback.legacyInvalidCredentialsServerText')
+            );
+        });
     const showPreviousLoginVisualSlide = () => {
         if (!hasMultipleLoginVisualSlides) {
             return;
@@ -765,20 +772,15 @@ function LoginPage() {
                     ) : null}
 
                     <div className="mx-auto mt-7 w-full max-w-[334px] text-center">
-                        <h1 className="font-apple text-[32px] font-semibold text-text-1">{isQaLogin ? 'QA 로그인' : title}</h1>
+                        <h1 className="font-apple text-[32px] font-semibold text-text-1">{isQaLogin ? t('page.login.qaTitle') : title}</h1>
                     </div>
 
                     {!isSignupPage && !isPasswordResetMode ? (
                         <form onSubmit={handlePasswordLogin} className="mx-auto mt-7 w-full max-w-[334px] space-y-4">
-                            {isQaLogin ? (
-                                <p className="text-sm leading-6 text-sub-2">
-                                    관리자 화면에서 만든 QA 아이디로 로그인하세요. 처음 로그인하면 온보딩부터 시작하고, 다시 로그인하면 진행
-                                    상태가 유지됩니다.
-                                </p>
-                            ) : null}
+                            {isQaLogin ? <p className="text-sm leading-6 text-sub-2">{t('page.login.qaDescription')}</p> : null}
                             <div>
                                 <label htmlFor="login-email" className="mb-1.5 block text-sm font-medium text-sub-2">
-                                    {isQaLogin ? 'QA 아이디' : t('page.login.email')}
+                                    {isQaLogin ? t('page.login.qaId') : t('page.login.email')}
                                 </label>
                                 <div className="relative">
                                     <Mail className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-4" />
@@ -826,7 +828,7 @@ function LoginPage() {
                             {loginError ? (
                                 <div>
                                     <p role="alert" className="rounded-[12px] bg-[#FFF7F8] px-3 py-2 text-sm text-red">
-                                        {loginError}
+                                        {shouldShowPasswordResetFromLoginError ? invalidLoginCredentialsMessage : loginError}
                                     </p>
                                     {shouldShowPasswordResetFromLoginError ? (
                                         <div className="mt-2 flex justify-end">

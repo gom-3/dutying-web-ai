@@ -68,6 +68,7 @@ type TTemplateCategory = string;
 type TTypedT = ReturnType<typeof useTypedTranslation>['t'];
 type TControlDef = {
     key: string;
+    required?: boolean;
     kind: 'select' | 'multiSelect' | 'number' | 'time';
     label?: string;
     optionsKey?: string;
@@ -1367,6 +1368,7 @@ function createControlFromSlot(slot: TShiftConstraintSlot): TControlDef {
         key: slot.key,
         kind,
         label: slot.label,
+        required: slot.required,
         optionsKey: getOptionMapKey(slot.optionGroup),
         defaultValue: slot.defaultValue,
     };
@@ -1555,7 +1557,11 @@ function createSoftRuleTemplates(templates: TShiftConstraintTemplate[], t: TType
             : canUseLegacySentence(legacyTemplate, controls)
               ? legacyTemplate!.sentence
               : createSentenceFromTemplate(template, controls);
-        const sentence = baseSentence;
+        const optionalNurseControls = controls.filter((control) => control.kind === 'multiSelect' && control.required === false);
+        const sentence: TSentencePart[] = [...baseSentence];
+        for (const control of optionalNurseControls) {
+            sentence.push({type: 'text', text: control.label ?? ''}, {type: 'control', key: control.key});
+        }
         const baseBuildText =
             template.templateCode === 'STAFF_COUNT_BY_SHIFT'
                 ? (params: Record<string, string>) => {
@@ -1584,7 +1590,10 @@ function createSoftRuleTemplates(templates: TShiftConstraintTemplate[], t: TType
                   ? (params: Record<string, string>) => interpolateLocalizedPattern(localizedSentencePattern, params)
                   : (legacyTemplate?.buildText ??
                     ((params: Record<string, string>) => interpolateDisplayTemplate(template.displayTemplate, controls, params)));
-        const buildText = baseBuildText;
+        const buildText = (params: Record<string, string>) =>
+            [baseBuildText(params), ...optionalNurseControls.filter((c) => params[c.key]).map((c) => `${c.label} ${params[c.key]}`)].join(
+                ' · ',
+            );
 
         return {
             id: template.templateCode,
@@ -1785,7 +1794,10 @@ function getControlAccessibleLabel(t: TTypedT, template: TSoftRuleTemplate, cont
               : control.kind === 'number'
                 ? 'page.makeShift.constraints.accessibility.field.number'
                 : 'page.makeShift.constraints.accessibility.field.selection';
-    const fieldLabel = t(CONTROL_ACCESSIBLE_LABEL_KEY_BY_PARAM[control.key] ?? fallbackKey);
+    const fieldLabel =
+        control.required === false && control.kind === 'multiSelect' && control.label
+            ? control.label
+            : t(CONTROL_ACCESSIBLE_LABEL_KEY_BY_PARAM[control.key] ?? fallbackKey);
 
     return t('page.makeShift.constraints.accessibility.fieldLabel', {
         constraint: template.label,
@@ -1874,6 +1886,8 @@ function getDefaultParams(
         }
 
         if (control.kind === 'multiSelect') {
+            if (control.required === false) return;
+
             const availableOptions = getEligibleNurseOptions(
                 template,
                 {...configuredDefaults, ...params},
@@ -3090,7 +3104,14 @@ function normalizeCombinationParams(
         (control) => control.kind === 'multiSelect' && control.optionsKey === 'nurse' && control.key === 'nurseIds',
     );
 
-    if (mixedNurseControl) {
+    for (const control of template.controls) {
+        const values = nextParams[control.key];
+        if (control.kind === 'multiSelect' && control.required === false && Array.isArray(values) && values.length === 0) {
+            delete nextParams[control.key];
+        }
+    }
+
+    if (mixedNurseControl && mixedNurseControl.required !== false) {
         const nurseOptions = optionMap.nurse ?? [];
         const eligibleOptions = getEligibleNurseOptions(template, nextParams, nurseOptions);
         const currentValues = Array.isArray(nextParams.nurseIds) ? nextParams.nurseIds : [];
@@ -3310,11 +3331,13 @@ function InlineDropdown({value, options, minWidth = 72, ariaLabel, onChange}: TI
 }
 
 function InlineMultiSelect({
+    emptyLabel,
     values,
     options,
     accessibleLabel,
     onChange,
 }: {
+    emptyLabel?: string;
     values: unknown[];
     options: TSelectOption[];
     accessibleLabel: string;
@@ -3331,7 +3354,7 @@ function InlineMultiSelect({
         }),
     );
     const selectedOptions = options.filter((option) => selectedOptionKeys.has(option.value));
-    const selectedText = selectedOptions.map((option) => option.label).join(', ') || '-';
+    const selectedText = selectedOptions.map((option) => option.label).join(', ') || emptyLabel || '-';
 
     useEffect(() => {
         if (!open) return;
@@ -3838,6 +3861,11 @@ function SoftSentence({template, params, optionMap, onParamChange}: TSoftSentenc
                 if (control.kind === 'multiSelect') {
                     return (
                         <InlineMultiSelect
+                            emptyLabel={
+                                control.key === 'nurseIds' && control.required === false
+                                    ? t('page.makeShift.constraints.help.audience.allNurses')
+                                    : undefined
+                            }
                             key={`${template.id}-${control.key}-${idx}`}
                             values={Array.isArray(params[control.key]) ? (params[control.key] as unknown[]) : []}
                             options={getOptionsForControl(control, template, params, optionMap)}
@@ -4442,7 +4470,7 @@ function getSoftRuleAddIssue(
     const minimumNurseCount = template.id === 'MIXED_SHIFT_WORKLOAD_BALANCE' ? 2 : 1;
 
     if (
-        template.controls.some((control) => control.kind === 'multiSelect' && control.key === 'nurseIds') &&
+        template.controls.some((control) => control.kind === 'multiSelect' && control.key === 'nurseIds' && control.required !== false) &&
         selectedNurseCount < minimumNurseCount
     ) {
         return 'page.makeShift.constraints.mixed.validation.selectEligibleNurse';

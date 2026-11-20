@@ -1,10 +1,10 @@
-﻿import type {ReactNode} from 'react';
-import {useTranslation} from 'react-i18next';
+﻿import {type ReactNode, useEffect} from 'react';
 import {useTypedTranslation, type TI18nKey} from '@/shared/hook/use-typed-translation';
 import BaseSectionHeader from '@/shared/ui/SectionHeader';
 import type {TOnboardingStep} from '../model';
-import {getOnboardingTutorialVideo} from '../model/tutorial-video';
-import ScheduleVideoGuide from './schedule-video-guide';
+// 설명 영상은 업로드 중심 온보딩을 정리하는 동안 숨겨 둡니다.
+// import {getOnboardingTutorialVideo} from '../model/tutorial-video';
+// import ScheduleVideoGuide from './schedule-video-guide';
 
 type TStepLabel = {
     titleKey: TI18nKey;
@@ -32,7 +32,6 @@ const STEP_LABELS: Record<TOnboardingStep, TStepLabel> = {
     },
     4: {
         titleKey: 'page.onboardingWardCreate.section.shiftType.title',
-        descriptionKey: 'page.onboardingWardCreate.section.shiftType.description',
         titleHighlightKeys: ['page.onboardingWardCreate.section.shiftType.highlight'],
     },
     5: {
@@ -49,6 +48,7 @@ const NIGHT_RECOVERY_LABEL: TStepLabel = {
 interface ISectionHeaderProps {
     step: TOnboardingStep;
     nightRecovery?: boolean;
+    titleOverride?: string;
 }
 
 function escapeRegExp(text: string) {
@@ -59,7 +59,7 @@ function HighlightedTitleText({children}: {children: ReactNode}) {
     return <span className="text-highlight-soft text-highlight-soft--subtle">{children}</span>;
 }
 
-function HighlightedText({text, highlights = []}: {text: string; highlights?: readonly string[]}) {
+export function HighlightedText({text, highlights = []}: {text: string; highlights?: readonly string[]}) {
     const availableHighlights = highlights.filter(Boolean);
 
     if (availableHighlights.length === 0) {
@@ -105,13 +105,17 @@ function TitleLines({
     );
 }
 
-function SectionHeader({step, nightRecovery = false}: ISectionHeaderProps) {
+function SectionHeader({step, nightRecovery = false, titleOverride}: ISectionHeaderProps) {
     const {t} = useTypedTranslation();
-    const {i18n} = useTranslation();
-    const tutorialVideo = step === 3 ? getOnboardingTutorialVideo(i18n.language || i18n.resolvedLanguage) : undefined;
+
+    useEffect(() => {
+        if (step === 3) document.getElementById('onboarding-schedule-review-heading')?.focus({preventScroll: true});
+    }, [step]);
+
+    // const tutorialVideo = step === 3 ? getOnboardingTutorialVideo(i18n.language || i18n.resolvedLanguage) : undefined;
     const label = nightRecovery ? NIGHT_RECOVERY_LABEL : STEP_LABELS[step];
     const isIdentityStep = step === 1;
-    const title = t(label.titleKey);
+    const title = titleOverride ?? t(label.titleKey);
     const titleHighlights = label.titleHighlightKeys?.map((key) => t(key));
     const description = label.descriptionKey ? t(label.descriptionKey) : undefined;
     const headerClassName = nightRecovery
@@ -119,16 +123,14 @@ function SectionHeader({step, nightRecovery = false}: ISectionHeaderProps) {
         : isIdentityStep || step === 2
           ? 'mb-6 max-w-[480px] space-y-2'
           : step === 3
-            ? tutorialVideo
-                ? 'mb-10'
-                : 'mb-10 max-w-[720px]'
+            ? 'mb-8 max-w-[720px]'
             : 'mb-10 max-w-[541px]';
     const renderedTitle = (
         <>
             <span className="sr-only">{title.replace(/\n/g, ' ')}</span>
             <TitleLines
                 highlights={titleHighlights}
-                trailingAction={tutorialVideo ? <ScheduleVideoGuide key={tutorialVideo.src} video={tutorialVideo} /> : undefined}
+                // trailingAction={tutorialVideo ? <ScheduleVideoGuide key={tutorialVideo.src} video={tutorialVideo} /> : undefined}
             >
                 {title}
             </TitleLines>
@@ -136,18 +138,18 @@ function SectionHeader({step, nightRecovery = false}: ISectionHeaderProps) {
     );
     const header = (
         <BaseSectionHeader
-            className={headerClassName}
+            id={step === 3 ? 'onboarding-schedule-review-heading' : undefined}
+            tabIndex={step === 3 ? -1 : undefined}
+            className={`${headerClassName} rounded-xl focus-visible:bg-main-light focus-visible:outline-none focus-visible:[&_h1]:text-main-1`}
             title={renderedTitle}
             titleClassName={
                 nightRecovery
-                    ? 'text-[clamp(12px,4.7vw,30px)] leading-[1.18] tracking-[-0.04em] whitespace-nowrap'
-                    : tutorialVideo
-                      ? 'text-[20px] sm:text-[32px]'
-                      : undefined
+                    ? 'text-[clamp(12px,4.7vw,30px)] leading-[1.18] tracking-[-0.04em] [overflow-wrap:anywhere] whitespace-normal'
+                    : '[overflow-wrap:anywhere]'
             }
             description={description}
             descriptionClassName={
-                isIdentityStep || nightRecovery ? 'text-sm leading-5 whitespace-normal' : 'whitespace-normal sm:whitespace-nowrap'
+                isIdentityStep || nightRecovery ? 'text-sm leading-5 whitespace-normal' : '[overflow-wrap:anywhere] whitespace-normal'
             }
         />
     );

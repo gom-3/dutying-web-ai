@@ -4,7 +4,10 @@ import {StrictMode} from 'react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import i18n from '@/i18n';
 import {getOnboardingTutorialVideo} from '../../model/tutorial-video';
+import ScheduleVideoGuide from '../schedule-video-guide';
 import SectionHeader from '../section-header';
+
+const koreanVideo = getOnboardingTutorialVideo('ko')!;
 
 describe('onboarding schedule video guide', () => {
     beforeEach(() => {
@@ -18,7 +21,7 @@ describe('onboarding schedule video guide', () => {
     });
 
     it('loads no media until the Korean guide button is clicked', () => {
-        const {baseElement} = render(<SectionHeader step={3} />);
+        const {baseElement} = render(<ScheduleVideoGuide video={koreanVideo} />);
         const button = screen.getByRole('button', {name: /설명 영상/});
 
         expect(button).toHaveTextContent('1분');
@@ -45,7 +48,7 @@ describe('onboarding schedule video guide', () => {
 
         render(
             <>
-                <SectionHeader step={3} />
+                <ScheduleVideoGuide video={koreanVideo} />
                 <label>
                     간호사 이름
                     <input defaultValue="김간호" />
@@ -76,7 +79,7 @@ describe('onboarding schedule video guide', () => {
     it('keeps the source available when Strict Mode replays the player effects', () => {
         const {baseElement} = render(
             <StrictMode>
-                <SectionHeader step={3} />
+                <ScheduleVideoGuide video={koreanVideo} />
             </StrictMode>,
         );
 
@@ -85,7 +88,7 @@ describe('onboarding schedule video guide', () => {
     });
 
     it('changes playback speed without replacing or seeking the video and syncs native speed changes', () => {
-        const {baseElement} = render(<SectionHeader step={3} />);
+        const {baseElement} = render(<ScheduleVideoGuide video={koreanVideo} />);
 
         fireEvent.click(screen.getByRole('button', {name: /설명 영상/}));
 
@@ -111,7 +114,7 @@ describe('onboarding schedule video guide', () => {
     });
 
     it('keeps the chosen speed after retrying or reopening the video', () => {
-        const {baseElement} = render(<SectionHeader step={3} />);
+        const {baseElement} = render(<ScheduleVideoGuide video={koreanVideo} />);
 
         fireEvent.click(screen.getByRole('button', {name: /설명 영상/}));
         fireEvent.change(screen.getByRole('combobox', {name: '재생 속도'}), {target: {value: '2'}});
@@ -125,28 +128,28 @@ describe('onboarding schedule video guide', () => {
         expect(baseElement.querySelector('video')?.playbackRate).toBe(2);
     });
 
-    it.each(['en', 'ja', 'zh', 'th', 'vi'])('hides the guide for %s without a Korean fallback', async (language) => {
+    it.each(['ko', 'ko-KR', 'en', 'ja', 'zh', 'th', 'vi'])('keeps the guide hidden on every onboarding step for %s', async (language) => {
         await act(() => i18n.changeLanguage(language));
 
-        const {baseElement} = render(<SectionHeader step={3} />);
+        const {baseElement, rerender} = render(<SectionHeader step={1} />);
 
-        expect(screen.queryByRole('button')).not.toBeInTheDocument();
-        expect(baseElement.querySelector('video')).toBeNull();
+        for (const step of [1, 2, 3, 4, 5] as const) {
+            rerender(<SectionHeader step={step} />);
+            expect(screen.queryByRole('button')).not.toBeInTheDocument();
+            expect(baseElement.querySelector('video, source')).toBeNull();
+        }
     });
 
-    it('shows the guide for regional Korean locales only on the schedule step', async () => {
-        await act(() => i18n.changeLanguage('ko-KR'));
+    it('provides the Korean video for regional Korean locales and no fallback for other locales', () => {
+        expect(getOnboardingTutorialVideo('ko-KR')).toEqual(koreanVideo);
 
-        const {rerender} = render(<SectionHeader step={3} />);
-
-        expect(screen.getByRole('button', {name: /설명 영상/})).toBeInTheDocument();
-        rerender(<SectionHeader step={4} />);
-        expect(screen.queryByRole('button', {name: /설명 영상/})).not.toBeInTheDocument();
-        expect(getOnboardingTutorialVideo('fr')).toBeUndefined();
+        for (const language of ['en', 'ja', 'zh', 'th', 'vi', 'fr']) {
+            expect(getOnboardingTutorialVideo(language)).toBeUndefined();
+        }
     });
 
     it('stops playback, releases the source and returns focus when closed', async () => {
-        const {baseElement} = render(<SectionHeader step={3} />);
+        const {baseElement} = render(<ScheduleVideoGuide video={koreanVideo} />);
         const button = screen.getByRole('button', {name: /설명 영상/});
 
         fireEvent.click(button);
@@ -162,23 +165,21 @@ describe('onboarding schedule video guide', () => {
         await waitFor(() => expect(button).toHaveFocus());
     });
 
-    it('unmounts an open video on language and step changes', async () => {
-        const {baseElement, rerender} = render(<SectionHeader step={3} />);
+    it('releases the open player on unmount', () => {
+        const {baseElement, unmount} = render(<ScheduleVideoGuide video={koreanVideo} />);
 
         fireEvent.click(screen.getByRole('button', {name: /설명 영상/}));
-        await act(() => i18n.changeLanguage('ja'));
-        expect(baseElement.querySelector('video')).toBeNull();
+
+        const video = baseElement.querySelector('video')!;
+
+        unmount();
+        expect(video).not.toBeInTheDocument();
+        expect(video).not.toHaveAttribute('src');
         expect(HTMLMediaElement.prototype.pause).toHaveBeenCalled();
-
-        await act(() => i18n.changeLanguage('ko'));
-        expect(screen.getByRole('button', {name: /설명 영상/})).toHaveAttribute('aria-expanded', 'false');
-        fireEvent.click(screen.getByRole('button', {name: /설명 영상/}));
-        rerender(<SectionHeader step={4} />);
-        expect(baseElement.querySelector('video')).toBeNull();
     });
 
     it('lets the visitor retry a failed video and close it with Escape', () => {
-        const {baseElement} = render(<SectionHeader step={3} />);
+        const {baseElement} = render(<ScheduleVideoGuide video={koreanVideo} />);
 
         fireEvent.click(screen.getByRole('button', {name: /설명 영상/}));
 

@@ -150,6 +150,7 @@ it('shows all month-only settings together before the explicit consent action', 
             },
         }),
     });
+
     render(
         <AiAuthoringCandidate
             result={result}
@@ -165,6 +166,6 @@ it('shows all month-only settings together before the explicit consent action', 
     expect(screen.getByText(/현재 조건은 21일.*22일로 바꿀까요/)).toBeVisible();
     expect(screen.getByText(/기존 설정은 저장하거나 영구 변경하지/)).toBeVisible();
     expect(onApply).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole('button', {name: '이번 달 조건 변경에 동의하고 반영'}));
+    fireEvent.click(screen.getByRole('button', {name: '위 설정을 이번 달만 허용하고 근무 반영'}));
     expect(onApply).toHaveBeenCalledOnce();
 });
