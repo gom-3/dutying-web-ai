@@ -11,6 +11,7 @@ import {
     DEFAULT_ONBOARDING_DIVISION_NUM,
     getAvailableOnboardingShiftColor,
     getDefaultShiftTypeColor,
+    getShiftTypesForNewUpload,
     isOnboardingShiftTypeActive,
     normalizeOnboardingShiftCode,
     normalizeNurseNameForRequest,
@@ -67,6 +68,7 @@ export type TOnboardingParsedNurse = Partial<
     Pick<TOnboardingNurseDraft, 'name' | 'memo' | 'isWorker' | 'employmentDate' | 'isPreceptor' | 'isPreceptee' | 'divisionNum'>
 > & {
     teamName?: string;
+    groupName?: string;
     possibleShiftShortNames?: string[];
     initialShifts?: TOnboardingParsedInitialShift[];
 };
@@ -74,6 +76,7 @@ export type TOnboardingParsedNurse = Partial<
 export type TOnboardingParsedConstraintCandidate = Omit<TOnboardingConstraintDraft, 'id'>;
 
 export type TOnboardingParsedWardData = {
+    importedCodes?: string[];
     fileName?: string;
     wardName?: string;
     hospitalName?: string;
@@ -96,10 +99,12 @@ export type TOnboardingUploadFailureCopy = {
     networkMessage: string;
 };
 
-const ONBOARDING_IMAGE_EXTENSIONS = ['png', 'jpg', 'jpeg'];
-const SUPPORTED_ONBOARDING_UPLOAD_EXTENSIONS = ['xlsx', 'xls', ...ONBOARDING_IMAGE_EXTENSIONS];
-
-export const ONBOARDING_UPLOAD_ACCEPT = SUPPORTED_ONBOARDING_UPLOAD_EXTENSIONS.map((extension) => `.${extension}`).join(',');
+export {
+    getOnboardingUploadExtension,
+    isOnboardingImageFile,
+    isSupportedOnboardingUploadFile,
+    ONBOARDING_UPLOAD_ACCEPT,
+} from '@/shared/api/file/onboarding-format';
 
 const SUPPORTED_CONSTRAINT_TEMPLATE_CODES = new Set([
     'MIN_STAFF_BY_SHIFT',
@@ -253,14 +258,34 @@ const normalizeInitialShifts = (
 
     return initialShifts;
 };
-const remapInitialShiftAliases = (
-    initialShifts: TOnboardingParsedInitialShift[],
-    shortNameAliases: Map<string, string>,
-): TOnboardingParsedInitialShift[] =>
-    initialShifts.map((shift) => ({
-        ...shift,
-        shiftShortName: remapShiftShortNameAlias(shift.shiftShortName, shortNameAliases) ?? shift.shiftShortName,
-    }));
+
+type TPhotoAssignments = Record<string, string | null> | null | undefined;
+
+const getRawPhotoAssignments = (values: TPhotoAssignments, options?: TOnboardingWardParseOptions) => {
+    const result = new Map<string, string>();
+
+    for (const [key, value] of Object.entries(values ?? {})) {
+        const date = normalizeAssignmentDate(key, options);
+
+        if (date && typeof value === 'string' && value.trim()) result.set(date, value.trim());
+    }
+
+    return result;
+};
+const getImportedInitialShifts = (
+    assignments: TPhotoAssignments,
+    rawAssignments: TPhotoAssignments,
+    options: TOnboardingWardParseOptions | undefined,
+    aliases: Map<string, string>,
+) => {
+    const shifts = new Map(
+        normalizeInitialShifts(assignments, options).map(({date, shiftShortName}) => [date, aliases.get(shiftShortName) ?? shiftShortName]),
+    );
+
+    for (const [date, rawCode] of getRawPhotoAssignments(rawAssignments, options)) shifts.set(date, rawCode);
+
+    return Array.from(shifts, ([date, shiftShortName]) => ({date, shiftShortName})).sort((a, b) => a.date.localeCompare(b.date));
+};
 const compactParsedNurse = (nurse: TOnboardingParsedNurse): TOnboardingParsedNurse =>
     Object.fromEntries(
         Object.entries(nurse).filter(([, value]) => value !== undefined && (!Array.isArray(value) || value.length > 0)),
@@ -907,6 +932,7 @@ const pickPrimaryOffShiftType = (
 const normalizeParsedShiftTypeList = (
     shiftTypes: TOnboardingParsedShiftType[],
     observedStats: Map<string, TObservedShiftCodeStat>,
+    supersededCodes: Set<string>,
 ): TNormalizedParsedShiftTypes => {
     const shortNameAliases = new Map<string, string>();
     const uniqueShiftTypes: TOnboardingParsedShiftType[] = [];
@@ -915,7 +941,7 @@ const normalizeParsedShiftTypeList = (
     shiftTypes.forEach((shiftType) => {
         const shortName = normalizeShiftShortName(shiftType.shortName);
 
-        if (!shortName || usedShortNames.has(shortName)) {
+        if (!shortName || usedShortNames.has(shortName) || supersededCodes.has(shortName)) {
             return;
         }
 
@@ -969,7 +995,10 @@ const normalizeParsedShiftTypeList = (
         shortNameAliases,
     };
 };
-const normalizeParsedShiftTypes = (response: TOnboardingWardParseApiResponse): TNormalizedParsedShiftTypes => {
+const normalizeParsedShiftTypes = (
+    response: TOnboardingWardParseApiResponse,
+    supersededCodes: Set<string>,
+): TNormalizedParsedShiftTypes => {
     const rawShiftTypes = response.shiftTypes ?? response.wardShiftTypes;
     const observedStats = collectObservedShiftCodeStats(response);
     const observedShiftCodes = collectResponseObservedShiftCodes(response);
@@ -1003,12 +1032,13 @@ const normalizeParsedShiftTypes = (response: TOnboardingWardParseApiResponse): T
                 observedShiftCodes,
             ),
             observedStats,
+            supersededCodes,
         );
     }
 
     if (!response.shift_type_candidates) {
         return observedShiftCodes.length > 0
-            ? normalizeParsedShiftTypeList(appendObservedShiftTypes([], observedShiftCodes), observedStats)
+            ? normalizeParsedShiftTypeList(appendObservedShiftTypes([], observedShiftCodes), observedStats, supersededCodes)
             : {shortNameAliases: new Map()};
     }
 
@@ -1032,6 +1062,7 @@ const normalizeParsedShiftTypes = (response: TOnboardingWardParseApiResponse): T
             observedShiftCodes,
         ),
         observedStats,
+        supersededCodes,
     );
 };
 const normalizeParsedTeams = (response: TOnboardingWardParseApiResponse): TOnboardingParsedTeam[] | undefined => {
@@ -1061,7 +1092,7 @@ const normalizeParsedNurses = (
     options?: TOnboardingWardParseOptions,
     shortNameAliases = new Map<string, string>(),
 ): TOnboardingParsedNurse[] | undefined => {
-    if (response.nurses) {
+    if (response.nurses?.length || (response.nurses && !response.nurse_candidates?.length)) {
         return response.nurses
             .map((nurse) =>
                 compactParsedNurse({
@@ -1073,12 +1104,13 @@ const normalizeParsedNurses = (
                     employmentDate: trimToUndefined(nurse.employmentDate),
                     teamName: trimToUndefined(nurse.teamName),
                     divisionNum: nurse.divisionNum ?? undefined,
+                    groupName: trimToUndefined(nurse.groupName),
                     possibleShiftShortNames:
                         nurse.possibleShiftShortNames
                             ?.map((shortName) => normalizeShiftShortName(shortName))
                             .map((shortName) => remapShiftShortNameAlias(shortName, shortNameAliases))
                             .filter((shortName): shortName is string => Boolean(shortName)) ?? undefined,
-                    initialShifts: remapInitialShiftAliases(normalizeInitialShifts(nurse.assignments, options), shortNameAliases),
+                    initialShifts: getImportedInitialShifts(nurse.assignments, nurse.unmapped_assignments, options, shortNameAliases),
                 }),
             )
             .filter((nurse) => Boolean(nurse.name ?? nurse.teamName));
@@ -1095,7 +1127,7 @@ const normalizeParsedNurses = (
                 possibleShiftShortNames: collectObservedWorkShiftCodes(nurse.assignments, nurse.monthly_counts)
                     .map((shortName) => remapShiftShortNameAlias(shortName, shortNameAliases))
                     .filter((shortName): shortName is string => Boolean(shortName)),
-                initialShifts: remapInitialShiftAliases(normalizeInitialShifts(nurse.assignments, options), shortNameAliases),
+                initialShifts: getImportedInitialShifts(nurse.assignments, nurse.unmapped_assignments, options, shortNameAliases),
             }),
         )
         .filter((nurse) => Boolean(nurse.name));
@@ -1176,13 +1208,6 @@ const buildConstraintRulePayloads = (draft: TOnboardingWardDraft) => {
         }));
 };
 
-export const getOnboardingUploadExtension = (fileName: string) => /\.([^.]+)$/.exec(fileName)?.[1].toLowerCase() ?? '';
-
-export const isOnboardingImageFile = (fileName: string) => ONBOARDING_IMAGE_EXTENSIONS.includes(getOnboardingUploadExtension(fileName));
-
-export const isSupportedOnboardingUploadFile = (fileName: string) =>
-    SUPPORTED_ONBOARDING_UPLOAD_EXTENSIONS.includes(getOnboardingUploadExtension(fileName));
-
 export const getOnboardingUploadFailureMessage = (error: unknown, copy: TOnboardingUploadFailureCopy = DEFAULT_UPLOAD_FAILURE_COPY) => {
     const message = error instanceof Error ? error.message.trim() : '';
 
@@ -1197,16 +1222,91 @@ export const getOnboardingUploadFailureMessage = (error: unknown, copy: TOnboard
     return message;
 };
 
+// Use raw, dated readings before normalizing known shift codes. Older analyzers can
+// also send a canonical suggestion for the same cell; it must not create a phantom type.
+const getPhotoImportCodes = (response: TOnboardingWardParseApiResponse, options?: TOnboardingWardParseOptions) => {
+    const importedCodes = new Set<string>();
+    const coveredKnownCodes = new Set<string>();
+    const uncoveredKnownCodes = new Set<string>();
+    const rows = response.nurses?.length ? response.nurses : (response.nurse_candidates ?? []);
+
+    for (const row of rows) {
+        const name = 'name' in row ? row.name : 'raw_name' in row ? row.raw_name : null;
+
+        if (!name?.trim()) continue;
+
+        const raw = getRawPhotoAssignments(row.unmapped_assignments, options);
+
+        for (const code of raw.values()) importedCodes.add(code);
+
+        for (const {date, shiftShortName} of normalizeInitialShifts(row.assignments, options)) {
+            (raw.has(date) ? coveredKnownCodes : uncoveredKnownCodes).add(shiftShortName);
+        }
+    }
+
+    return {
+        importedCodes: Array.from(importedCodes),
+        supersededCodes: new Set(
+            [...coveredKnownCodes, ...[...importedCodes].map(normalizeOnboardingShiftCode)].filter(
+                (code) => !uncoveredKnownCodes.has(code),
+            ),
+        ),
+    };
+};
+// Some analyzers return staffing details in nurses and the original cell readings only
+// in nurse_candidates. Join matching rows without assigning another team member's shifts.
+const includeCandidatePhotoReadings = (response: TOnboardingWardParseApiResponse): TOnboardingWardParseApiResponse => {
+    const candidates = response.nurse_candidates;
+
+    if (!response.nurses?.length || !candidates?.some((candidate) => candidate.unmapped_assignments)) return response;
+
+    const candidatesByName = new Map<string, typeof candidates>();
+
+    for (const candidate of candidates) {
+        const name = candidate.raw_name?.trim();
+
+        if (name) candidatesByName.set(name, [...(candidatesByName.get(name) ?? []), candidate]);
+    }
+
+    const usedNames = new Set<string>();
+    const duplicateNames = new Set<string>();
+
+    for (const nurse of response.nurses) {
+        const name = nurse.name?.trim();
+
+        if (!name) continue;
+
+        if (usedNames.has(name)) duplicateNames.add(name);
+
+        usedNames.add(name);
+    }
+
+    return {
+        ...response,
+        nurses: response.nurses.map((nurse) => {
+            const name = nurse.name?.trim();
+            const matches = name ? candidatesByName.get(name) : undefined;
+
+            if (!name || duplicateNames.has(name) || matches?.length !== 1 || !matches[0]?.unmapped_assignments) return nurse;
+
+            return {...nurse, unmapped_assignments: {...matches[0].unmapped_assignments, ...nurse.unmapped_assignments}};
+        }),
+    };
+};
+
 export const buildOnboardingParseDraftInjection = (
-    response: TOnboardingWardParseApiResponse,
+    input: TOnboardingWardParseApiResponse,
     uploadedFileName: string,
     options?: TOnboardingWardParseOptions,
     copy: TOnboardingParseWarningCopy = DEFAULT_PARSE_WARNING_COPY,
 ): TOnboardingParseDraftInjection => {
-    const normalizedShiftTypes = normalizeParsedShiftTypes(response);
+    const response = includeCandidatePhotoReadings(input);
+    const {importedCodes, supersededCodes} = getPhotoImportCodes(response, options);
+    const normalizedShiftTypes = normalizeParsedShiftTypes(response, supersededCodes);
 
     return {
         parsedWardData: {
+            ...(importedCodes.length ? {importedCodes} : {}),
             fileName: trimToUndefined(response.fileName) ?? uploadedFileName,
             wardName: trimToUndefined(response.wardName),
             hospitalName: trimToUndefined(response.hospitalName),
@@ -1222,151 +1322,73 @@ export const buildOnboardingParseDraftInjection = (
 // 병원이 쓰던 원본 근무표는 서식 좌표로 읽을 수 없어 서버 분석 결과로만 들어온다.
 // 분석 결과에는 일자별 근무가 그대로 있으므로, '근무표 입력' 칸도 여기서 채운다.
 // 안 채우면 사용자가 방금 올린 한 달치를 손으로 다시 입력해야 한다.
-export const buildUploadedTeamSchedulesFromParsedWardData = (parsed: TOnboardingParsedWardData): TOnboardingUploadedTeamSchedule[] => {
-    const nurses = parsed.nurses ?? [];
-    const divisionNameByNum = new Map(
-        (parsed.teams?.[0]?.divisions ?? []).map((division) => [division.divisionNum, division.name] as const),
-    );
-    const teamOrder: string[] = [];
+export const buildUploadedTeamSchedulesFromParsedWardData = (
+    parsed: TOnboardingParsedWardData,
+    monthKey?: string,
+): TOnboardingUploadedTeamSchedule[] => {
+    const teams = parsed.teams ?? [];
     const rowsByTeamName = new Map<string, TOnboardingUploadedTeamSchedule['rows']>();
 
-    nurses.forEach((nurse) => {
+    for (const nurse of parsed.nurses ?? []) {
         const name = nurse.name?.trim() ?? '';
         const shifts = Object.fromEntries(
             (nurse.initialShifts ?? [])
+                .filter((shift) => !monthKey || shift.date.slice(0, 7) === monthKey)
                 .map((shift) => [String(Number(shift.date.slice(8, 10))), shift.shiftShortName] as const)
                 .filter(([day, shiftShortName]) => day !== 'NaN' && Boolean(shiftShortName)),
         );
 
-        if (!name && Object.keys(shifts).length === 0) {
-            return;
-        }
+        if (!name && Object.keys(shifts).length === 0) continue;
 
-        const teamName = nurse.teamName?.trim() ?? '';
-        const divisionNum = nurse.divisionNum ?? 1;
+        const teamName = nurse.teamName?.trim() ? nurse.teamName.trim() : teams.length === 1 ? teams[0]!.name.trim() : '';
+        const team = teams.find((candidate) => candidate.name.trim() === teamName);
+        const divisionNum = nurse.divisionNum ?? DEFAULT_ONBOARDING_DIVISION_NUM;
+        const division = team?.divisions?.find((item) => item.divisionNum === divisionNum);
+        const rows = rowsByTeamName.get(teamName) ?? [];
+        const roleFlags = getNurseRoleFlagsFromMemo(nurse.memo);
 
-        if (!rowsByTeamName.has(teamName)) {
-            teamOrder.push(teamName);
-            rowsByTeamName.set(teamName, []);
-        }
-
-        rowsByTeamName.get(teamName)?.push({
+        rows.push({
             name,
             shifts,
             divisionNum,
-            divisionName: divisionNameByNum.get(divisionNum) ?? '',
+            divisionName: division?.name.trim() ? division.name.trim() : (nurse.groupName?.trim() ?? ''),
+            nurseSettings: {
+                memo: getMemoWithoutNurseRoleMarker(nurse.memo),
+                isWorker: nurse.isWorker,
+                employmentDate: nurse.employmentDate,
+                isPreceptor: nurse.isPreceptor ?? roleFlags.isPreceptor,
+                isPreceptee: nurse.isPreceptee ?? roleFlags.isPreceptee,
+                possibleShiftShortNames: nurse.possibleShiftShortNames,
+            },
         });
-    });
+        rowsByTeamName.set(teamName, rows);
+    }
 
-    const teamSchedules = teamOrder.map((teamName) => ({teamName, rows: rowsByTeamName.get(teamName) ?? []}));
+    const teamSchedules = Array.from(rowsByTeamName, ([teamName, rows]) => ({teamName, rows}));
     const hasAnyShift = teamSchedules.some((teamSchedule) => teamSchedule.rows.some((row) => Object.keys(row.shifts).length > 0));
 
     return hasAnyShift ? teamSchedules : [];
 };
 
-// 월별 탭(7월·8월·9월)을 한 파일에 쌓아 쓰는 병동이 흔하다. 분석은 달마다의 근무를
-// 'YYYY-MM-DD' 로 돌려주는데, 일자만 떼어 한 달에 몰아 넣으면 7월 3일이 9월 3일을 덮는다.
-// 달별로 갈라 두고 각 달의 근무표 칸에 따로 채운다. 최신 달이 마지막에 온다.
+// 각 월의 행은 같은 팀·근무자 명단을 사용하고, 날짜별 근무만 달리한다.
 export const buildUploadedMonthlySchedulesFromParsedWardData = (
     parsed: TOnboardingParsedWardData,
 ): TOnboardingUploadedMonthlySchedule[] => {
-    const nurses = parsed.nurses ?? [];
-    const divisionNameByNum = new Map(
-        (parsed.teams?.[0]?.divisions ?? []).map((division) => [division.divisionNum, division.name] as const),
-    );
-    const monthKeys: string[] = [];
-    const shiftsByNurseAndMonthKey = nurses.map((nurse) => {
-        const shiftsByMonthKey = new Map<string, Record<string, string>>();
+    const monthKeys = new Set<string>();
 
-        (nurse.initialShifts ?? []).forEach((shift) => {
-            const monthKey = shift.date.slice(0, 7);
-            const day = String(Number(shift.date.slice(8, 10)));
+    for (const nurse of parsed.nurses ?? []) {
+        for (const shift of nurse.initialShifts ?? []) {
+            if (shift.shiftShortName && isValidIsoDate(shift.date)) monthKeys.add(shift.date.slice(0, 7));
+        }
+    }
 
-            if (day === 'NaN' || !shift.shiftShortName) {
-                return;
-            }
-
-            if (!shiftsByMonthKey.has(monthKey)) {
-                shiftsByMonthKey.set(monthKey, {});
-
-                if (!monthKeys.includes(monthKey)) {
-                    monthKeys.push(monthKey);
-                }
-            }
-
-            shiftsByMonthKey.get(monthKey)![day] = shift.shiftShortName;
-        });
-
-        return shiftsByMonthKey;
-    });
-
-    return monthKeys
+    return Array.from(monthKeys)
         .sort()
         .map((monthKey) => ({
             year: Number(monthKey.slice(0, 4)),
             month: Number(monthKey.slice(5, 7)),
-            // 달마다 인원이 달라지면 안 된다. 그 달에 근무가 하나도 없는 사람(휴직·신규)을
-            // 빼면 그 사람은 간호사로 등록되지 않고 다른 달 행만 주인 없이 남는다.
-            teamSchedules: [
-                {
-                    teamName: '',
-                    rows: nurses.map((nurse, nurseIndex) => ({
-                        name: nurse.name?.trim() ?? '',
-                        shifts: shiftsByNurseAndMonthKey[nurseIndex]?.get(monthKey) ?? {},
-                        divisionNum: nurse.divisionNum ?? 1,
-                        divisionName: divisionNameByNum.get(nurse.divisionNum ?? 1) ?? '',
-                    })),
-                },
-            ],
-        }))
-        .filter(({year, month}) => Number.isInteger(year) && Number.isInteger(month) && month >= 1 && month <= 12);
-};
-
-// 근무표 칸을 채우는 경로는 간호사를 새로 만들면서 가능 근무유형을 전체로 되돌린다.
-// 나이트 전담에게 D/E 까지 열어두면 첫 자동생성부터 병동 운영과 어긋나므로,
-// 분석이 사람별로 관찰한 근무유형을 다시 씌운다.
-export const restoreParsedNursePossibleShiftTypes = (
-    draft: TOnboardingWardDraft,
-    parsed: TOnboardingParsedWardData,
-): TOnboardingWardDraft => {
-    const parsedShortNamesByName = new Map<string, string[]>();
-
-    (parsed.nurses ?? []).forEach((nurse) => {
-        const name = nurse.name?.trim();
-
-        if (!name || parsedShortNamesByName.has(name) || !nurse.possibleShiftShortNames?.length) {
-            return;
-        }
-
-        parsedShortNamesByName.set(name, nurse.possibleShiftShortNames);
-    });
-
-    if (parsedShortNamesByName.size === 0) {
-        return draft;
-    }
-
-    const activeShiftTypeIdsByShortName = new Map(
-        draft.shiftTypes
-            .filter(isOnboardingShiftTypeActive)
-            .map((shiftType) => [normalizeOnboardingShiftCode(shiftType.shortName), shiftType.id] as const),
-    );
-
-    return {
-        ...draft,
-        nurses: draft.nurses.map((nurse) => {
-            const shortNames = parsedShortNamesByName.get(nurse.name.trim());
-
-            if (!shortNames) {
-                return nurse;
-            }
-
-            const possibleShiftTypeIds = shortNames
-                .map((shortName) => activeShiftTypeIdsByShortName.get(normalizeOnboardingShiftCode(shortName)))
-                .filter((shiftTypeId): shiftTypeId is string => Boolean(shiftTypeId));
-
-            return possibleShiftTypeIds.length > 0 ? {...nurse, possibleShiftTypeIds} : nurse;
-        }),
-    };
+            teamSchedules: buildUploadedTeamSchedulesFromParsedWardData(parsed, monthKey),
+        }));
 };
 
 export const applyParsedWardData = (
@@ -1374,9 +1396,39 @@ export const applyParsedWardData = (
     parsed: TOnboardingParsedWardData,
     labels?: TOnboardingDraftLabels,
 ): TOnboardingWardDraft => {
-    const nextShiftTypes = parsed.shiftTypes
-        ? ensureCoreShiftTypes(draft.shiftTypes, parsed.shiftTypes, draft.rotationMode)
-        : normalizeUploadedShiftTypes(draft.shiftTypes);
+    const currentShiftTypes = parsed.fileName ? getShiftTypesForNewUpload(draft.shiftTypes) : draft.shiftTypes;
+    const knownShiftTypes = parsed.shiftTypes
+        ? ensureCoreShiftTypes(currentShiftTypes, parsed.shiftTypes, draft.rotationMode)
+        : normalizeUploadedShiftTypes(currentShiftTypes);
+    const rawCodes = new Set(parsed.importedCodes);
+    const nextShiftTypes = [
+        ...knownShiftTypes.filter((type) => !rawCodes.has(type.shortName)),
+        ...Array.from(rawCodes, (code, index): TOnboardingWardShiftType => {
+            const configured = currentShiftTypes.find(
+                (type) =>
+                    type.shortName === code &&
+                    !type.autoSeeded &&
+                    isOnboardingShiftTypeActive(type) &&
+                    isOnboardingShiftMappingResolved(type.mappingStatus) &&
+                    type.mappingStatus !== 'AUTO_MATCHED',
+            );
+
+            if (configured) return {...configured, importedCode: code, protectedByPreviousSchedule: true, mappingStatus: 'CONFIRMED'};
+
+            return {
+                ...createEmptyShiftType(knownShiftTypes.length + index),
+                id: createLocalId('shift'),
+                name: code,
+                shortName: code,
+                importedCode: code,
+                startTime: '',
+                endTime: '',
+                source: 'schedule-input',
+                protectedByPreviousSchedule: true,
+                mappingStatus: 'UNASSIGNED',
+            };
+        }),
+    ];
     const nextTeams = buildParsedTeams(parsed, draft.teams) ?? draft.teams;
     const nextNurses = parsed.nurses
         ? buildParsedNurses(parsed.nurses, nextTeams, nextShiftTypes)
@@ -1422,7 +1474,22 @@ export const buildCreateWardPayload = (draft: TOnboardingWardDraft): TCreateWard
             uniqueMappedShiftTypeByShortName.get(normalizeOnboardingShiftCode(shiftType.shortName)) ?? shiftType,
         ]),
     );
-    const mappedShiftShortNames = new Set(uniqueMappedShiftTypeByShortName.keys());
+    const unresolvedPhotoCodes = new Set(
+        draft.shiftTypes
+            .filter((type) => type.importedCode && !isOnboardingShiftMappingResolved(type.mappingStatus))
+            .flatMap((type) => [type.shortName, ...(type.shortNameAliases ?? [])]),
+    );
+    const getInitialShifts = (nurse: TOnboardingNurseDraft) => {
+        const shifts = (nurse.initialShifts ?? []).flatMap((shift) => {
+            if (unresolvedPhotoCodes.has(shift.shiftShortName)) return [];
+
+            const shiftShortName = normalizeOnboardingShiftCode(shift.shiftShortName);
+
+            return uniqueMappedShiftTypeByShortName.has(shiftShortName) ? [{...shift, shiftShortName}] : [];
+        });
+
+        return shifts.length ? shifts : undefined;
+    };
     const constraintRules = buildConstraintRulePayloads(draft);
 
     return {
@@ -1436,15 +1503,19 @@ export const buildCreateWardPayload = (draft: TOnboardingWardDraft): TCreateWard
             ({
                 id: _id,
                 source: _source,
+                importedCode,
                 shortNameAliases: _shortNameAliases,
                 protectedByPreviousSchedule: _protectedByPreviousSchedule,
                 autoSeeded: _autoSeeded,
-                mappingStatus: _mappingStatus,
+                mappingStatus,
                 mappingRecommendation: _mappingRecommendation,
                 ...shiftType
             }) => {
                 const shortName = normalizeOnboardingShiftCode(shiftType.shortName);
-                const classification = getPayloadShiftClassification({...shiftType, shortName});
+                const classification =
+                    importedCode && mappingStatus === 'CONFIRMED'
+                        ? shiftType.classification
+                        : getPayloadShiftClassification({...shiftType, shortName});
                 const rotationSystem = resolveOnboardingRotationSystem({...shiftType, classification});
 
                 return {
@@ -1491,16 +1562,9 @@ export const buildCreateWardPayload = (draft: TOnboardingWardDraft): TCreateWard
                         .filter((shiftType): shiftType is TOnboardingWardShiftType =>
                             Boolean(shiftType && isOnboardingShiftTypeActive(shiftType)),
                         )
-                        .map((shiftType) => shiftType.shortName)
+                        .map((shiftType) => normalizeOnboardingShiftCode(shiftType.shortName))
                         .filter((shortName): shortName is string => Boolean(shortName)),
-                    initialShifts:
-                        (nurse.initialShifts ?? []).filter((shift) =>
-                            mappedShiftShortNames.has(normalizeOnboardingShiftCode(shift.shiftShortName)),
-                        ).length > 0
-                            ? (nurse.initialShifts ?? []).filter((shift) =>
-                                  mappedShiftShortNames.has(normalizeOnboardingShiftCode(shift.shiftShortName)),
-                              )
-                            : undefined,
+                    initialShifts: getInitialShifts(nurse),
                 })),
             };
         }),

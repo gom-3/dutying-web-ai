@@ -25,6 +25,7 @@ import CompositionInput from '@/shared/ui/form-controls/CompositionInput';
 import ShiftClassificationDropdown from '@/shared/ui/ShiftClassificationDropdown';
 import {
     DEFAULT_SHIFT_TYPE_COLORS,
+    ONBOARDING_SHIFT_NAME_MAX_LENGTH,
     getAutomaticPreviousScheduleShiftMapping,
     isLastOnboardingAnnualLeave,
     isOnboardingShiftTypeActive,
@@ -43,6 +44,7 @@ interface IShiftTypeStepProps {
     onDragEnd: (result: DropResult) => void;
     onAdd: () => void;
     onDelete: (shiftTypeId: string) => void;
+    onMergeImportedShiftType?: (sourceId: string, targetId: string) => void;
 }
 
 interface IShiftTypeRequirementsProps {
@@ -52,7 +54,6 @@ interface IShiftTypeRequirementsProps {
 }
 
 const SHIFT_COLOR_OPTIONS = DEFAULT_SHIFT_TYPE_COLORS;
-const SHIFT_NAME_MAX_LENGTH = 12;
 const SHIFT_TYPE_GRID_COLS_WITH_ROTATION = 'grid-cols-[32px_72px_minmax(110px,0.95fr)_94px_170px_minmax(220px,1.35fr)_48px_40px]';
 const SHIFT_TYPE_GRID_COLS_WITHOUT_ROTATION = 'grid-cols-[32px_72px_minmax(110px,0.95fr)_170px_minmax(220px,1.35fr)_48px_40px]';
 const SHIFT_TYPE_INPUT_SURFACE_CLASS =
@@ -83,10 +84,14 @@ function getAvailableShiftClassificationOptions(rotationMode: TOnboardingRotatio
 }
 
 function getShiftClassificationForRotationSelection(shiftType: TOnboardingWardShiftType, rotationMode: TOnboardingRotationMode) {
-    return isOnboardingShiftMappingResolved(shiftType.mappingStatus)
-        ? shiftType.classification
-        : (getAutomaticPreviousScheduleShiftMapping(shiftType.shortName, rotationMode)?.classification ??
-              shiftType.mappingRecommendation?.classification);
+    if (isOnboardingShiftMappingResolved(shiftType.mappingStatus)) return shiftType.classification;
+
+    if (shiftType.importedCode) return undefined;
+
+    return (
+        getAutomaticPreviousScheduleShiftMapping(shiftType.shortName, rotationMode)?.classification ??
+        shiftType.mappingRecommendation?.classification
+    );
 }
 
 function getAvailableShiftRotationSystems(shiftType: TOnboardingWardShiftType, rotationMode: TOnboardingRotationMode) {
@@ -340,6 +345,7 @@ export function ShiftTypeStep({
     onDragEnd,
     onAdd,
     onDelete,
+    onMergeImportedShiftType,
 }: IShiftTypeStepProps) {
     const {t} = useTypedTranslation();
     const onChange: IShiftTypeStepProps['onChange'] = (shiftTypeId, updater) => {
@@ -360,6 +366,14 @@ export function ShiftTypeStep({
     const [shortNameErrorById, setShortNameErrorById] = useState<Record<string, string>>({});
     const openedColorContainerRef = useRef<HTMLDivElement | null>(null);
     const reviewRequiredCount = shiftTypes.filter((shiftType) => !isOnboardingShiftMappingResolved(shiftType.mappingStatus)).length;
+    const mergeTargets = shiftTypes.filter(
+        (type) =>
+            isOnboardingShiftTypeActive(type) &&
+            isOnboardingShiftMappingResolved(type.mappingStatus) &&
+            type.shortName.trim() &&
+            !hasInvalidShiftShortNameLengthInput(type.shortName) &&
+            !hasInvalidShiftShortNameEntryKey(type.shortName),
+    );
     const showRotationSystemColumn = rotationMode === 'MIXED';
     const shiftTypeGridCols = showRotationSystemColumn ? SHIFT_TYPE_GRID_COLS_WITH_ROTATION : SHIFT_TYPE_GRID_COLS_WITHOUT_ROTATION;
     const showProtectedDeleteToast = () => {
@@ -420,6 +434,10 @@ export function ShiftTypeStep({
 
         if (!normalizedShortName) return t('page.onboardingWardCreate.shiftType.validation.shortNameRequired');
 
+        if (hasInvalidShiftShortNameLengthInput(shortName)) {
+            return t('page.onboardingWardCreate.shiftType.validation.shortNameLength');
+        }
+
         if (hasInvalidShiftShortNameEntryKey(normalizedShortName)) {
             return t('page.onboardingWardCreate.shiftType.validation.shortNameFirstKey');
         }
@@ -432,6 +450,8 @@ export function ShiftTypeStep({
     };
     const getShiftNameError = (name: string) => {
         if (!name.trim()) return t('page.onboardingWardCreate.shiftType.validation.nameRequired');
+
+        if (name.trim().length > ONBOARDING_SHIFT_NAME_MAX_LENGTH) return t('page.onboardingWardCreate.shiftType.validation.nameLength');
 
         return null;
     };
@@ -565,15 +585,52 @@ export function ShiftTypeStep({
                                                         : 'border-transparent'
                                                 }`}
                                             >
-                                                {!isOnboardingShiftMappingResolved(shiftType.mappingStatus) ? (
-                                                    <div className="col-span-full flex flex-wrap items-center gap-x-3 gap-y-1 pl-2 font-apple text-[13px] leading-relaxed text-amber-900">
-                                                        <span className="inline-flex items-center gap-1.5 rounded-md bg-amber-100 px-2 py-1 font-medium">
-                                                            <CircleAlert aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
-                                                            {t('page.onboardingWardCreate.shiftType.reviewStatus', {
-                                                                code: shiftType.shortName || shiftType.name,
-                                                            })}
-                                                        </span>
-                                                        <span>{t('page.onboardingWardCreate.shiftType.reviewHint')}</span>
+                                                {!isOnboardingShiftMappingResolved(shiftType.mappingStatus) || shiftType.importedCode ? (
+                                                    <div className="col-span-full flex flex-wrap items-center gap-x-3 gap-y-1 pl-2 font-apple text-[13px] leading-relaxed">
+                                                        {!isOnboardingShiftMappingResolved(shiftType.mappingStatus) ? (
+                                                            <>
+                                                                <span className="inline-flex max-w-full items-center gap-1.5 rounded-md bg-amber-100 px-2 py-1 font-medium break-all text-amber-900">
+                                                                    <CircleAlert aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
+                                                                    {t('page.onboardingWardCreate.shiftType.reviewStatus', {
+                                                                        code:
+                                                                            shiftType.importedCode ??
+                                                                            (shiftType.shortName || shiftType.name),
+                                                                    })}
+                                                                </span>
+                                                                <span className="text-amber-900">
+                                                                    {t('page.onboardingWardCreate.shiftType.reviewHint')}
+                                                                </span>
+                                                            </>
+                                                        ) : (
+                                                            <span className="break-all text-gray-3">
+                                                                {t('page.onboardingWardCreate.shiftType.originalCode', {
+                                                                    code: shiftType.importedCode!,
+                                                                })}
+                                                            </span>
+                                                        )}
+                                                        {shiftType.importedCode &&
+                                                            onMergeImportedShiftType &&
+                                                            mergeTargets.some((target) => target.id !== shiftType.id) && (
+                                                                <select
+                                                                    className="ml-auto max-w-full cursor-pointer rounded-lg bg-white px-2 py-1.5 text-sub-2 focus-visible:outline-main-1"
+                                                                    value=""
+                                                                    aria-label={`${shiftType.importedCode} · ${t('page.onboardingWardCreate.shiftType.mapToExisting')}`}
+                                                                    onChange={(event) =>
+                                                                        onMergeImportedShiftType(shiftType.id, event.target.value)
+                                                                    }
+                                                                >
+                                                                    <option value="" disabled>
+                                                                        {t('page.onboardingWardCreate.shiftType.mapToExisting')}
+                                                                    </option>
+                                                                    {mergeTargets
+                                                                        .filter((target) => target.id !== shiftType.id)
+                                                                        .map((target) => (
+                                                                            <option key={target.id} value={target.id}>
+                                                                                {target.shortName} · {target.name}
+                                                                            </option>
+                                                                        ))}
+                                                                </select>
+                                                            )}
                                                     </div>
                                                 ) : null}
                                                 <button
@@ -592,6 +649,10 @@ export function ShiftTypeStep({
                                                 <div className="flex flex-col items-center gap-1">
                                                     <CompositionInput
                                                         value={shiftType.shortName}
+                                                        onFocus={(event) => {
+                                                            if (shiftType.importedCode === shiftType.shortName)
+                                                                event.currentTarget.select();
+                                                        }}
                                                         onValueChange={(value) => {
                                                             const normalizedShortName = normalizeShiftShortNameInput(value);
 
@@ -602,6 +663,8 @@ export function ShiftTypeStep({
                                                                         'page.onboardingWardCreate.shiftType.validation.shortNameLength',
                                                                     ),
                                                                 }));
+
+                                                                if (shiftType.importedCode) return;
                                                             } else if (hasInvalidShiftShortNameEntryKey(normalizedShortName)) {
                                                                 setShortNameErrorById((prev) => ({
                                                                     ...prev,
@@ -640,7 +703,7 @@ export function ShiftTypeStep({
                                                 <div className="flex flex-col items-center gap-1">
                                                     <CompositionInput
                                                         value={shiftType.name}
-                                                        maxLength={SHIFT_NAME_MAX_LENGTH}
+                                                        maxLength={ONBOARDING_SHIFT_NAME_MAX_LENGTH}
                                                         onValueChange={(value) => onChange(shiftType.id, {name: value})}
                                                         variant="foundation"
                                                         fieldSize="lg"

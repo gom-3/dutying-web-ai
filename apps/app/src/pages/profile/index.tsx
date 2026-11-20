@@ -781,17 +781,8 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
                                     if (phone) setPhoneCountry(phone.country);
                                 }}
                                 aria-invalid={Boolean(fieldErrors.phoneNum)}
-                                aria-describedby={
-                                    [fieldErrors.phoneNum && 'profile-phone-error', isWardAdmin && 'profile-phone-hint']
-                                        .filter(Boolean)
-                                        .join(' ') || undefined
-                                }
+                                aria-describedby={fieldErrors.phoneNum ? 'profile-phone-error' : undefined}
                             />
-                            {isWardAdmin ? (
-                                <p id="profile-phone-hint" className="mt-1.5 text-xs leading-relaxed text-gray-3">
-                                    {t('shared.contactPhone.hint')}
-                                </p>
-                            ) : null}
                             {fieldErrors.phoneNum ? (
                                 <p id="profile-phone-error" className="mt-1 font-apple text-xs text-red">
                                     {fieldErrors.phoneNum}

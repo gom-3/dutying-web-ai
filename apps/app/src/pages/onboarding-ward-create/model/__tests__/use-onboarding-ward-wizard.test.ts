@@ -51,7 +51,7 @@ vi.mock('@/shared/api', async () => {
 });
 
 const uploadFile = async (
-    applyUploadedFile: (file: File, options?: {targetYear?: number; targetMonth?: number}) => Promise<void>,
+    applyUploadedFile: ReturnType<typeof useOnboardingWardWizard>['applyUploadedFile'],
     file: File,
     options?: {targetYear?: number; targetMonth?: number},
 ) => {

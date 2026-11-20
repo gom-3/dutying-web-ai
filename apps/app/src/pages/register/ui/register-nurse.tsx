@@ -361,11 +361,7 @@ function RegisterNurse({mode = 'default', onCompleted}: IRegisterNurseProps) {
                             autoComplete="tel"
                             className={cn(FIELD_CLASS, phoneNumError && 'border-red bg-[#FFF7F8] focus-visible:bg-white')}
                             aria-invalid={Boolean(phoneNumError)}
-                            aria-describedby={
-                                [phoneNumError && 'register-phone-num-error', globalPhone && 'register-phone-hint']
-                                    .filter(Boolean)
-                                    .join(' ') || undefined
-                            }
+                            aria-describedby={phoneNumError ? 'register-phone-num-error' : undefined}
                             maxLength={globalPhone ? GLOBAL_PHONE_INPUT_MAX_LENGTH : CONTACT_PHONE_MAX_LENGTH}
                             placeholder={t('page.register.nurse.phoneNumPlaceholder')}
                             {...phoneNumField}
@@ -396,11 +392,6 @@ function RegisterNurse({mode = 'default', onCompleted}: IRegisterNurseProps) {
                                 if (phone) setPhoneCountry(phone.country);
                             }}
                         />
-                        {globalPhone ? (
-                            <p id="register-phone-hint" className="mt-1.5 text-xs leading-relaxed text-gray-3">
-                                {t('shared.contactPhone.hint')}
-                            </p>
-                        ) : null}
                         {phoneNumError ? (
                             <p id="register-phone-num-error" className="mt-1 text-xs text-red">
                                 {phoneNumError}

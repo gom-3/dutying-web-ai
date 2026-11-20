@@ -42,6 +42,7 @@ export type TOnboardingWardParseApiNurse = {
     groupName?: string | null;
     possibleShiftShortNames?: Array<string | null> | null;
     assignments?: Record<string, string | null> | null;
+    unmapped_assignments?: Record<string, string | null> | null;
 };
 
 export type TOnboardingWardAnalyzeApiNurseCandidate = {
@@ -49,6 +50,7 @@ export type TOnboardingWardAnalyzeApiNurseCandidate = {
     raw_name?: string | null;
     display_order?: number | null;
     assignments?: Record<string, string | null> | null;
+    unmapped_assignments?: Record<string, string | null> | null;
     monthly_counts?: Record<string, number | null> | null;
 };
 

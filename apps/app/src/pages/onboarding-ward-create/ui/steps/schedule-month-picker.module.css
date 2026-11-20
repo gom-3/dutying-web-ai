@@ -1,0 +1,117 @@
+.picker {
+    --month-accent: #603bd2;
+    border-radius: 16px;
+    margin-bottom: 12px;
+    background: white;
+    color: #242428;
+}
+.trigger {
+    display: flex;
+    width: 100%;
+    min-height: 52px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    border-radius: inherit;
+    padding: 10px 16px;
+    line-height: 1.4;
+}
+.label,
+.value {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+.label {
+    color: #595961;
+    font-size: 14px;
+    text-align: start;
+}
+.calendarIcon {
+    color: var(--month-accent);
+    fill: #f1ebff;
+}
+.value {
+    color: var(--month-accent);
+    font-size: clamp(1.125rem, 2.5vw, 1.25rem);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    text-align: end;
+}
+.picker svg {
+    flex: none;
+}
+.trigger[aria-expanded='true'] .value svg {
+    transform: rotate(180deg);
+}
+.trigger:hover:enabled,
+.trigger:focus-visible {
+    background: #f0ecff;
+}
+.trigger:focus-visible .value {
+    color: #5029c0;
+    text-decoration: underline;
+}
+.trigger:disabled,
+.yearRow button:disabled {
+    opacity: 0.55;
+}
+.panel {
+    padding: 0 16px 16px;
+}
+.yearRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+.yearRow strong {
+    color: var(--month-accent);
+    font-weight: 700;
+    font-size: 1.375rem;
+    font-variant-numeric: tabular-nums;
+}
+.yearRow button {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    color: #595961;
+}
+.months {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 4px;
+}
+.months button {
+    min-height: 44px;
+    padding: 4px;
+    border-radius: 10px;
+    color: #594f6d;
+    font-size: 1rem;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+.yearRow button:hover:enabled,
+.months button:hover,
+.yearRow button:focus-visible,
+.months button:focus-visible {
+    background: #f0ecff;
+    color: #5029c0;
+}
+.months button[aria-pressed='true'] {
+    background: #643bfa;
+    color: white;
+    font-weight: 650;
+}
+.months button:focus-visible {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+@media (max-width: 400px) {
+    .trigger {
+        padding-inline: 12px;
+    }
+    .panel {
+        padding-inline: 10px;
+    }
+}

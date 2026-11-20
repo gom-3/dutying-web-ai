@@ -1,10 +1,11 @@
 import {cn} from '@dutying/utils/style';
-import {ChevronLeft, ChevronRight, Plus, Trash2, UsersRound, X} from 'lucide-react';
+import {ChevronLeft, ChevronRight, Plus, RotateCcw, Trash2, UsersRound, X} from 'lucide-react';
 import {
     type Dispatch,
     type KeyboardEvent,
     type MutableRefObject,
     type ReactNode,
+    type Ref,
     type SetStateAction,
     useCallback,
     useEffect,
@@ -12,7 +13,6 @@ import {
     useRef,
     useState,
 } from 'react';
-import whiteExcelIcon from '@/shared/assets/images/w_excel.png';
 import {PersonIcon} from '@/shared/assets/svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {getDivisionCustomName} from '@/shared/lib/division-label';
@@ -21,6 +21,7 @@ import {
     getAvailableOnboardingShiftColor,
     getDefaultShiftTypeColor,
     groupItemsByDivision,
+    isOnboardingShiftMappingResolved,
     normalizeOnboardingShiftCode,
     type TOnboardingNurseDraft,
     type TOnboardingScheduleRowDraft,
@@ -28,7 +29,7 @@ import {
     type TOnboardingWardDraft,
 } from '../../model';
 import {OnboardingAddDivisionButton, OnboardingDivisionHeader} from './division-controls';
-import ScheduleFileUploadModal from './schedule-file-upload-modal';
+import ScheduleUploadIntro from './schedule-upload-intro';
 import TeamTabs from './team-tabs';
 
 type TScheduleFileUploadStatus = 'idle' | 'uploading' | 'success' | 'warning' | 'error';
@@ -39,6 +40,12 @@ type TScheduleFileUploadTargetMonth = {
 };
 
 interface IScheduleInputStepProps {
+    showUploadIntro?: boolean;
+    chooseFileButtonRef?: Ref<HTMLButtonElement>;
+    isEntryDisabled?: boolean;
+    isReloadingFile?: boolean;
+    onReloadFile?: () => void;
+    onManualEntry?: () => void;
     draft: TOnboardingWardDraft;
     selectedTeamId: string;
     onSelectTeam: (teamId: string) => void;
@@ -209,9 +216,6 @@ const getDayType = (year: number, month: number, day: number) => {
 
     return 'weekday';
 };
-const limitShiftCellValue = (value: string) => Array.from(value).slice(0, MAX_SHIFT_CELL_LENGTH).join('');
-const limitCellValue = (value: string, colIndex: number) =>
-    colIndex === NAME_COLUMN_INDEX ? sanitizeNurseNameInput(value) : limitShiftCellValue(value);
 const getLatestSchedule = (scheduleInputs: TOnboardingWardDraft['scheduleInputs'][string]) =>
     Object.values(scheduleInputs ?? {})
         .filter((schedule): schedule is TOnboardingTeamScheduleDraft => Boolean(schedule))
@@ -309,6 +313,12 @@ const buildShiftTermColorMap = (shiftTypes: TOnboardingWardDraft['shiftTypes'], 
 };
 
 function ScheduleInputStep({
+    showUploadIntro = false,
+    chooseFileButtonRef,
+    isEntryDisabled = false,
+    isReloadingFile = false,
+    onReloadFile,
+    onManualEntry,
     draft,
     selectedTeamId,
     onSelectTeam,
@@ -351,8 +361,6 @@ function ScheduleInputStep({
             ? {key: getMonthKey(latest.year, latest.month), label: RECENT_SCHEDULE_LABEL, year: latest.year, month: latest.month}
             : getCurrentMonthOption();
     });
-    const [isScheduleFileUploadModalOpen, setIsScheduleFileUploadModalOpen] = useState(false);
-    const pendingUploadMonthJumpRef = useRef(false);
     const [editingDivisionNum, setEditingDivisionNum] = useState<number | null>(null);
     const [editingDivisionName, setEditingDivisionName] = useState('');
     const maxMonthOption = useMemo(() => getCurrentMonthOption(), []);
@@ -365,37 +373,27 @@ function ScheduleInputStep({
     const activeScheduleKey = `${selectedTeamId}:${activeMonthOption.key}`;
     const dayCount = getDaysInMonth(activeMonthOption.year, activeMonthOption.month);
     const days = useMemo(() => Array.from({length: dayCount}, (_, index) => index + 1), [dayCount]);
+    const importedCodes = useMemo(
+        () => new Set(draft.shiftTypes.flatMap((type) => (type.importedCode ? [type.importedCode] : []))),
+        [draft.shiftTypes],
+    );
+    const pendingImportedCodes = useMemo(
+        () => draft.shiftTypes.filter((type) => type.importedCode && !isOnboardingShiftMappingResolved(type.mappingStatus)),
+        [draft.shiftTypes],
+    );
+    const pendingCellCodes = useMemo(() => new Set(pendingImportedCodes.map((type) => type.shortName)), [pendingImportedCodes]);
+    const limitCellValue = useCallback(
+        (value: string, colIndex: number, previousValue = '') => {
+            if (colIndex === NAME_COLUMN_INDEX) return sanitizeNurseNameInput(value);
 
-    // 올린 근무표는 화면에 띄워 둔 달이 아니라 파일이 스스로 말하는 달로 들어간다.
-    // 지난 달 근무표를 올리면 보고 있던 달은 빈 채라, 아무 일도 없던 것처럼 보인다.
-    // 근무가 들어간 달 중 가장 최근 달로 옮겨 준다.
-    useEffect(() => {
-        if (!pendingUploadMonthJumpRef.current) {
-            return;
-        }
+            if (importedCodes.has(value)) return value;
 
-        const filledSchedules = Object.values(draft.scheduleInputs?.[selectedTeamId] ?? {}).filter(
-            (schedule): schedule is TOnboardingTeamScheduleDraft =>
-                Boolean(schedule?.rows.some((row) => row.name.trim() || Object.values(row.shifts).some((shift) => shift.trim()))),
-        );
+            const limit = Math.max(MAX_SHIFT_CELL_LENGTH, Array.from(previousValue).length);
 
-        if (filledSchedules.length === 0) {
-            return;
-        }
-
-        pendingUploadMonthJumpRef.current = false;
-
-        const latest = filledSchedules.reduce((left, right) =>
-            left.year * 12 + left.month >= right.year * 12 + right.month ? left : right,
-        );
-
-        setSelectedMonthOption((prev) =>
-            prev.year === latest.year && prev.month === latest.month
-                ? prev
-                : {key: getMonthKey(latest.year, latest.month), label: RECENT_SCHEDULE_LABEL, year: latest.year, month: latest.month},
-        );
-    }, [draft.scheduleInputs, selectedTeamId]);
-
+            return Array.from(value).slice(0, limit).join('');
+        },
+        [importedCodes],
+    );
     const goPreviousMonth = () => setSelectedMonthOption((prev) => moveMonthOption(prev, -1));
     const goNextMonth = () =>
         setSelectedMonthOption((prev) => {
@@ -442,8 +440,7 @@ function ScheduleInputStep({
 
                 return {
                     ...row,
-                    name: limitCellValue(name, NAME_COLUMN_INDEX),
-                    shifts: Object.fromEntries(Object.entries(row.shifts).map(([day, value]) => [day, limitShiftCellValue(value)])),
+                    name: sanitizeNurseNameInput(name),
                 };
             });
 
@@ -564,8 +561,7 @@ function ScheduleInputStep({
             const normalizedRows = ensureMinimumRows(
                 nextRows.map((row) => ({
                     ...row,
-                    name: limitCellValue(row.name, NAME_COLUMN_INDEX),
-                    shifts: Object.fromEntries(Object.entries(row.shifts).map(([day, value]) => [day, limitShiftCellValue(value)])),
+                    name: sanitizeNurseNameInput(row.name),
                 })),
             );
             const previousRows = options.previousRows ?? rows;
@@ -638,7 +634,7 @@ function ScheduleInputStep({
     const updateCellValue = useCallback(
         (rowIndex: number, colIndex: number, value: string) => {
             const nextRows = ensureMinimumRows(rows, rowIndex + 1);
-            const nextValue = limitCellValue(value, colIndex);
+            const nextValue = limitCellValue(value, colIndex, getCellValue(rows, rowIndex, colIndex));
 
             if (colIndex === NAME_COLUMN_INDEX) {
                 nextRows[rowIndex] = {
@@ -657,7 +653,7 @@ function ScheduleInputStep({
 
             commitRows(nextRows);
         },
-        [commitRows, ensureMinimumRows, rows],
+        [commitRows, ensureMinimumRows, limitCellValue, rows],
     );
     const moveSelection = useCallback(
         (rowDelta: number, colDelta: number) => {
@@ -789,7 +785,7 @@ function ScheduleInputStep({
             setSelection({start, end: {row: endRow, col: endCol}});
             focusCell(start.row, start.col);
         },
-        [commitRows, createRow, dayCount, ensureMinimumRows, focusCell, rows, selection.end],
+        [commitRows, createRow, dayCount, ensureMinimumRows, focusCell, limitCellValue, rows, selection.end],
     );
     const applyFillDrag = useCallback(
         (source: TCellRange, target: TCellPosition) => {
@@ -803,7 +799,11 @@ function ScheduleInputStep({
                 for (let colIndex = targetRange.minCol; colIndex <= targetRange.maxCol; colIndex += 1) {
                     const sourceRow = sourceRange.minRow + positiveModulo(rowIndex - sourceRange.minRow, sourceHeight);
                     const sourceCol = sourceRange.minCol + positiveModulo(colIndex - sourceRange.minCol, sourceWidth);
-                    const value = limitCellValue(getCellValue(rows, sourceRow, sourceCol), colIndex);
+                    const sourceValue = getCellValue(rows, sourceRow, sourceCol);
+                    const value =
+                        colIndex !== NAME_COLUMN_INDEX && sourceCol !== NAME_COLUMN_INDEX
+                            ? sourceValue
+                            : limitCellValue(sourceValue, colIndex);
 
                     if (!nextRows[rowIndex]) {
                         nextRows[rowIndex] = createRow({divisionNum: nextRows[rowIndex - 1]?.divisionNum ?? 1});
@@ -832,7 +832,7 @@ function ScheduleInputStep({
                 end: {row: targetRange.maxRow, col: targetRange.maxCol},
             });
         },
-        [commitRows, createRow, ensureMinimumRows, rows],
+        [commitRows, createRow, ensureMinimumRows, limitCellValue, rows],
     );
     const deleteRow = (rowIndex: number) => {
         const nextRows = rows.filter((_, index) => index !== rowIndex);
@@ -913,10 +913,34 @@ function ScheduleInputStep({
         return () => document.removeEventListener('mousedown', clearSelectionOnOutsideMouseDown);
     }, []);
 
+    if (showUploadIntro) {
+        return (
+            <ScheduleUploadIntro
+                chooseFileButtonRef={chooseFileButtonRef}
+                disabled={isEntryDisabled}
+                isReloadingFile={isReloadingFile}
+                targetYear={activeMonthOption.year}
+                targetMonth={activeMonthOption.month}
+                uploadStatus={uploadStatus}
+                uploadError={uploadError}
+                onManualEntry={({targetYear, targetMonth}) => {
+                    setSelectedMonthOption({
+                        key: getMonthKey(targetYear, targetMonth),
+                        label: RECENT_SCHEDULE_LABEL,
+                        year: targetYear,
+                        month: targetMonth,
+                    });
+                    onManualEntry?.();
+                }}
+                onUpload={onUploadFile}
+            />
+        );
+    }
+
     return (
         <div
             ref={calendarWrapRef}
-            className="fixed-shifts-calendar-wrap w-full min-w-0 rounded-[16px] bg-white p-[clamp(20px,2.2cqw,32px)] shadow-[0_12px_32px_rgba(49,55,74,0.06)]"
+            className="fixed-shifts-calendar-wrap w-full min-w-0 rounded-[16px] bg-white p-[clamp(20px,2.2cqw,32px)]"
             onMouseDownCapture={(event) => {
                 const target = event.target instanceof Element ? event.target : null;
 
@@ -938,7 +962,22 @@ function ScheduleInputStep({
             }}
         >
             <div className="space-y-5">
-                <div className="flex w-full items-center justify-between gap-3">
+                {draft.uploadedFileName && !!draft.importWarnings?.length && (
+                    <details
+                        open={draft.importWarnings.length < 3}
+                        className="rounded-xl bg-[#fff7e8] px-4 py-3 text-sm leading-6 text-[#684617]"
+                    >
+                        <summary className="cursor-pointer font-semibold">
+                            {t('page.onboardingWardCreate.scheduleEntry.reviewNotes')} ({draft.importWarnings.length})
+                        </summary>
+                        <ul className="mt-1 list-disc space-y-1 pl-5">
+                            {draft.importWarnings.map((warning) => (
+                                <li key={warning}>{warning}</li>
+                            ))}
+                        </ul>
+                    </details>
+                )}
+                <div className="flex w-full flex-wrap items-center justify-between gap-3">
                     <ScheduleMonthSelector
                         year={activeMonthOption.year}
                         month={activeMonthOption.month}
@@ -946,23 +985,30 @@ function ScheduleInputStep({
                         onNextMonth={goNextMonth}
                         isNextMonthDisabled={isNextMonthDisabled}
                     />
-                    <button
-                        type="button"
-                        className="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-full bg-[#107C41] px-4 font-apple text-[14px] font-semibold text-white transition-colors hover:bg-[#0E6F3A] focus-visible:outline-2 focus-visible:outline-[#107C41]/35 active:bg-[#0B5F31]"
-                        onClick={() => setIsScheduleFileUploadModalOpen(true)}
-                    >
-                        <img
-                            src={whiteExcelIcon}
-                            alt=""
-                            aria-hidden="true"
-                            width={18}
-                            height={18}
-                            decoding="async"
-                            className="h-[17.6px] w-[17.6px] object-contain"
-                        />
-                        {t('page.onboardingWardCreate.schedule.uploadFile')}
-                    </button>
+                    {draft.uploadedFileName && onReloadFile && (
+                        <button
+                            type="button"
+                            className="ml-auto inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-lg px-2 font-apple text-[14px] font-semibold text-sub-2 underline-offset-4 hover:text-main-1 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-main-1 disabled:cursor-default disabled:opacity-50"
+                            onClick={onReloadFile}
+                            disabled={isEntryDisabled}
+                        >
+                            <RotateCcw className="size-4 shrink-0" aria-hidden="true" />
+                            {t('page.onboardingWardCreate.scheduleEntry.reloadFile')}
+                        </button>
+                    )}
                 </div>
+                {pendingImportedCodes.length > 0 && (
+                    <div className="rounded-xl bg-main-light px-4 py-3 text-sm text-sub-1">
+                        <p>{t('page.onboardingWardCreate.scheduleEntry.rawCodesHint')}</p>
+                        <ul className="mt-2 flex flex-wrap gap-1.5">
+                            {pendingImportedCodes.map((type) => (
+                                <li key={type.id} className="max-w-full rounded-md bg-white px-2 py-0.5 font-medium break-all text-main-1">
+                                    <bdi>{type.importedCode}</bdi>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
                 <TeamTabs
                     teams={draft.teams}
                     nurses={tabNurses}
@@ -1110,6 +1156,9 @@ function ScheduleInputStep({
                                                                                 day,
                                                                             )}
                                                                             value={getCellValue(rows, rowIndex, dayIndex + 1)}
+                                                                            pendingImport={pendingCellCodes.has(
+                                                                                row.shifts[String(day)] ?? '',
+                                                                            )}
                                                                             termColorMap={shiftTermColorMap}
                                                                             selection={selection}
                                                                             isSelectionVisible={isSelectionVisible}
@@ -1196,18 +1245,6 @@ function ScheduleInputStep({
                     </div>
                 )}
             </div>
-            <ScheduleFileUploadModal
-                open={isScheduleFileUploadModalOpen}
-                targetYear={activeMonthOption.year}
-                targetMonth={activeMonthOption.month}
-                uploadStatus={uploadStatus}
-                uploadError={uploadError}
-                onClose={() => setIsScheduleFileUploadModalOpen(false)}
-                onUpload={async (file, options) => {
-                    pendingUploadMonthJumpRef.current = true;
-                    await onUploadFile(file, options);
-                }}
-            />
         </div>
     );
 }
@@ -1429,6 +1466,7 @@ type TShiftCellProps = TEditableCellProps & {
     day: number;
     dayType: 'weekday' | 'saturday' | 'sunday';
     value: string;
+    pendingImport: boolean;
     termColorMap: Map<string, string>;
 };
 
@@ -1438,6 +1476,7 @@ function ShiftCell({
     day,
     dayType,
     value,
+    pendingImport,
     termColorMap,
     selection,
     isSelectionVisible,
@@ -1471,14 +1510,20 @@ function ShiftCell({
     const shiftColorTerm = getCanonicalShiftColorTerm(value);
     const shiftTypeColor = shiftColorTerm ? (termColorMap.get(shiftColorTerm) ?? null) : null;
     const isFixedShiftValue = shiftColorTerm ? CORE_SHIFT_TERMS.has(shiftColorTerm) : false;
-    const backgroundColor = isSymbolOffValue ? SYMBOL_OFF_SHIFT_COLOR : (shiftTypeColor ?? FALLBACK_SHIFT_COLOR);
-    const textColor = isSymbolOffValue
-        ? SYMBOL_OFF_SHIFT_TEXT_COLOR
-        : isFixedShiftValue
-          ? FIXED_SHIFT_TEXT_COLOR
-          : hasValue
-            ? SHIFT_TERM_TEXT_COLOR
-            : EMPTY_SHIFT_TEXT_COLOR;
+    const backgroundColor = pendingImport
+        ? '#EEE9FF'
+        : isSymbolOffValue
+          ? SYMBOL_OFF_SHIFT_COLOR
+          : (shiftTypeColor ?? FALLBACK_SHIFT_COLOR);
+    const textColor = pendingImport
+        ? '#4C308E'
+        : isSymbolOffValue
+          ? SYMBOL_OFF_SHIFT_TEXT_COLOR
+          : isFixedShiftValue
+            ? FIXED_SHIFT_TEXT_COLOR
+            : hasValue
+              ? SHIFT_TERM_TEXT_COLOR
+              : EMPTY_SHIFT_TEXT_COLOR;
     const weekendBg = dayType === 'saturday' ? 'bg-blue/5' : dayType === 'sunday' ? 'bg-red/5' : '';
 
     return (
@@ -1517,7 +1562,7 @@ function ShiftCell({
             }}
             onDoubleClick={() => onFocusCell(rowIndex, colIndex, true)}
         >
-            <span className={SHIFT_BADGE_CELL_WRAP}>
+            <span className={cn(SHIFT_BADGE_CELL_WRAP, 'group/shift-code')}>
                 <input
                     ref={(element) => {
                         inputRefByCell.current[`${rowIndex}:${colIndex}`] = element;
@@ -1525,7 +1570,8 @@ function ShiftCell({
                     value={value}
                     aria-label={t('page.onboardingWardCreate.schedule.shiftCellAria', {rowNumber: rowIndex + 1, day})}
                     placeholder="-"
-                    maxLength={MAX_SHIFT_CELL_LENGTH}
+                    title={value || undefined}
+                    maxLength={Math.max(MAX_SHIFT_CELL_LENGTH, value.length)}
                     className={cn(SHIFT_INPUT_CLASS, isActive && 'outline outline-2 outline-main-1')}
                     style={{backgroundColor, color: textColor}}
                     onFocus={() => {
@@ -1538,6 +1584,15 @@ function ShiftCell({
                     }
                     onCompositionEnd={onFlushCompositionMove}
                 />
+                {pendingImport && value.length > 2 && (
+                    <span
+                        aria-hidden="true"
+                        className="pointer-events-none absolute bottom-full z-30 mb-1 hidden w-max max-w-52 rounded-md bg-sub-1 px-2 py-1 text-xs leading-normal break-all text-white group-focus-within/shift-code:block group-hover/shift-code:block"
+                        style={day > 16 ? {right: 0} : {left: 0}}
+                    >
+                        {value}
+                    </span>
+                )}
             </span>
             {isFillHandleCell ? <FillHandle selection={selection} cell={cell} onSetFillDrag={onSetFillDrag} /> : null}
         </div>

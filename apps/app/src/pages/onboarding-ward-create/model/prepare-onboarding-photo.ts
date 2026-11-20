@@ -33,6 +33,6 @@ export async function prepareOnboardingPhoto(file: File, failureMessage: string)
             image.close();
         }
     } catch (error) {
-        throw new Error(failureMessage, {cause: error});
+        throw Object.defineProperty(new Error(failureMessage), 'cause', {value: error, writable: true, configurable: true});
     }
 }

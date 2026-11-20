@@ -4,6 +4,7 @@ import {Check} from 'lucide-react';
 import {useEffect, useRef, useState} from 'react';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {useHospitalSearch} from '../../model/use-hospital-search';
+import styles from './hospital-search-field.module.css';
 
 export type THospitalSelection = {
     hospitalId?: number;
@@ -147,8 +148,15 @@ function HospitalSearchField({
                         );
                     })}
                     {isLoading && results.length === 0 && (
-                        <li className="px-4 py-3 text-[13px] text-gray-3">
-                            {t('page.onboardingWardCreate.identity.hospitalSearchLoading')}
+                        <li role="presentation" className="px-4 py-3 text-[13px] text-gray-3">
+                            <span role="status" className="inline-flex items-center gap-1.5">
+                                <span>{t('page.onboardingWardCreate.identity.hospitalSearchLoading')}</span>
+                                <span aria-hidden="true" className="inline-flex items-center gap-[3px] text-main-1">
+                                    <span className={styles.dot} />
+                                    <span className={styles.dot} />
+                                    <span className={styles.dot} />
+                                </span>
+                            </span>
                         </li>
                     )}
                     {!isLoading && hasSearchError && (

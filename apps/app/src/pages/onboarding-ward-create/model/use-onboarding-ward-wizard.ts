@@ -17,7 +17,6 @@ import {
     applyParsedWardData,
     buildUploadedMonthlySchedulesFromParsedWardData,
     buildUploadedTeamSchedulesFromParsedWardData,
-    restoreParsedNursePossibleShiftTypes,
     buildOnboardingParseDraftInjection,
     getOnboardingUploadFailureMessage,
     isOnboardingImageFile,
@@ -49,6 +48,8 @@ import {
     goPreviousStep as goPreviousStepDraft,
     hasScheduleInputDraft,
     isOnboardingShiftTypeActive,
+    mergeImportedShiftTypeDraft,
+    getShiftTypesForNewUpload,
     MAX_ONBOARDING_NURSES,
     MAX_ONBOARDING_TEAMS,
     normalizeOnboardingShiftCode,
@@ -282,6 +283,7 @@ const normalizePersistedDraft = (draft: TOnboardingWardDraft, labels?: TOnboardi
             onboardingSignals: normalizeOnboardingSignals(draft.onboardingSignals),
             currentStep: draft.currentStep,
             uploadedFileName: draft.uploadedFileName,
+            importWarnings: Array.isArray(draft.importWarnings) ? draft.importWarnings.filter((item) => typeof item === 'string') : [],
             wardName: draft.wardName,
             hospitalName: draft.hospitalName,
             hospitalId: draft.hospitalId,
@@ -832,7 +834,6 @@ function useOnboardingWardWizard(options: TOnboardingWardWizardOptions = {}) {
     const [submissionStatus, setSubmissionStatus] = useState<TSubmissionStatus>('idle');
     const [uploadStatus, setUploadStatus] = useState<TUploadStatus>('idle');
     const [uploadError, setUploadError] = useState<string | null>(null);
-    const [uploadWarnings, setUploadWarnings] = useState<string[]>([]);
     const [draftWardId, setDraftWardId] = useState<number | null>(null);
     const [draftCreationStatus, setDraftCreationStatus] = useState<TDraftCreationStatus>('idle');
     const [draftRestoreStatus, setDraftRestoreStatus] = useState<TDraftRestoreStatus>('loading');
@@ -1141,6 +1142,10 @@ function useOnboardingWardWizard(options: TOnboardingWardWizardOptions = {}) {
         }
     };
     const saveScheduleInputAndGoNext = async () => {
+        if (draft.shiftTypes.some((type) => type.importedCode)) {
+            return saveAndReloadDraft(goNextStepDraft(draft));
+        }
+
         const schedulePreviewTargets = draft.teams.flatMap((team) => {
             const schedules = getTeamSchedules(draft.scheduleInputs?.[team.id]);
 
@@ -1255,6 +1260,10 @@ function useOnboardingWardWizard(options: TOnboardingWardWizardOptions = {}) {
         setDraft((prev) =>
             withOnboardingEdit(prev, updateTwoShiftNightRecoveryDisplayDraft(prev, display, onboardingDraftLabels), 'constraintsEdited'),
         );
+    };
+    const mergeImportedShiftType = (sourceId: string, targetId: string) => {
+        markDraftTouched();
+        setDraft((prev) => withOnboardingEdit(prev, mergeImportedShiftTypeDraft(prev, sourceId, targetId), 'shiftTypesEdited'));
     };
     const updateShiftType = (shiftTypeId: string, updater: Parameters<typeof updateShiftTypeDraft>[2]) => {
         markDraftTouched();
@@ -1558,7 +1567,7 @@ function useOnboardingWardWizard(options: TOnboardingWardWizardOptions = {}) {
         markDraftTouched();
         setDraft((prev) => withOnboardingEdit(prev, reorderShiftTypes(prev, {destination, source}), 'shiftTypesEdited'));
     };
-    const applyUploadedFile = async (file: File, options?: TOnboardingWardParseOptions) => {
+    const applyUploadedFile = async (file: File, options?: TOnboardingWardParseOptions, replacingFile = false): Promise<boolean> => {
         markDraftTouched();
 
         if (!isSupportedOnboardingUploadFile(file.name)) {
@@ -1566,15 +1575,13 @@ function useOnboardingWardWizard(options: TOnboardingWardWizardOptions = {}) {
 
             setUploadStatus('error');
             setUploadError(message);
-            setUploadWarnings([]);
             toast.error(message);
 
-            return;
+            return false;
         }
 
         setUploadStatus('uploading');
         setUploadError(null);
-        setUploadWarnings([]);
 
         let serverImportFormat: 'PHOTO' | 'EXCEL' | undefined;
 
@@ -1592,7 +1599,7 @@ function useOnboardingWardWizard(options: TOnboardingWardWizardOptions = {}) {
 
                 setDraft((prev) => {
                     const result = applyUploadedScheduleTemplateDraft(
-                        prev,
+                        {...prev, shiftTypes: getShiftTypesForNewUpload(prev.shiftTypes)},
                         {
                             fileName: file.name,
                             year: targetYear,
@@ -1604,7 +1611,7 @@ function useOnboardingWardWizard(options: TOnboardingWardWizardOptions = {}) {
 
                     nextActiveTeamId = result.activeTeamId;
 
-                    return withOnboardingImport(result.draft, 'EXCEL');
+                    return withOnboardingImport({...result.draft, importWarnings: []}, 'EXCEL');
                 });
 
                 if (nextActiveTeamId) {
@@ -1617,7 +1624,7 @@ function useOnboardingWardWizard(options: TOnboardingWardWizardOptions = {}) {
                 setUploadStatus('success');
                 toast.success(t('page.onboardingWardCreate.toast.uploadApplied'));
 
-                return;
+                return true;
             }
 
             serverImportFormat = image ? 'PHOTO' : 'EXCEL';
@@ -1628,23 +1635,30 @@ function useOnboardingWardWizard(options: TOnboardingWardWizardOptions = {}) {
                 failedSheet: (sheetName) => t('page.onboardingWardCreate.upload.failedSheet', {sheetName}),
                 failedRow: (rowLabel) => t('page.onboardingWardCreate.upload.failedRow', {rowLabel}),
             });
+            const monthlySchedules = scheduleTemplate.length > 0 ? [] : buildUploadedMonthlySchedulesFromParsedWardData(parsedWardData);
+            const detectedMonth =
+                monthlySchedules.length > 1 || (targetYear && targetMonth) ? monthlySchedules[monthlySchedules.length - 1] : undefined;
+            const teamSchedules =
+                scheduleTemplate.length > 0
+                    ? scheduleTemplate
+                    : (detectedMonth?.teamSchedules ?? buildUploadedTeamSchedulesFromParsedWardData(parsedWardData));
+            const year = detectedMonth?.year ?? targetYear;
+            const month = detectedMonth?.month ?? targetMonth;
+
+            if (replacingFile && !teamSchedules.length) {
+                throw new Error(t('page.onboardingWardCreate.upload.parseFailed'));
+            }
 
             let nextActiveTeamId: string | null = null;
 
             setDraft((prev) => {
-                const parsedDraft = applyParsedWardData(prev, parsedWardData, onboardingDraftLabels);
-                // 월별 탭이 여러 장인 파일은 달마다 근무표 칸을 따로 채운다. 명단은 최신 달이 정한다.
-                const monthlySchedules = scheduleTemplate.length > 0 ? [] : buildUploadedMonthlySchedulesFromParsedWardData(parsedWardData);
-                const primaryMonth = monthlySchedules.length > 1 ? monthlySchedules[monthlySchedules.length - 1] : null;
-                // 서식 파일이 아니면 서버 분석 결과에서 근무표 칸을 만든다.
-                const teamSchedules =
-                    scheduleTemplate.length > 0
-                        ? scheduleTemplate
-                        : (primaryMonth?.teamSchedules ?? buildUploadedTeamSchedulesFromParsedWardData(parsedWardData));
-                const targetYear = primaryMonth?.year ?? options?.targetYear;
-                const targetMonth = primaryMonth?.month ?? options?.targetMonth;
+                const parsedDraft = applyParsedWardData(
+                    {...prev, importWarnings: [...new Set(warnings)]},
+                    parsedWardData,
+                    onboardingDraftLabels,
+                );
 
-                if (!targetYear || !targetMonth || teamSchedules.length === 0) {
+                if (!year || !month || teamSchedules.length === 0) {
                     return parsedDraft;
                 }
 
@@ -1652,27 +1666,28 @@ function useOnboardingWardWizard(options: TOnboardingWardWizardOptions = {}) {
                     parsedDraft,
                     {
                         fileName: file.name,
-                        year: targetYear,
-                        month: targetMonth,
+                        year,
+                        month,
                         teamSchedules,
-                        monthlySchedules: primaryMonth ? monthlySchedules : undefined,
+                        monthlySchedules,
                     },
                     onboardingDraftLabels,
                 );
 
                 nextActiveTeamId = result.activeTeamId;
 
-                return withOnboardingImport(restoreParsedNursePossibleShiftTypes(result.draft, parsedWardData), image ? 'PHOTO' : 'EXCEL');
+                return withOnboardingImport(result.draft, image ? 'PHOTO' : 'EXCEL');
             });
 
             if (nextActiveTeamId) {
                 setSelectedTeamId(nextActiveTeamId);
             }
 
-            setUploadWarnings(warnings);
             setUploadStatus(warnings.length > 0 ? 'warning' : 'success');
             toast.success(t(image ? 'page.onboardingWardCreate.upload.reviewImage' : 'page.onboardingWardCreate.toast.uploadApplied'));
             captureRosterImportEvent('roster_import_draft_ready', serverImportFormat);
+
+            return Boolean(year && month && teamSchedules.length);
         } catch (error) {
             if (serverImportFormat) captureRosterImportEvent('roster_import_failed', serverImportFormat);
 
@@ -1683,8 +1698,9 @@ function useOnboardingWardWizard(options: TOnboardingWardWizardOptions = {}) {
 
             setUploadStatus('error');
             setUploadError(message);
-            setUploadWarnings([]);
             toast.error(message);
+
+            return false;
         }
     };
     const complete = async () => {
@@ -1766,6 +1782,7 @@ function useOnboardingWardWizard(options: TOnboardingWardWizardOptions = {}) {
         skipOrComplete,
         addShiftType,
         updateShiftType,
+        mergeImportedShiftType,
         deleteShiftType,
         addTeam,
         addNurse,
@@ -1788,7 +1805,7 @@ function useOnboardingWardWizard(options: TOnboardingWardWizardOptions = {}) {
         applyUploadedFile,
         uploadStatus,
         uploadError,
-        uploadWarnings,
+        uploadWarnings: draft.importWarnings ?? [],
         draftCreationStatus,
         draftRestoreStatus,
         retryDraftRestore: () => setDraftRestoreAttempt((attempt) => attempt + 1),

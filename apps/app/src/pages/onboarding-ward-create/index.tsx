@@ -1,6 +1,6 @@
 import {cn} from '@dutying/utils/style';
 import {ArrowLeft, Trash2} from 'lucide-react';
-import {useEffect, useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
 import toast from 'react-hot-toast';
 import {useTranslation} from 'react-i18next';
@@ -30,6 +30,7 @@ import NightRecoveryStep from './ui/steps/night-recovery-step';
 import NurseStep from './ui/steps/nurse-step';
 import RotationStep from './ui/steps/rotation-step';
 import ScheduleInputStep from './ui/steps/schedule-input-step';
+import ScheduleSkipDialog from './ui/steps/schedule-skip-dialog';
 import ShiftTypeStep from './ui/steps/shift-type-step';
 import WardIdentityStep from './ui/steps/ward-identity-step';
 import WardCreationProgressOverlay from './ui/ward-creation-progress-overlay';
@@ -69,6 +70,7 @@ function OnboardingWardWizardPage({hospitalContext}: {hospitalContext?: THospita
         skipOrComplete,
         addShiftType,
         updateShiftType,
+        mergeImportedShiftType,
         deleteShiftType,
         addTeam,
         addNurse,
@@ -108,12 +110,23 @@ function OnboardingWardWizardPage({hospitalContext}: {hospitalContext?: THospita
     const [showDeleteTeamModal, setShowDeleteTeamModal] = useState(false);
     const [showIdentityNameError, setShowIdentityNameError] = useState(false);
     const [showTwoShiftNightRecoveryStep, setShowTwoShiftNightRecoveryStep] = useState(false);
+    const [scheduleView, setScheduleView] = useState<'upload' | 'editor' | 'reload'>();
+    const [scheduleImportCount, setScheduleImportCount] = useState(0);
+    const chooseFileButtonRef = useRef<HTMLButtonElement>(null);
     const isSubmitting = submissionStatus === 'submitting';
     const isSuccess = submissionStatus === 'success';
     const isSavingDraft = draftCreationStatus === 'creating';
-    const actionsDisabled = isSavingDraft || isStepTransitioning || isSubmitting || isSuccess;
+    const actionsDisabled = isSavingDraft || isStepTransitioning || isSubmitting || isSuccess || uploadStatus === 'uploading';
     const isNurseRegistrationStep = draft.currentStep === 5;
     const isScheduleInputStep = draft.currentStep === 3;
+    const isReloadingFile = isScheduleInputStep && scheduleView === 'reload';
+    const isScheduleUploadIntro = isScheduleInputStep && (scheduleView ?? (hasScheduleInput ? 'editor' : 'upload')) !== 'editor';
+
+    // Open imported or restored schedules and keep the editor open even if its final row is cleared.
+    useEffect(() => {
+        if (hasScheduleInput) setScheduleView('editor');
+    }, [hasScheduleInput]);
+
     const isNightRecoveryStep = draft.currentStep === 2 && draft.rotationMode === 'TWO' && showTwoShiftNightRecoveryStep;
     const activeShiftTypes = draft.shiftTypes.filter(isOnboardingShiftTypeActive);
     const activeTeam = draft.teams.find((team) => team.id === activeTeamId);
@@ -166,6 +179,18 @@ function OnboardingWardWizardPage({hospitalContext}: {hospitalContext?: THospita
         </WizardButton>
     );
     const handlePreviousStep = () => {
+        if (isReloadingFile) {
+            setScheduleView('editor');
+
+            return;
+        }
+
+        if (isScheduleInputStep && !isScheduleUploadIntro && !draft.uploadedFileName) {
+            setScheduleView('upload');
+
+            return;
+        }
+
         if (isNightRecoveryStep) {
             setShowTwoShiftNightRecoveryStep(false);
 
@@ -443,6 +468,13 @@ function OnboardingWardWizardPage({hospitalContext}: {hospitalContext?: THospita
             case 3:
                 return (
                     <ScheduleInputStep
+                        key={scheduleImportCount}
+                        showUploadIntro={isScheduleUploadIntro}
+                        isReloadingFile={isReloadingFile}
+                        onReloadFile={() => setScheduleView('reload')}
+                        chooseFileButtonRef={chooseFileButtonRef}
+                        isEntryDisabled={actionsDisabled}
+                        onManualEntry={() => setScheduleView('editor')}
                         draft={draft}
                         selectedTeamId={activeTeamId}
                         onSelectTeam={setSelectedTeamId}
@@ -453,7 +485,12 @@ function OnboardingWardWizardPage({hospitalContext}: {hospitalContext?: THospita
                         onAddDivisionAfterRow={addScheduleDivisionAfterRow}
                         onDeleteDivision={deleteScheduleDivision}
                         onScheduleChange={updateScheduleInput}
-                        onUploadFile={applyUploadedFile}
+                        onUploadFile={async (file, options) => {
+                            if (await applyUploadedFile(file, options, isReloadingFile)) {
+                                setScheduleImportCount((count) => count + 1);
+                                setScheduleView('editor');
+                            }
+                        }}
                         uploadStatus={uploadStatus}
                         uploadError={uploadError}
                         onDeleteTeam={handleDeleteTeamClick}
@@ -468,6 +505,7 @@ function OnboardingWardWizardPage({hospitalContext}: {hospitalContext?: THospita
                         allowNightContinuation={draft.rotationMode !== 'TWO' || draft.twoShiftNightRecoveryDisplay === 'NIGHT_CONTINUATION'}
                         requireNightContinuation={draft.twoShiftNightRecoveryDisplay === 'NIGHT_CONTINUATION'}
                         onChange={updateShiftType}
+                        onMergeImportedShiftType={mergeImportedShiftType}
                         onDragEnd={handleShiftTypeDragEnd}
                         onAdd={addShiftType}
                         onDelete={deleteShiftType}
@@ -591,9 +629,11 @@ function OnboardingWardWizardPage({hospitalContext}: {hospitalContext?: THospita
                         ? 'max-w-[560px]'
                         : draft.currentStep === 1 || draft.currentStep === 2
                           ? 'max-w-[480px]'
-                          : isScheduleInputStep
-                            ? 'max-w-[1200px]'
-                            : 'max-w-[1120px]',
+                          : isScheduleUploadIntro
+                            ? 'max-w-[544px]'
+                            : isScheduleInputStep
+                              ? 'max-w-[1200px]'
+                              : 'max-w-[1120px]',
                 )}
             >
                 {draft.currentStep === 1 ? (
@@ -644,9 +684,34 @@ function OnboardingWardWizardPage({hospitalContext}: {hospitalContext?: THospita
                         </div>
                     </div>
                 ) : null}
-                <SectionHeader step={draft.currentStep} nightRecovery={isNightRecoveryStep} />
+                {!isScheduleUploadIntro && (
+                    <SectionHeader
+                        step={draft.currentStep}
+                        nightRecovery={isNightRecoveryStep}
+                        titleOverride={
+                            isScheduleInputStep
+                                ? t(
+                                      draft.uploadedFileName
+                                          ? 'page.onboardingWardCreate.scheduleEntry.reviewTitle'
+                                          : 'page.onboardingWardCreate.scheduleEntry.manualTitle',
+                                  )
+                                : undefined
+                        }
+                    />
+                )}
                 <OnboardingStepLayout
                     step={draft.currentStep}
+                    nextAction={
+                        isScheduleUploadIntro
+                            ? !isReloadingFile && (
+                                  <ScheduleSkipDialog
+                                      disabled={actionsDisabled}
+                                      onChooseFile={() => chooseFileButtonRef.current?.click()}
+                                      onSkip={skipOrComplete}
+                                  />
+                              )
+                            : undefined
+                    }
                     onPrev={handlePreviousStep}
                     onNext={() => {
                         if (draft.currentStep === 1) {
@@ -681,15 +746,7 @@ function OnboardingWardWizardPage({hospitalContext}: {hospitalContext?: THospita
 
                         toast.error(getNextBlockedReasonMessage());
                     }}
-                    leftAction={
-                        isScheduleInputStep && !hasScheduleInput ? (
-                            <WizardButton variant="link" className="text-[18px]" disabled={actionsDisabled} onClick={skipOrComplete}>
-                                {t('page.onboardingWardCreate.action.skip')}
-                            </WizardButton>
-                        ) : isNurseRegistrationStep ? (
-                            deleteTeamButton
-                        ) : undefined
-                    }
+                    leftAction={isNurseRegistrationStep ? deleteTeamButton : undefined}
                     nextDisabled={
                         draft.currentStep < 5
                             ? (!canGoNext && !(draft.currentStep === 2 && !isNightRecoveryStep)) ||

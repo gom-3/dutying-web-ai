@@ -26,6 +26,41 @@ const createUnassignedNightShiftType = (): TOnboardingWardShiftType => ({
 });
 
 describe('ShiftTypeStep', () => {
+    it('keeps the original photo label visible while the user sets a valid abbreviation or explicitly links it to an existing shift', async () => {
+        const user = userEvent.setup();
+        const original = '별도·야간지원★보조전담근무';
+        const imported = {...createUnassignedNightShiftType(), name: original, shortName: original, importedCode: original};
+        const day = createInitialDraft().shiftTypes[0]!;
+        const onChange = vi.fn();
+        const onMerge = vi.fn();
+        const props = {
+            rotationMode: 'THREE' as const,
+            onChange,
+            onDragEnd: vi.fn(),
+            onAdd: vi.fn(),
+            onDelete: vi.fn(),
+            onMergeImportedShiftType: onMerge,
+        };
+        const {rerender} = render(<ShiftTypeStep {...props} shiftTypes={[day, imported]} />);
+        const code = screen.getByRole('textbox', {name: '약자', description: '공백 없이 2글자까지 입력해 주세요.'});
+
+        expect(screen.getByText(`${original} · 확인 필요`)).toBeVisible();
+        expect(code).toHaveValue(original);
+        expect(screen.getByRole('textbox', {name: '근무명', description: /12자/})).toHaveValue(original);
+        fireEvent.focus(code);
+        fireEvent.blur(code);
+        expect(onChange).not.toHaveBeenCalled();
+        fireEvent.change(code, {target: {value: 'TOOLONG'}});
+        expect(onChange).not.toHaveBeenCalled();
+        fireEvent.change(code, {target: {value: 'X2'}});
+        expect(onChange).toHaveBeenCalledWith(imported.id, {shortName: 'X2'});
+
+        rerender(<ShiftTypeStep {...props} shiftTypes={[day, {...imported, shortName: 'X2', mappingStatus: 'CONFIRMED'}]} />);
+        expect(screen.getByText(`원본 표기 · ${original}`)).toBeVisible();
+        await user.selectOptions(screen.getByRole('combobox', {name: `${original} · 기존 근무유형에 연결`}), day.id);
+        expect(onMerge).toHaveBeenCalledExactlyOnceWith(imported.id, day.id);
+    });
+
     it.each(['THREE', 'MIXED'] as const)(
         'puts the code before its editable name in %s rotation and explains provisional names',
         (rotationMode) => {

@@ -2311,7 +2311,7 @@ export const ko = {
                 "wardNameOptional": "(선택) 병동명",
                 "wardNamePlaceholder": "병동명을 입력해 주세요",
                 "hospitalSearchError": "병원을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.",
-                "hospitalSearchLoading": "검색 중이에요",
+                "hospitalSearchLoading": "검색 중",
                 "hospitalFreeTextHint": "목록에 없으면 적은 그대로 두셔도 돼요",
                 "hospitalMatched": "카탈로그에서 찾은 병원이에요"
             },
@@ -2474,7 +2474,8 @@ export const ko = {
                     "shortNameRequired": "약자를 입력해 주세요.",
                     "timeFormat": "시간은 00:00 형식으로 입력해 주세요.",
                     "timeOrder": "시작/종료 시간을 다르게 입력해 주세요.",
-                    "timeRequired": "시간을 입력해 주세요."
+                    "timeRequired": "시간을 입력해 주세요.",
+                    "nameLength": "근무명을 12자 이내로 입력해 주세요."
                 },
                 "work": "근무",
                 "workTime": "근무 시간",
@@ -2488,7 +2489,9 @@ export const ko = {
                 "nameGuidance": "약자를 기준으로 확인해 주세요. D·E·N·O 외 근무명은 자동으로 붙인 임시 설명일 수 있어요. 병동에서 쓰는 이름으로 바꾸고 유형을 확인해 주세요.",
                 "reviewCount": "확인이 필요한 근무 유형 {{count}}개",
                 "reviewStatus": "{{code}} · 확인 필요",
-                "reviewHint": "근무명을 확인하고, 병동에서 쓰는 유형을 선택해 주세요."
+                "reviewHint": "근무명을 확인하고, 병동에서 쓰는 유형을 선택해 주세요.",
+                "originalCode": "원본 표기 · {{code}}",
+                "mapToExisting": "기존 근무유형에 연결"
             },
             "teamTabs": {
                 "addTeam": "팀 추가하기"
@@ -2553,6 +2556,30 @@ export const ko = {
                 "retry": "다시 재생",
                 "loading": "영상을 불러오고 있어요.",
                 "playbackSpeed": "재생 속도"
+            },
+            "scheduleEntry": {
+                "title": "최근 근무표를 올려 주세요",
+                "titleHighlight": "최근 근무표",
+                "description": "우리 병동의 근무 패턴에 맞춰 자동 설정하려면 꼭 필요해요!",
+                "previousYear": "이전 연도",
+                "nextYear": "다음 연도",
+                "fileTypes": "JPG · PNG · Excel",
+                "chooseFile": "사진·엑셀 올리기",
+                "manualAction": "직접 작성하기",
+                "manualTitle": "이전 근무표를 직접 작성해 주세요",
+                "processingTitle": "근무표 읽는 중",
+                "reviewTitle": "불러온 근무표를 확인해 주세요",
+                "skipTitle": "이전 근무표 없이 넘어갈까요?",
+                "skipDescription": "AI가 이전 근무표의 패턴을 학습해 우리 병동에 더 잘 맞는 근무표를 만들어요.",
+                "skipConfirm": "그래도 건너뛰기",
+                "skipUpload": "근무표 올리기",
+                "reloadFile": "다시 불러오기",
+                "reloadTitle": "다시 불러올 근무표를 선택해 주세요",
+                "reloadTitleHighlight": "근무표",
+                "reloadDescription": "새 근무표를 불러오면 지금 보고 있는 표가 바뀌어요.",
+                "reviewNotes": "근무표 판독 안내",
+                "rawCodesHint": "새로 읽은 코드는 다음 단계에서 약자와 근무 의미를 정해 주세요.",
+                "legacyPhotoReview": "이 서버의 사진 판독기는 일부 기호를 비워 둘 수 있어요. 원본과 대조해 주세요."
             }
         },
         "profile": {
@@ -5771,7 +5798,8 @@ export const en: TLocale = {
                     "shortNameRequired": "Enter an abbreviation.",
                     "timeFormat": "Use the 00:00 time format.",
                     "timeOrder": "Use different start and end times.",
-                    "timeRequired": "Enter the time."
+                    "timeRequired": "Enter the time.",
+                    "nameLength": "Enter a shift name of up to 12 characters."
                 },
                 "work": "Work",
                 "workTime": "Shift time",
@@ -5785,7 +5813,9 @@ export const en: TLocale = {
                 "nameGuidance": "Start with the shift code. Names for codes other than D, E, N and O may be temporary, automatically assigned descriptions. Use your ward’s names and check each shift type.",
                 "reviewCount": "{{count}} shift types need review",
                 "reviewStatus": "{{code}} · Needs review",
-                "reviewHint": "Check the name and select the type used in your ward."
+                "reviewHint": "Check the name and select the type used in your ward.",
+                "originalCode": "On roster · {{code}}",
+                "mapToExisting": "Link to an existing shift type"
             },
             "teamTabs": {
                 "addTeam": "Add team"
@@ -5850,6 +5880,30 @@ export const en: TLocale = {
                 "retry": "Try again",
                 "loading": "Loading video…",
                 "playbackSpeed": "Playback speed"
+            },
+            "scheduleEntry": {
+                "title": "Upload a recent schedule",
+                "titleHighlight": "recent schedule",
+                "description": "We need your schedule to set things up automatically around your ward’s shift patterns!",
+                "previousYear": "Previous year",
+                "nextYear": "Next year",
+                "fileTypes": "JPG · PNG · Excel",
+                "chooseFile": "Upload photo or Excel file",
+                "manualAction": "Enter manually",
+                "manualTitle": "Enter your previous schedule manually",
+                "processingTitle": "Reading schedule",
+                "reviewTitle": "Review your imported schedule",
+                "skipTitle": "Continue without a previous schedule?",
+                "skipDescription": "A previous schedule helps AI learn your ward’s shift patterns and create schedules that fit your team.",
+                "skipConfirm": "Skip anyway",
+                "skipUpload": "Upload schedule",
+                "reloadFile": "Import again",
+                "reloadTitle": "Choose a schedule to import",
+                "reloadTitleHighlight": "schedule",
+                "reloadDescription": "Importing a new schedule replaces the one you’re reviewing.",
+                "reviewNotes": "Schedule import notes",
+                "rawCodesHint": "Choose an abbreviation and meaning for new codes in the next step.",
+                "legacyPhotoReview": "This server’s photo reader may leave some symbols blank. Compare the grid with the original."
             }
         },
         "profile": {
@@ -9066,7 +9120,8 @@ export const ja: TLocale = {
                     "shortNameRequired": "略称を入力してください。",
                     "timeFormat": "時間は00:00形式で入力してください。",
                     "timeOrder": "開始時間と終了時間は別にしてください。",
-                    "timeRequired": "時間を入力してください。"
+                    "timeRequired": "時間を入力してください。",
+                    "nameLength": "勤務名は12文字以内で入力してください。"
                 },
                 "work": "勤務",
                 "workTime": "勤務時間",
@@ -9080,7 +9135,9 @@ export const ja: TLocale = {
                 "nameGuidance": "略称を基準に確認してください。D・E・N・O以外の勤務名は、自動で付けられた仮の説明の場合があります。病棟で使う名前に変更し、勤務区分を確認してください。",
                 "reviewCount": "確認が必要な勤務区分：{{count}}件",
                 "reviewStatus": "{{code}} · 要確認",
-                "reviewHint": "勤務名を確認し、病棟で使う勤務区分を選択してください。"
+                "reviewHint": "勤務名を確認し、病棟で使う勤務区分を選択してください。",
+                "originalCode": "元の表記 · {{code}}",
+                "mapToExisting": "既存の勤務区分に割り当てる"
             },
             "teamTabs": {
                 "addTeam": "チームを追加"
@@ -9145,6 +9202,30 @@ export const ja: TLocale = {
                 "retry": "もう一度再生",
                 "loading": "動画を読み込んでいます。",
                 "playbackSpeed": "再生速度"
+            },
+            "scheduleEntry": {
+                "title": "最近の勤務表をアップロードしてください",
+                "titleHighlight": "最近の勤務表",
+                "description": "病棟の勤務パターンに合わせて自動設定するために必要です！",
+                "previousYear": "前年",
+                "nextYear": "翌年",
+                "fileTypes": "JPG · PNG · Excel",
+                "chooseFile": "写真・Excelをアップロード",
+                "manualAction": "手入力する",
+                "manualTitle": "以前の勤務表を手入力してください",
+                "processingTitle": "勤務表を読み込み中",
+                "reviewTitle": "読み込んだ勤務表を確認してください",
+                "skipTitle": "以前の勤務表なしで進みますか？",
+                "skipDescription": "以前の勤務表があると、AIが勤務パターンを学習し、病棟に合った勤務表を作れます。",
+                "skipConfirm": "スキップして進む",
+                "skipUpload": "勤務表をアップロード",
+                "reloadFile": "読み込み直す",
+                "reloadTitle": "読み込み直す勤務表を選んでください",
+                "reloadTitleHighlight": "勤務表",
+                "reloadDescription": "新しい勤務表を読み込むと、表示中の勤務表が置き換わります。",
+                "reviewNotes": "勤務表の読み取りに関するお知らせ",
+                "rawCodesHint": "次のステップで新しい記号の略称と勤務区分を設定してください。",
+                "legacyPhotoReview": "このサーバーでは、一部の記号が空欄になる場合があります。元の勤務表と照合してください。"
             }
         },
         "profile": {
@@ -12361,7 +12442,8 @@ export const zh: TLocale = {
                     "shortNameRequired": "请输入缩写。",
                     "timeFormat": "请以 00:00 格式输入时间。",
                     "timeOrder": "请输入不同的开始/结束时间。",
-                    "timeRequired": "请输入时间。"
+                    "timeRequired": "请输入时间。",
+                    "nameLength": "班次名称最多可输入12个字符。"
                 },
                 "work": "在职的",
                 "workTime": "时间",
@@ -12375,7 +12457,9 @@ export const zh: TLocale = {
                 "nameGuidance": "请先核对缩写。D、E、N、O以外的班次名称可能是自动填写的临时说明。请改为病区使用的名称，并确认班次类型。",
                 "reviewCount": "有{{count}}个班次类型需要确认",
                 "reviewStatus": "{{code}} · 待确认",
-                "reviewHint": "请核对班次名称，并选择病区使用的类型。"
+                "reviewHint": "请核对班次名称，并选择病区使用的类型。",
+                "originalCode": "原始标记 · {{code}}",
+                "mapToExisting": "关联到已有班次"
             },
             "teamTabs": {
                 "addTeam": "添加团队"
@@ -12440,6 +12524,30 @@ export const zh: TLocale = {
                 "retry": "重新播放",
                 "loading": "正在加载视频…",
                 "playbackSpeed": "播放速度"
+            },
+            "scheduleEntry": {
+                "title": "上传近期排班表",
+                "titleHighlight": "近期排班表",
+                "description": "要按病区的排班规律自动设置，就需要这份排班表！",
+                "previousYear": "上一年",
+                "nextYear": "下一年",
+                "fileTypes": "JPG · PNG · Excel",
+                "chooseFile": "上传照片或 Excel 文件",
+                "manualAction": "手动填写",
+                "manualTitle": "请手动填写之前的排班表",
+                "processingTitle": "正在读取排班表",
+                "reviewTitle": "请确认导入的排班表",
+                "skipTitle": "不上传之前的排班表，继续吗？",
+                "skipDescription": "AI 可以从之前的排班表学习病区的排班规律，生成更适合团队的排班表。",
+                "skipConfirm": "仍然跳过",
+                "skipUpload": "上传排班表",
+                "reloadFile": "重新导入",
+                "reloadTitle": "选择要重新导入的排班表",
+                "reloadTitleHighlight": "排班表",
+                "reloadDescription": "导入新排班表后，当前查看的排班表将被替换。",
+                "reviewNotes": "排班表识别提示",
+                "rawCodesHint": "请在下一步为新识别的代码设置简称和班次含义。",
+                "legacyPhotoReview": "此服务器可能无法读入某些符号，请对照原图检查空白单元格。"
             }
         },
         "profile": {
@@ -15656,7 +15764,8 @@ export const zhTW: TLocale = {
                     "shortNameRequired": "請輸入縮寫。",
                     "timeFormat": "請以 00:00 格式輸入時間。",
                     "timeOrder": "請輸入不同的開始/結束時間。",
-                    "timeRequired": "請輸入時間。"
+                    "timeRequired": "請輸入時間。",
+                    "nameLength": "班別名稱最多可輸入12個字元。"
                 },
                 "work": "在職的",
                 "workTime": "時間",
@@ -15670,7 +15779,9 @@ export const zhTW: TLocale = {
                 "nameGuidance": "請先核對縮寫。D、E、N、O以外的班次名稱可能是自動填寫的暫時說明。請改為病房使用的名稱，並確認班次類型。",
                 "reviewCount": "有{{count}}個班次類型需要確認",
                 "reviewStatus": "{{code}} · 待確認",
-                "reviewHint": "請核對班次名稱，並選擇病房使用的類型。"
+                "reviewHint": "請核對班次名稱，並選擇病房使用的類型。",
+                "originalCode": "原始標記 · {{code}}",
+                "mapToExisting": "連結至現有班別"
             },
             "teamTabs": {
                 "addTeam": "新增團隊"
@@ -15735,6 +15846,30 @@ export const zhTW: TLocale = {
                 "retry": "重新播放",
                 "loading": "正在載入影片…",
                 "playbackSpeed": "播放速度"
+            },
+            "scheduleEntry": {
+                "title": "上傳近期班表",
+                "titleHighlight": "近期班表",
+                "description": "要依照病房的排班模式自動設定，就需要這份班表！",
+                "previousYear": "上一年",
+                "nextYear": "下一年",
+                "fileTypes": "JPG · PNG · Excel",
+                "chooseFile": "上傳照片或 Excel 檔案",
+                "manualAction": "手動填寫",
+                "manualTitle": "請手動填寫先前的班表",
+                "processingTitle": "正在讀取班表",
+                "reviewTitle": "請確認匯入的班表",
+                "skipTitle": "要略過先前的班表嗎？",
+                "skipDescription": "AI 可以從先前的班表學習病房的排班模式，排出更適合團隊的班表。",
+                "skipConfirm": "仍要略過",
+                "skipUpload": "上傳班表",
+                "reloadFile": "重新匯入",
+                "reloadTitle": "選擇要重新匯入的班表",
+                "reloadTitleHighlight": "班表",
+                "reloadDescription": "匯入新班表後，會取代目前顯示的班表。",
+                "reviewNotes": "班表辨識提示",
+                "rawCodesHint": "請在下一步為新辨識的代碼設定簡稱與班別意義。",
+                "legacyPhotoReview": "此伺服器可能無法讀入某些符號，請對照原圖檢查空白儲存格。"
             }
         },
         "profile": {
@@ -18951,7 +19086,8 @@ export const th: TLocale = {
                     "shortNameRequired": "ป้อนคำย่อ",
                     "timeFormat": "ใช้รูปแบบเวลา 00:00",
                     "timeOrder": "ใช้เวลาเริ่มต้นและเวลาสิ้นสุดที่แตกต่างกัน",
-                    "timeRequired": "ป้อนเวลา"
+                    "timeRequired": "ป้อนเวลา",
+                    "nameLength": "กรอกชื่อเวรไม่เกิน 12 ตัวอักษร"
                 },
                 "work": "งาน",
                 "workTime": "เวลากะ",
@@ -18965,7 +19101,9 @@ export const th: TLocale = {
                 "nameGuidance": "โปรดตรวจสอบจากรหัสเวรก่อน ชื่อเวรที่ไม่ใช่ D, E, N และ O อาจเป็นคำอธิบายชั่วคราวที่ระบบตั้งให้อัตโนมัติ โปรดเปลี่ยนเป็นชื่อที่วอร์ดใช้และตรวจสอบประเภทเวร",
                 "reviewCount": "มีประเภทเวรที่ต้องตรวจสอบ {{count}} รายการ",
                 "reviewStatus": "{{code}} · ต้องตรวจสอบ",
-                "reviewHint": "ตรวจสอบชื่อเวรและเลือกประเภทที่วอร์ดใช้"
+                "reviewHint": "ตรวจสอบชื่อเวรและเลือกประเภทที่วอร์ดใช้",
+                "originalCode": "รหัสในต้นฉบับ · {{code}}",
+                "mapToExisting": "เชื่อมกับประเภทเวรที่มีอยู่"
             },
             "teamTabs": {
                 "addTeam": "เพิ่มทีม"
@@ -19030,6 +19168,30 @@ export const th: TLocale = {
                 "retry": "เล่นอีกครั้ง",
                 "loading": "กำลังโหลดวิดีโอ…",
                 "playbackSpeed": "ความเร็วในการเล่น"
+            },
+            "scheduleEntry": {
+                "title": "อัปโหลดตารางเวรล่าสุด",
+                "titleHighlight": "ตารางเวรล่าสุด",
+                "description": "ต้องใช้ตารางเวรเพื่อตั้งค่าให้ตรงกับรูปแบบเวรของวอร์ดโดยอัตโนมัติ!",
+                "previousYear": "ปีก่อนหน้า",
+                "nextYear": "ปีถัดไป",
+                "fileTypes": "JPG · PNG · Excel",
+                "chooseFile": "อัปโหลดรูปหรือไฟล์ Excel",
+                "manualAction": "กรอกเอง",
+                "manualTitle": "กรอกตารางเวรเดิมด้วยตนเอง",
+                "processingTitle": "กำลังอ่านตารางเวร",
+                "reviewTitle": "ตรวจสอบตารางเวรที่นำเข้า",
+                "skipTitle": "ดำเนินการต่อโดยไม่ใช้ตารางเวรเดิมไหม",
+                "skipDescription": "ตารางเวรเดิมช่วยให้ AI เรียนรู้รูปแบบการจัดเวรและจัดตารางให้เหมาะกับวอร์ดมากขึ้น",
+                "skipConfirm": "ข้ามขั้นตอนนี้",
+                "skipUpload": "อัปโหลดตารางเวร",
+                "reloadFile": "นำเข้าอีกครั้ง",
+                "reloadTitle": "เลือกตารางเวรที่จะนำเข้าใหม่",
+                "reloadTitleHighlight": "ตารางเวร",
+                "reloadDescription": "เมื่อนำเข้าตารางเวรใหม่ ตารางเวรปัจจุบันจะถูกแทนที่",
+                "reviewNotes": "หมายเหตุการอ่านตารางเวร",
+                "rawCodesHint": "กำหนดตัวย่อและความหมายของรหัสใหม่ในขั้นตอนถัดไป",
+                "legacyPhotoReview": "ระบบอ่านภาพของเซิร์ฟเวอร์นี้อาจเว้นสัญลักษณ์บางตัวไว้ กรุณาเทียบกับต้นฉบับ"
             }
         },
         "profile": {
@@ -22246,7 +22408,8 @@ export const vi: TLocale = {
                     "shortNameRequired": "Nhập một từ viết nghỉ.",
                     "timeFormat": "Sử dụng định dạng thời gian 00:00.",
                     "timeOrder": "Sử dụng thời gian bắt đầu và kết thúc khác nhau.",
-                    "timeRequired": "Nhập thời gian."
+                    "timeRequired": "Nhập thời gian.",
+                    "nameLength": "Nhập tên ca tối đa 12 ký tự."
                 },
                 "work": "công việc",
                 "workTime": "thời gian thay đổi",
@@ -22260,7 +22423,9 @@ export const vi: TLocale = {
                 "nameGuidance": "Hãy kiểm tra mã ca trước. Tên của các mã ngoài D, E, N và O có thể là mô tả tạm thời do hệ thống tự đặt. Hãy đổi thành tên dùng tại khoa và kiểm tra loại ca.",
                 "reviewCount": "Có {{count}} loại ca cần kiểm tra",
                 "reviewStatus": "{{code}} · Cần kiểm tra",
-                "reviewHint": "Kiểm tra tên ca và chọn loại ca được dùng tại khoa."
+                "reviewHint": "Kiểm tra tên ca và chọn loại ca được dùng tại khoa.",
+                "originalCode": "Ký hiệu gốc · {{code}}",
+                "mapToExisting": "Liên kết với loại ca hiện có"
             },
             "teamTabs": {
                 "addTeam": "Thêm đội"
@@ -22325,6 +22490,30 @@ export const vi: TLocale = {
                 "retry": "Phát lại",
                 "loading": "Đang tải video…",
                 "playbackSpeed": "Tốc độ phát"
+            },
+            "scheduleEntry": {
+                "title": "Tải lên lịch trực gần đây",
+                "titleHighlight": "lịch trực gần đây",
+                "description": "Cần lịch trực để tự động thiết lập theo cách xếp ca của khoa!",
+                "previousYear": "Năm trước",
+                "nextYear": "Năm sau",
+                "fileTypes": "JPG · PNG · Excel",
+                "chooseFile": "Tải ảnh hoặc tệp Excel lên",
+                "manualAction": "Nhập thủ công",
+                "manualTitle": "Nhập thủ công lịch trực trước đây",
+                "processingTitle": "Đang đọc lịch trực",
+                "reviewTitle": "Kiểm tra lịch trực đã nhập",
+                "skipTitle": "Tiếp tục mà không có lịch trực cũ?",
+                "skipDescription": "Lịch trực cũ giúp AI học cách xếp ca của khoa và lập lịch phù hợp hơn.",
+                "skipConfirm": "Vẫn bỏ qua",
+                "skipUpload": "Tải lịch trực lên",
+                "reloadFile": "Nhập lại",
+                "reloadTitle": "Chọn lịch trực để nhập lại",
+                "reloadTitleHighlight": "lịch trực",
+                "reloadDescription": "Lịch trực mới sẽ thay thế lịch bạn đang xem.",
+                "reviewNotes": "Ghi chú khi đọc lịch trực",
+                "rawCodesHint": "Chọn tên viết tắt và ý nghĩa của mã ca mới ở bước tiếp theo.",
+                "legacyPhotoReview": "Bộ đọc ảnh của máy chủ này có thể bỏ trống một số ký hiệu. Hãy đối chiếu với ảnh gốc."
             }
         },
         "profile": {
