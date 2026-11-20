@@ -87,6 +87,24 @@ describe('ProfilePage account actions', () => {
         });
     });
 
+    it.each(['ACCOUNT', 'WARD_ADMIN'])('omits legacy roster import from the %s profile', async (principalType) => {
+        const auth = mockedUseAuth();
+
+        mockedUseAuth.mockReturnValue({
+            ...auth,
+            state: {...auth.state, accessToken: `header.${btoa(JSON.stringify({principalType}))}.signature`},
+        } as never);
+        render(
+            <MemoryRouter>
+                <ProfilePage />
+            </MemoryRouter>,
+        );
+
+        expect(await screen.findByRole('textbox', {name: '이름'})).toHaveValue('홍길동');
+        expect(screen.queryByRole('link', {name: '앱 개인 근무표 가져오기'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('heading', {name: '기존 근무표 가져오기'})).not.toBeInTheDocument();
+    });
+
     it.each(['𠮷野　髙橋', 'สมหญิง ใจดี', 'Nguyễn Thị Hương'.normalize('NFD'), "Jean-Luc O'Neill"])(
         'preserves a global account name after onboarding and submits it without losing characters: %s',
         async (name) => {
