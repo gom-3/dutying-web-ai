@@ -1,9 +1,15 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {getExistingPagesDeploymentUrl} from './existing-pages-deployment.mjs';
+import {getExistingPagesDeploymentUrl, getPagesDeploymentOrigin} from './existing-pages-deployment.mjs';
 
 const expected = {commit: 'a'.repeat(40), branch: 'main', project: 'dutying-web-ai'};
 const metadata = {provider: 'cloudflare-pages', commit: expected.commit, branch: 'main', deploymentUrl: 'https://12345678.dutying-web-ai.pages.dev'};
+
+test('exports the immutable origin validator used by delayed deployment verification', () => {
+    assert.equal(getPagesDeploymentOrigin(metadata.deploymentUrl, expected.project), metadata.deploymentUrl);
+    assert.throws(() => getPagesDeploymentOrigin(metadata.deploymentUrl, 'another-project'));
+    assert.throws(() => getPagesDeploymentOrigin('https://example.com', expected.project));
+});
 
 test('accepts the matching production and development Git-integrated deployment', () => {
     assert.equal(getExistingPagesDeploymentUrl(metadata, expected), metadata.deploymentUrl);

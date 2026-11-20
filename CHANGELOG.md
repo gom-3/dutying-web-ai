@@ -6,6 +6,13 @@ This repository uses one shared version across all workspaces, so release notes 
 
 Entries are generated from pending `.changeset/*.md` files when `pnpm run changeset:version` or `pnpm run release:version` is executed.
 
+## 1.3.53 - 2026-11-21
+
+- `@dutying/app` (patch): 이미 반영한 이전 설정 제안에 근무표 변경으로 반영할 수 없다는 안내가 남지 않도록 수정합니다.
+- `@dutying/app` (patch): 간호사 앱 소개에 잠금화면 근무표 안내를 추가하고, 근무표와 할 일 버튼 설정에서 자동 갱신까지 이어지는 가이드를 제공합니다.
+- `@dutying/app` (patch): 온보딩과 로그인에서 7개 언어의 이름 검증·기본 근무명·오류 안내를 정리하고, 그룹 번호와 근무표·근무유형 편집 내용이 가져오기 및 초안 복원 뒤에도 일관되게 유지되도록 수정합니다.
+- `@dutying/app` (patch): 최고 관리자가 병동 나가기에서 권한 인계가 필요하다는 응답을 받으면 해당 병동의 이용 종료 요청 화면을 바로 엽니다.
+
 ## 1.3.52 - 2026-11-16
 
 - `@dutying/app` (patch): Display monthly days-off targets in the selected language across worker confirmation, schedule menus and tooltips.
