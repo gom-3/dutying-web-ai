@@ -236,6 +236,38 @@ describe('ward management workspace', () => {
         expect(screen.queryByRole('button', {name: '결제 금액 확인'})).not.toBeInTheDocument();
     });
 
+    it('uses the closure route when the server rejects leaving from members', async () => {
+        const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+        mocks.context = {enabled: true, scopes: [{...wardScope, role: 'EDITOR'}]};
+        mocks.get.mockImplementation((path: string) => Promise.resolve(path.includes('/entitlements') ? wardEntitlement() : []));
+        mocks.legacyDelete.mockImplementationOnce(async () => {
+            mocks.context = {enabled: true, scopes: [wardScope]};
+            throw Object.assign(new Error('Owner transfer required'), {code: 409, serverCode: 'OWNER_TRANSFER_REQUIRED'});
+        });
+        mount('/workspace/WARD/11/members');
+        await userEvent.click(await screen.findByRole('button', {name: '이 범위에서 나가기'}));
+
+        expect(await screen.findByRole('heading', {name: '범위 종료·보관 요청'})).toBeVisible();
+        expect(mocks.legacyDelete).toHaveBeenCalledExactlyOnceWith('/admin/wards/11/quit');
+        expect(mocks.post).not.toHaveBeenCalled();
+        confirm.mockRestore();
+    });
+
+    it('opens and focuses the ward closure request from its direct link', async () => {
+        mocks.context = {enabled: true, scopes: [wardScope]};
+        mocks.get.mockImplementation((path: string) => Promise.resolve(path.includes('/entitlements') ? wardEntitlement() : []));
+        mount('/workspace/WARD/11/support#ward-closure');
+
+        const summary = await screen.findByText('병동 이용 종료');
+        const disclosure = summary.closest('details');
+
+        expect(disclosure).toHaveAttribute('open');
+        expect(disclosure?.querySelector('summary')).toHaveFocus();
+        expect(within(disclosure!).getByRole('button', {name: '요청 보내기'})).toBeVisible();
+        expect(mocks.post).not.toHaveBeenCalled();
+    });
+
     it('does not offer a membership resignation for an inherited hospital ward', async () => {
         mocks.context = {enabled: true, scopes: [{...wardScope, role: 'EDITOR', accessSource: 'HOSPITAL'}]};
         mocks.get.mockResolvedValue(wardEntitlement());

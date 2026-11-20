@@ -294,6 +294,35 @@ describe('useEditAccount.quitWard', () => {
         confirmSpy.mockRestore();
     });
 
+    it.each([
+        ['OWNER_TRANSFER_REQUIRED', '/workspace/WARD/3/support#ward-closure'],
+        ['ANOTHER_CONFLICT', undefined],
+    ])('handles ward admin quit conflict %s', async (serverCode, path) => {
+        const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+        const error = Object.assign(new Error('Could not leave the ward'), {code: 409, serverCode});
+
+        mockAdminQuitWard.mockRejectedValueOnce(error);
+
+        const {result} = renderHook(() => useEditAccount(), {wrapper: createWrapper(new QueryClient())});
+
+        await act(async () => {
+            await result.current.quitWard();
+        });
+
+        if (path) {
+            expect(mockNavigate).toHaveBeenCalledExactlyOnceWith(path);
+            expect(mockToastError).not.toHaveBeenCalled();
+            expect(mockCaptureException).not.toHaveBeenCalled();
+        } else {
+            expect(mockNavigate).not.toHaveBeenCalled();
+            expect(mockToastError).toHaveBeenCalledExactlyOnceWith('병동을 나가지 못했어요.');
+        }
+
+        expect(mockHandleGetAccountMe).not.toHaveBeenCalled();
+        expect(mockSetLoading).toHaveBeenLastCalledWith(false);
+        confirmSpy.mockRestore();
+    });
+
     it('does not attempt membership resignation for inherited hospital access', async () => {
         const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
         const auth = mockUseAuth();
