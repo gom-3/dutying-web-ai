@@ -13,6 +13,7 @@ interface IOnboardingStepLayoutProps {
     nextDisabled?: boolean;
     actionsDisabled?: boolean;
     nextLabel?: string;
+    nextAction?: ReactNode;
     children: ReactNode;
 }
 
@@ -25,6 +26,7 @@ function OnboardingStepLayout({
     nextDisabled = false,
     actionsDisabled = false,
     nextLabel,
+    nextAction,
     children,
 }: IOnboardingStepLayoutProps) {
     const {t} = useTypedTranslation();
@@ -34,31 +36,41 @@ function OnboardingStepLayout({
             {children}
             <div className="mt-14 flex items-center justify-between">
                 {leftAction ?? <div />}
-                <div className="flex items-center gap-[42px]">
+                <div
+                    className={cn(
+                        'flex max-w-full min-w-0 flex-wrap items-center justify-end gap-y-3',
+                        nextAction ? 'gap-4' : 'gap-x-[42px]',
+                    )}
+                >
                     {step > 1 ? (
                         <WizardButton variant="secondary" onClick={onPrev} disabled={actionsDisabled}>
                             {t('page.onboardingWardCreate.action.previous')}
                         </WizardButton>
                     ) : null}
-                    <WizardButton
-                        onClick={() => {
-                            if (nextDisabled) {
-                                onNextDisabledClick?.();
+                    {nextAction === undefined ? (
+                        <WizardButton
+                            onClick={() => {
+                                if (nextDisabled) {
+                                    onNextDisabledClick?.();
 
-                                return;
-                            }
+                                    return;
+                                }
 
-                            onNext();
-                        }}
-                        disabled={actionsDisabled}
-                        aria-disabled={nextDisabled}
-                        className={cn(
-                            nextDisabled && 'border-0 bg-[#EFEAFF] text-[#A69BCF] hover:bg-[#EFEAFF] hover:text-[#A69BCF] active:scale-100',
-                        )}
-                    >
-                        {nextLabel ??
-                            (step < 5 ? t('page.onboardingWardCreate.action.next') : t('page.onboardingWardCreate.action.complete'))}
-                    </WizardButton>
+                                onNext();
+                            }}
+                            disabled={actionsDisabled}
+                            aria-disabled={nextDisabled}
+                            className={cn(
+                                nextDisabled &&
+                                    'border-0 bg-[#EFEAFF] text-[#A69BCF] hover:bg-[#EFEAFF] hover:text-[#A69BCF] active:scale-100',
+                            )}
+                        >
+                            {nextLabel ??
+                                (step < 5 ? t('page.onboardingWardCreate.action.next') : t('page.onboardingWardCreate.action.complete'))}
+                        </WizardButton>
+                    ) : (
+                        nextAction
+                    )}
                 </div>
             </div>
         </>

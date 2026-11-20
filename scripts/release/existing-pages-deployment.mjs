@@ -7,7 +7,12 @@ export function getExistingPagesDeploymentUrl(metadata, {commit, branch, project
         throw new Error('Public domain is not serving the expected Pages commit and branch');
     }
 
-    const url = new URL(metadata.deploymentUrl);
+    return getPagesDeploymentOrigin(metadata.deploymentUrl, project);
+}
+
+export function getPagesDeploymentOrigin(deploymentUrl, project) {
+    if (!['dutying-web-ai', 'dutying-web-ai-dev'].includes(project)) throw new Error('Unknown Pages project');
+    const url = new URL(deploymentUrl);
     const suffix = `.${project}.pages.dev`;
     const id = url.hostname.slice(0, -suffix.length);
 

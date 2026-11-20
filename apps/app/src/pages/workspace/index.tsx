@@ -35,6 +35,7 @@ import {HospitalChooser, useWorkspaceNavigation, workspaceRoleLabel} from '@/fea
 import {parseQuoteTerms, parseSubscriptionSummary, quoteTimestamp} from '@/features/commercial/quote-terms';
 import {loadToss, openTossBilling} from '@/features/commercial/toss-sdk';
 import {wardBillingPath} from '@/features/commercial/ward-billing-path';
+import {getWardClosurePath, WARD_CLOSURE_HASH} from '@/features/commercial/ward-closure-path';
 import {getOwnedWardLinkScope} from '@/features/commercial/ward-links';
 import {RefundConditions, SubscriptionConditions, fetchPublicOffer} from '@/pages/subscription-info';
 import {WardAPI} from '@/shared/api';
@@ -172,12 +173,32 @@ function RequestForm({
     );
 }
 
-function HospitalDisclosure({active, title, help, children}: {active: boolean; title: string; help?: ReactNode; children: ReactNode}) {
+function HospitalDisclosure({
+    active,
+    title,
+    help,
+    children,
+    id,
+    openOnArrival,
+}: {
+    active: boolean;
+    title: string;
+    help?: ReactNode;
+    children: ReactNode;
+    id?: string;
+    openOnArrival?: boolean;
+}) {
+    const summaryRef = useRef<HTMLElement>(null);
+
+    useEffect(() => {
+        if (openOnArrival) summaryRef.current?.focus();
+    }, [openOnArrival]);
+
     if (!active) return <>{children}</>;
 
     return (
-        <details className="hospital-secondary-disclosure">
-            <summary>
+        <details id={id} open={openOnArrival} className="hospital-secondary-disclosure">
+            <summary ref={summaryRef}>
                 <span className="hospital-secondary-label">
                     {title}
                     {help ? <InfoTip label={`${title} 도움말`}>{help}</InfoTip> : null}
@@ -1348,6 +1369,7 @@ export function BillingPanel({
 
 function MembersPanel({scope, e}: {scope: Scope; e: Entitlement}) {
     const t = useCopy();
+    const navigate = useNavigate();
     const memberAction = useAction();
     const invitationAction = useAction();
     const transferAction = useAction();
@@ -1595,7 +1617,17 @@ function MembersPanel({scope, e}: {scope: Scope; e: Entitlement}) {
                                 ),
                             )
                         )
-                            void memberAction.run(() => legacyDelete(`${adminPath}/quit`));
+                            void memberAction.run(async () => {
+                                try {
+                                    await legacyDelete(`${adminPath}/quit`);
+                                } catch (error) {
+                                    const closurePath = getWardClosurePath(error, scope.ref);
+
+                                    if (!closurePath) throw error;
+
+                                    navigate(closurePath);
+                                }
+                            });
                     }}
                 >
                     {t('이 범위에서 나가기', 'Leave this scope')}
@@ -2886,7 +2918,12 @@ export default function WorkspacePage() {
                                 <HospitalDisclosure active title={t('직원 지원 접근 권한', 'Staff support access')}>
                                     <SupportConsentPanel scope={scope} />
                                 </HospitalDisclosure>
-                                <HospitalDisclosure active title={t('병동 이용 종료', 'Close ward workspace')}>
+                                <HospitalDisclosure
+                                    active
+                                    id={WARD_CLOSURE_HASH.slice(1)}
+                                    openOnArrival={location.hash === WARD_CLOSURE_HASH}
+                                    title={t('병동 이용 종료', 'Close ward workspace')}
+                                >
                                     <Section title={t('범위 종료·보관 요청', 'Request closure & archive')}>
                                         <Notice>
                                             {t(

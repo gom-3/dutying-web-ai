@@ -14,6 +14,7 @@ import {
     getOnboardingInitialScheduleTarget,
     getOnboardingInitialScheduleTargets,
     getStepValidation,
+    goToStep,
     MAX_ONBOARDING_SHIFT_TYPES,
     prepareManualEntryDraft,
     reorderNursesWithinTeam,
@@ -40,8 +41,8 @@ const localizedLabels: TOnboardingDraftLabels = {
         night: 'Overnight',
         off: 'Rest',
         annualLeave: 'Annual leave',
-        twoDay: 'Two-shift day',
-        twoNight: 'Two-shift night',
+        twoDay: 'Day (2)',
+        twoNight: 'Night (2)',
         twoNightContinuation: 'Night finish',
     },
 };
@@ -61,10 +62,23 @@ describe('OnboardingWardCreatePage model', () => {
 
         const withInvalidWardName = {
             ...withHospitalName,
-            wardName: '중환자실!',
+            wardName: '病'.repeat(51),
         };
 
         expect(getStepValidation(withInvalidWardName, 1).issues).toEqual([{code: 'invalid-ward-name', step: 1}]);
+    });
+
+    it.each([
+        {hospitalName: 'ศิริราช', wardName: 'หอผู้ป่วย 1'},
+        {hospitalName: 'Bệnh viện Chợ Rẫy', wardName: 'Khoa Hồi sức'},
+        {hospitalName: "St. Mary's", wardName: 'ICU-1 (East)'},
+        {hospitalName: '𠮷田記念病院', wardName: '東・病棟'},
+    ])('accepts international hospital and ward names: $hospitalName', ({hospitalName, wardName}) => {
+        const draft = {...createInitialDraft(), hospitalName, wardName};
+
+        expect(getStepValidation(draft, 1).isValid).toBe(true);
+        expect(draft.hospitalName).toBe(hospitalName);
+        expect(draft.wardName).toBe(wardName);
     });
 
     it('uses injected labels for default teams, nurses, and shifts', () => {
@@ -138,8 +152,8 @@ describe('OnboardingWardCreatePage model', () => {
             mixedDraft.shiftTypes.filter((shiftType) => shiftType.rotationSystem === 'TWO').map((shiftType) => shiftType.shortName),
         ).toEqual(['1', '2']);
         expect(mixedDraft.shiftTypes.filter((shiftType) => shiftType.rotationSystem === 'TWO').map((shiftType) => shiftType.name)).toEqual([
-            'Two-shift day',
-            'Two-shift night',
+            'Day (2)',
+            'Night (2)',
         ]);
         expect(getStepValidation({...mixedDraft, currentStep: 4}, 4).isValid).toBe(true);
     });
@@ -359,6 +373,28 @@ describe('OnboardingWardCreatePage model', () => {
         expect(canGoNext(invalidRotationDraft)).toBe(false);
     });
 
+    it.each(['THREE', 'TWO'] as const)('blocks duplicate types with an incompatible imported rotation in a %s ward', (rotationMode) => {
+        const draft = updateRotationModeDraft({...createInitialDraft(), currentStep: 4}, rotationMode);
+        const day = draft.shiftTypes.find((shift) => shift.classification === 'DAY')!;
+        const extra = {
+            ...day,
+            id: 'extra-day',
+            name: '별도 주간',
+            shortName: 'ⓓ',
+            rotationSystem: rotationMode === 'THREE' ? ('TWO' as const) : ('THREE' as const),
+        };
+        const duplicated = {...draft, shiftTypes: [...draft.shiftTypes, extra]};
+
+        expect(getStepValidation(duplicated).issues).toContainEqual({code: 'duplicate-required-shift-types', step: 4});
+        expect(canGoNext(duplicated)).toBe(false);
+
+        for (const patch of [{isActive: false}, {mappingStatus: 'UNASSIGNED' as const}]) {
+            const ignored = {...draft, shiftTypes: [...draft.shiftTypes, {...extra, ...patch}]};
+
+            expect(getStepValidation(ignored).issues).not.toContainEqual({code: 'duplicate-required-shift-types', step: 4});
+        }
+    });
+
     it('blocks duplicate shift short names', () => {
         const initialDraft = createInitialDraft();
         const firstShift = initialDraft.shiftTypes[0];
@@ -526,6 +562,38 @@ describe('OnboardingWardCreatePage model', () => {
         );
     });
 
+    it('recalculates only the nurse whose working codes changed in the edited grid', () => {
+        const original = createInitialDraft();
+        const team = original.teams[0]!.id;
+        const withRoster = applyScheduleInputDraft(original, team, {
+            year: 2026,
+            month: 11,
+            rows: [
+                {id: 'r1', nurseId: null, name: 'Kim', shifts: {'1': 'N', '2': 'O'}},
+                {id: 'r2', nurseId: null, name: 'Lee', shifts: {'1': 'D', '2': 'E'}},
+                {id: 'r3', nurseId: null, name: 'Park', shifts: {}},
+            ],
+        });
+        const nurseStep = goToStep(withRoster, 5);
+        const [kim, lee] = nurseStep.nurses;
+        const night = nurseStep.shiftTypes.find((type) => type.shortName === 'N')!;
+        const day = nurseStep.shiftTypes.find((type) => type.shortName === 'D')!;
+        const edited = updateNurseDraft(updateNurseDraft(nurseStep, kim!.id, {possibleShiftTypeIds: [night.id, day.id]}), lee!.id, {
+            possibleShiftTypeIds: [day.id],
+        });
+        const schedule = edited.scheduleInputs[team]!['2026-11']!;
+        const corrected = applyScheduleInputDraft(edited, team, {
+            ...schedule,
+            rows: schedule.rows.map((row) => (row.nurseId === kim!.id ? {...row, shifts: {'1': 'E', '2': 'O'}} : row)),
+        });
+        const final = goToStep(corrected, 5);
+        const work = final.nurses.map((nurse) =>
+            final.shiftTypes.filter((type) => !type.isOff && nurse.possibleShiftTypeIds.includes(type.id)).map((type) => type.shortName),
+        );
+
+        expect(work).toEqual([['E'], ['D'], final.shiftTypes.filter((type) => !type.isOff).map((type) => type.shortName)]);
+    });
+
     it('removes a schedule-derived nurse when their name cell is cleared', () => {
         const draft = prepareManualEntryDraft(createInitialDraft());
         const teamId = draft.teams[0]?.id ?? '';
@@ -629,7 +697,7 @@ describe('OnboardingWardCreatePage model', () => {
             shortName: 'F',
             classification: 'DAY',
         });
-        expect(withRename.scheduleInputs[teamId]?.['2026-05']?.rows[0]?.shifts).toEqual({'1': 'F'});
+        expect(withRename.scheduleInputs[teamId]?.['2026-05']?.rows[0]?.shifts).toEqual({'1': 'N'});
         expect(withDeleteAttempt.shiftTypes.some((shiftType) => shiftType.id === previousShiftType.id)).toBe(true);
     });
 
@@ -1228,7 +1296,7 @@ describe('OnboardingWardCreatePage model', () => {
         );
     });
 
-    it('remaps the previous schedule code while allowing other shift edits', () => {
+    it('keeps the source grid unchanged while resolving configured shift codes', () => {
         const draft = prepareManualEntryDraft(createInitialDraft());
         const teamId = draft.teams[0]!.id;
         const withCustomShift = applyScheduleInputDraft(draft, teamId, {
@@ -1259,14 +1327,14 @@ describe('OnboardingWardCreatePage model', () => {
                 endTime: '18:00',
             }),
         );
-        expect(renamedDraft.scheduleInputs[teamId]?.['2026-05']?.rows[0]?.shifts).toEqual({'1': 'F', '2': 'D'});
+        expect(renamedDraft.scheduleInputs[teamId]?.['2026-05']?.rows[0]?.shifts).toEqual({'1': 'R', '2': 'D'});
         expect(nurse?.initialShifts).toEqual([
             {date: '2026-05-01', shiftShortName: 'F'},
             {date: '2026-05-02', shiftShortName: 'D'},
         ]);
     });
 
-    it('remaps the previous schedule code when a protected abbreviation is edited', () => {
+    it('remaps nurse history without rewriting the source grid when a protected abbreviation changes', () => {
         const draft = prepareManualEntryDraft(createInitialDraft());
         const teamId = draft.teams[0]!.id;
         const withCustomShift = applyScheduleInputDraft(draft, teamId, {
@@ -1291,7 +1359,7 @@ describe('OnboardingWardCreatePage model', () => {
         const nurse = renamedDraft.nurses.find((candidate) => candidate.name === 'Nurse A');
 
         expect(temporarilyEmptyDraft.scheduleInputs[teamId]?.['2026-05']?.rows[0]?.shifts).toEqual({'1': 'R'});
-        expect(renamedDraft.scheduleInputs[teamId]?.['2026-05']?.rows[0]?.shifts).toEqual({'1': 'F'});
+        expect(renamedDraft.scheduleInputs[teamId]?.['2026-05']?.rows[0]?.shifts).toEqual({'1': 'R'});
         expect(nurse?.initialShifts).toEqual([{date: '2026-05-01', shiftShortName: 'F'}]);
     });
 

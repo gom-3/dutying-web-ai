@@ -22,7 +22,6 @@ export function AiExecutionFailure({
     settingsHref,
     onInspectSchedule,
     operationType,
-    attemptLabel,
     headerAction,
     children,
     detailsInChildren = false,
@@ -85,7 +84,7 @@ export function AiExecutionFailure({
                 message={
                     detailsInChildren && failure.confirmationRequired && failure.conflictDetails?.violations.length ? '' : failure.message
                 }
-                title={attemptLabel ? `${title} (${attemptLabel})` : title}
+                title={title}
                 headerAction={headerAction}
             >
                 {!!failure.conflicts?.length && (

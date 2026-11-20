@@ -24,6 +24,7 @@ import {LandingAdoption} from './landing-adoption';
 import {trackLandingAdoption} from './landing-adoption-analytics';
 import {LandingAdoptionEvidence, LandingHospitalRotation, LandingNurseUsage, LandingWorkflowSummary} from './landing-adoption-overview';
 import {LandingCalendarPreview} from './landing-calendar-preview';
+import {LandingLockscreenSection} from './landing-lockscreen';
 import {LandingSchedulePreview} from './landing-schedule-preview';
 import './landing-page.css';
 
@@ -1194,6 +1195,11 @@ function NurseAppSections({language}: {language: TWebLanguage}) {
                         <div id="mobile-app-download" className="landing-cta-row mt-12 flex flex-col gap-4 sm:flex-row">
                             <StoreButton language={language} />
                         </div>
+                        {language === 'ko' && (
+                            <a href="#lockscreen" className="landing-lockscreen-jump">
+                                잠금화면에 근무표 띄우기
+                            </a>
+                        )}
                     </article>
 
                     <img
@@ -1218,6 +1224,8 @@ function NurseAppSections({language}: {language: TWebLanguage}) {
             {appFeatureSections.map((section) => (
                 <AppFeatureSection key={section.id} section={section} />
             ))}
+
+            {language === 'ko' && <LandingLockscreenSection />}
 
             <section className="relative overflow-hidden bg-black">
                 <div className="landing-final-cta__inner mx-auto grid min-h-[442px] max-w-[1440px] grid-cols-1 items-center gap-12 px-5 pt-[68px] pb-[23px] md:min-h-[476px] md:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] md:px-8 md:pt-[95px] md:pb-[32px]">

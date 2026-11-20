@@ -294,6 +294,22 @@ export default defineConfig(({mode}) => {
             tailwindcss(),
             ...(isTest ? [] : [mkcert()]),
             {
+                name: 'lockscreen-guide-dev-index',
+                configureServer(server) {
+                    // Production hosting resolves this public directory's index.html.
+                    // Vite dev otherwise sends directory URLs to the React SPA fallback.
+                    server.middlewares.use((request, _response, next) => {
+                        const url = new URL(request.url ?? '/', 'http://vite.local');
+
+                        if (url.pathname === '/help/lockscreen' || url.pathname === '/help/lockscreen/') {
+                            request.url = `/help/lockscreen/index.html${url.search}`;
+                        }
+
+                        next();
+                    });
+                },
+            },
+            {
                 name: 'app-site-url-assets',
                 configResolved(config) {
                     resolvedOutDir = config.build.outDir;

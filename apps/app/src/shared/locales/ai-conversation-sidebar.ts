@@ -1,12 +1,21 @@
 export const aiConversationSidebarKo = {
     authoring: {
+        settingReviewTitle: '이번 달 이 설정을 허용할까요?',
+        candidateReviewTitle: '요청한 근무 변경안을 확인해 주세요',
+        assignmentChanged: '{{date}} {{name}}: {{before}} → {{after}}',
+        assignmentUnchanged: '{{date}} {{name}}: 이미 {{shift}}예요',
+        additionalImpacts: '함께 달라지는 근무',
+        impactDetails: '다른 영향과 비교 범위 보기',
+        impactsUnavailable: '이 변경안의 상세 영향 정보는 아직 확인되지 않았어요.',
+        changeDetails: '전체 {{count}}칸 변경 내역 보기',
+        ruleDetails: '현재 조건과 비교한 상세 결과',
         settingChangesTitle: '이번 달 이 변경안에만 적용할 조건',
         settingChangesScope: '기존 설정은 저장하거나 영구 변경하지 않아요. 아래 조건 전체에 동의하면 이 변경안만 반영해요.',
         settingAvailability:
             '{{name}}님은 현재 {{code}} 근무를 하지 않는 것으로 설정되어 있어요. 이번 달 이 변경안에서는 {{code}} 근무가 가능하도록 바꿀까요?',
         settingValues: '{{name}}님의 현재 조건은 {{before}}일이에요. 이번 달 이 변경안에만 {{after}}일로 바꿀까요?',
         settingMonth: '{{year}}년 {{month}}월 · 이 변경안에만 적용',
-        settingConsentApply: '이번 달 조건 변경에 동의하고 반영',
+        settingConsentApply: '위 설정을 이번 달만 허용하고 근무 반영',
 
         requestResults: '요청별 결과',
         clauseCount: '{{count}}개',
@@ -21,6 +30,8 @@ export const aiConversationSidebarKo = {
         staffingShortage: '{{date}} {{shift}}: {{actual}}명 / 필요 {{required}}명',
         partialCoverage: '빈칸이 있어 일부 조건은 아직 확인하지 못했어요.',
         details: '변경 내용 더 보기',
+        candidateSourceChanged: '근무표가 수정되어 이 변경안을 반영할 수 없어요. 현재 근무표를 기준으로 다시 요청해 주세요.',
+        candidateExpired: '변경안의 유효 시간이 지났어요. 현재 근무표를 기준으로 다시 요청해 주세요.',
         candidateUnavailable: '이 변경안을 확인할 수 없어 반영하지 않았어요. 최신 표로 다시 요청해 주세요.',
         STRATEGY_ONLY: '바꿀 방향을 정리했어요. 아직 근무표는 변경되지 않았어요. 바꾸려는 근무나 조건을 더 알려 주세요.',
         selectedReview: '변경을 표에 반영했어요. 결과를 확인해 주세요.',
@@ -163,6 +174,15 @@ export const aiConversationSidebarKo = {
 
 export const aiConversationSidebarEn = {
     authoring: {
+        settingReviewTitle: 'Allow these settings for this month?',
+        candidateReviewTitle: 'Review the requested shift changes',
+        assignmentChanged: '{{date}} {{name}}: {{before}} → {{after}}',
+        assignmentUnchanged: '{{date}} {{name}}: already {{shift}}',
+        additionalImpacts: 'Other shift changes',
+        impactDetails: 'More effects and comparison scope',
+        impactsUnavailable: 'Detailed impact evidence is not available for this proposal.',
+        changeDetails: 'View all {{count}} cell changes',
+        ruleDetails: 'Details against current conditions',
         settingChangesTitle: 'Conditions for this proposal only',
         settingChangesScope: 'Your saved settings stay unchanged. Agree to all conditions below to apply this proposal only.',
         settingAvailability: '{{name}} is currently set as unavailable for {{code}}. Allow {{code}} for this month’s proposal only?',
@@ -185,6 +205,9 @@ export const aiConversationSidebarEn = {
         staffingShortage: '{{date}} {{shift}}: {{actual}} staff / {{required}} required',
         partialCoverage: 'Some conditions could not be checked yet because there are blank cells.',
         details: 'More about these changes',
+        candidateSourceChanged:
+            'The schedule was edited, so this proposal can no longer be applied. Request again using the current schedule.',
+        candidateExpired: 'This proposal has expired. Request again using the current schedule.',
         candidateUnavailable: 'This proposal could not be verified and was not applied. Request again using the current schedule.',
         STRATEGY_ONLY: 'A direction for review is ready. Your schedule is unchanged. Add details about the target or conditions.',
         selectedReview: 'Applied the changes to the schedule. Review the result.',
@@ -325,6 +348,15 @@ export const aiConversationSidebarEn = {
 
 export const aiConversationSidebarJa = {
     authoring: {
+        settingReviewTitle: '今月だけこの設定を許可しますか？',
+        candidateReviewTitle: '依頼した勤務変更案をご確認ください',
+        assignmentChanged: '{{date}} {{name}}：{{before}} → {{after}}',
+        assignmentUnchanged: '{{date}} {{name}}：すでに{{shift}}です',
+        additionalImpacts: '一緒に変わる勤務',
+        impactDetails: 'その他の影響と比較範囲',
+        impactsUnavailable: 'この案の詳細な影響はまだ確認できていません。',
+        changeDetails: '全{{count}}枠の変更内容を見る',
+        ruleDetails: '現在の条件との比較詳細',
         settingChangesTitle: '今月のこの配置案だけに適用する条件',
         settingChangesScope: '保存済み設定は変更しません。以下の条件すべてに同意した場合、この配置案だけを反映します。',
         settingAvailability: '{{name}}さんは現在{{code}}勤務が不可に設定されています。今月のこの配置案だけ{{code}}勤務を可能にしますか？',
@@ -345,6 +377,8 @@ export const aiConversationSidebarJa = {
         staffingShortage: '{{date}} {{shift}}：{{actual}}人／必要{{required}}人',
         partialCoverage: '空欄があるため、まだ確認できていない条件があります。',
         details: '変更内容を詳しく見る',
+        candidateSourceChanged: '勤務表が編集されたため、この変更案は反映できません。現在の勤務表で再度ご依頼ください。',
+        candidateExpired: '変更案の有効期限が切れました。現在の勤務表で再度ご依頼ください。',
         candidateUnavailable: '変更案を確認できなかったため反映していません。最新の勤務表で再度ご依頼ください。',
         STRATEGY_ONLY: '検討する方向性を用意しました。勤務表はそのままです。対象や条件を詳しくお知らせください。',
         selectedReview: '変更を勤務表に反映しました。結果をご確認ください。',

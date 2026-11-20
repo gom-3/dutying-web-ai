@@ -1,5 +1,6 @@
 export * from './adapter';
 export * from './draft';
+export * from './divisions';
 export * from './sort';
 export * from './shift-type-mapping';
 export * from './submission';

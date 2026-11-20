@@ -5,8 +5,8 @@ import userEvent from '@testing-library/user-event';
 import {type ReactNode, useEffect, useState} from 'react';
 import {MemoryRouter, Route, Routes, useLocation} from 'react-router';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
-import '@/i18n';
 import type {AccessContext} from '@/features/commercial/api';
+import i18n from '@/i18n';
 import type * as WizardModel from './model';
 import {createInitialDraft} from './model/draft';
 import {hospitalOnboardingApi} from './model/hospital-onboarding-api';
@@ -121,9 +121,30 @@ beforeEach(() => {
     window.sessionStorage.clear();
 });
 
-afterEach(cleanup);
+afterEach(async () => {
+    cleanup();
+    await i18n.changeLanguage('ko');
+});
 
 describe('hospital ward setup entry', () => {
+    it.each(['ko', 'en', 'ja', 'zh', 'zh-TW', 'th', 'vi'])('localizes hospital setup and recovery messages in %s', async (language) => {
+        await i18n.changeLanguage(language);
+
+        const view = mount();
+        const t = i18n.getFixedT(language);
+
+        expect(screen.getByRole('button', {name: t('page.onboardingWardCreate.hospital.backToManagement')})).toBeInTheDocument();
+        expect(screen.getByText('서울병원').closest('p')).toHaveTextContent(
+            t('page.onboardingWardCreate.hospital.affiliation', {hospitalName: '서울병원'}).replace(/<\/?hospital>/g, ''),
+        );
+        view.unmount();
+        mocks.restoreStatus = 'error';
+        mount();
+
+        expect(screen.getByRole('heading', {name: t('page.onboardingWardCreate.hospital.restoreError')})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: t('page.onboardingWardCreate.hospital.retryRestore')})).toBeInTheDocument();
+    });
+
     it('keeps an existing ward owner in the hospital setup flow and explains automatic affiliation', () => {
         mount();
 

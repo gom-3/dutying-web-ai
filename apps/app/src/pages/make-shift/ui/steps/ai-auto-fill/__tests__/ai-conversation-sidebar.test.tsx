@@ -1308,9 +1308,9 @@ describe('persistent schedule sidebar', () => {
         ];
         renderSidebar();
 
-        expect(await screen.findByText('AI 채우기를 마치지 못했어요. (1회차)')).toBeVisible();
+        expect(await screen.findByText('AI 채우기를 마치지 못했어요.')).toBeVisible();
         expect(screen.getAllByRole('alert')).toHaveLength(1);
-        expect(screen.getByRole('img', {name: 'AI 채우기를 마치지 못했어요. (1회차)'})).toBeVisible();
+        expect(screen.getByRole('img', {name: 'AI 채우기를 마치지 못했어요.'})).toBeVisible();
         expect(screen.queryByText(/^AI 채우기 1회차 ·/)).not.toBeInTheDocument();
         expect(screen.queryByRole('img', {name: 'AI 채우기 성공'})).not.toBeInTheDocument();
         expect(document.querySelector('.ai-conversation-operation-dots')).not.toBeInTheDocument();
@@ -1359,7 +1359,7 @@ describe('persistent schedule sidebar', () => {
         const onRecoverGeneration = vi.fn();
         const sidebar = renderSidebar({onRecoverGeneration});
 
-        expect(await screen.findByText('AI 채우기를 마치지 못했어요. (1회차)')).toBeVisible();
+        expect(await screen.findByText('AI 채우기를 마치지 못했어요.')).toBeVisible();
         expect(onRecoverGeneration).not.toHaveBeenCalled();
         await userEvent.click(screen.getByRole('button', {name: i18n.t('aiAdjust.preparation.reviewFixed')}));
         expect(onRecoverGeneration).toHaveBeenCalledOnce();
@@ -1380,7 +1380,7 @@ describe('persistent schedule sidebar', () => {
             }),
         );
         expect(screen.getByText('고정한 근무 재확인')).toBeVisible();
-        expect(screen.getByText('AI 채우기를 마치지 못했어요. (1회차)')).toBeVisible();
+        expect(screen.getByText('AI 채우기를 마치지 못했어요.')).toBeVisible();
         sidebar.rerender(sidebarElement({onRecoverGeneration, open: false}));
         sidebar.rerender(sidebarElement({onRecoverGeneration}));
         expect(onRecoverGeneration).toHaveBeenCalledOnce();
@@ -1914,7 +1914,7 @@ describe('persistent schedule sidebar', () => {
         expect((await screen.findByText(/근무표를 채웠어요\.|근무표가 완성되었어요/)).parentElement).not.toHaveTextContent('회차');
         expect(screen.queryByText('2026년 11월 · 1번째 AI 채우기')).not.toBeInTheDocument();
         expect(screen.getByText(/요청하신 내용으로 \d+칸 변경했어요\.|근무표를 수정했어요!/).parentElement).not.toHaveTextContent('회차');
-        expect(screen.getByText('AI 채우기를 마치지 못했어요. (2회차)')).toBeVisible();
+        expect(screen.getByText('AI 채우기를 마치지 못했어요.')).toBeVisible();
         expect(screen.queryByText(/^AI 채우기 2회차 ·/)).not.toBeInTheDocument();
         expect(mocks.execute).not.toHaveBeenCalled();
     });
@@ -2006,7 +2006,7 @@ describe('persistent schedule sidebar', () => {
         const history = within(summary.closest('details')!);
 
         expect(await history.findByRole('alert')).toHaveTextContent(/시간 안에 조건에 맞는 근무표를 찾지 못했어요|within the time limit/);
-        expect(history.getByRole('img', {name: 'AI 채우기를 마치지 못했어요. (1회차)'})).toBeVisible();
+        expect(history.getByRole('img', {name: 'AI 채우기를 마치지 못했어요.'})).toBeVisible();
         expect(history.queryByRole('button', {name: /다시 계산하기|Calculate again/})).not.toBeInTheDocument();
         expect(history.queryByRole('button', {name: /근무표 살펴보기|Explore schedule/})).not.toBeInTheDocument();
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
@@ -2091,7 +2091,7 @@ describe('persistent schedule sidebar', () => {
             ];
             renderSidebar({onGenerated, onPrepareGeneration});
             expect(await screen.findByRole('alert')).toHaveTextContent(/근무표는 변경되지 않았어요|previous schedule is unchanged/);
-            expect(screen.getByRole('img', {name: 'AI 채우기를 마치지 못했어요. (1회차)'})).toBeVisible();
+            expect(screen.getByRole('img', {name: 'AI 채우기를 마치지 못했어요.'})).toBeVisible();
             expect(
                 screen.queryByText(/근무표를 채웠어요.|근무표가 완성되었어요|Your schedule is ready|Schedule ready/),
             ).not.toBeInTheDocument();
@@ -3547,10 +3547,10 @@ describe('persistent schedule sidebar', () => {
         ];
         renderSidebar();
 
-        const failure = await screen.findByRole('region', {name: '근무표를 수정하지 못했어요. (2회차)'});
+        const failure = await screen.findByRole('region', {name: '근무표를 수정하지 못했어요.'});
         const alert = within(failure).getByRole('alert');
 
-        expect(within(failure).getByText('근무표를 수정하지 못했어요. (2회차)')).toBeVisible();
+        expect(within(failure).getByText('근무표를 수정하지 못했어요.')).toBeVisible();
         expect(within(failure).getAllByRole('img')).toHaveLength(1);
         expect(within(failure).getByRole('button', {name: '다시 계산하기'})).toBeEnabled();
         expect(within(failure).getByRole('button', {name: '요청 수정하기'})).toBeEnabled();
@@ -3628,7 +3628,7 @@ describe('persistent schedule sidebar', () => {
         expect(screen.getAllByRole('button', {name: '다시 계산하기'})).toHaveLength(1);
         expect(screen.getAllByRole('button', {name: '요청 수정하기'})).toHaveLength(1);
 
-        const failure = screen.getByRole('region', {name: '근무표를 수정하지 못했어요. (1회차)'});
+        const failure = screen.getByRole('region', {name: '근무표를 수정하지 못했어요.'});
 
         expect(within(failure).getByRole('alert')).toHaveTextContent('근무표를 수정하지 못했어요.');
         expect(within(failure).queryByTestId('conversation-result-preview')).not.toBeInTheDocument();
@@ -4178,6 +4178,104 @@ describe('persistent schedule sidebar', () => {
             expect(mocks.execute).not.toHaveBeenCalled();
         },
     );
+
+    const invalidatePreviewOnDraftSync = () => {
+        mocks.sync.mockImplementationOnce(async (_id, draft) => {
+            current = {
+                ...current,
+                draft: {...current.draft, versionId: 'edited:1', cells: draft.cells},
+                conversation: {...current.conversation, revision: 1, currentVersionId: 'edited:1', latestInterpretationId: null},
+            };
+
+            return current;
+        });
+    };
+
+    it('interprets an edited request against the newly saved draft when sync invalidates its preview', async () => {
+        const {raw, proposal} = semanticRequest();
+        const edited = raw.replace('1~2일', '1~5일');
+
+        invalidatePreviewOnDraftSync();
+        mocks.interpret.mockResolvedValueOnce(proposal);
+        renderSidebar();
+
+        await userEvent.click(await screen.findByRole('button', {name: '요청 수정하기'}));
+
+        const input = screen.getByRole('textbox');
+
+        await userEvent.clear(input);
+        await userEvent.type(input, edited);
+        mocks.draftFixed = true;
+        await userEvent.click(screen.getByRole('button', {name: '수정한 요청 확인'}));
+
+        await waitFor(() => expect(mocks.interpret).toHaveBeenCalledOnce());
+        expect(mocks.sync).toHaveBeenCalledWith(1, expect.objectContaining({cells: [expect.objectContaining({fixed: true})]}));
+        const [, request] = mocks.interpret.mock.calls[0]!;
+
+        expect(request).toMatchObject({expectedRevision: 1, text: edited, clientContext: {inputMode: 'request'}});
+        expect(request).not.toHaveProperty('previousInterpretationId');
+        expect(request).not.toHaveProperty('change');
+        expect(screen.getByText(raw)).toBeVisible();
+        expect(mocks.confirmPlan).not.toHaveBeenCalled();
+        expect(mocks.execute).not.toHaveBeenCalled();
+        expect(mocks.reportClientFailure).not.toHaveBeenCalled();
+    });
+
+    it('accepts a new request when the restored composer still points at an invalidated, unexecuted preview', async () => {
+        const {raw, proposal} = semanticRequest();
+        const nextText = '변경한 근무표 기준으로 다시 짜줘';
+
+        current.conversation = {...current.conversation, latestInterpretationId: null, revision: 1};
+        localStorage.setItem(
+            'dutying:schedule-chat:v2:account:4:1:2:2026:11:server-transcript',
+            JSON.stringify({
+                conversationId: 1,
+                events: [],
+                recoveredFailures: [],
+                composer: {previousId: proposal.interpretationId, change: 'ADD'},
+            }),
+        );
+        mocks.interpret.mockResolvedValueOnce(proposal);
+        renderSidebar();
+
+        await userEvent.type(await screen.findByRole('textbox'), nextText);
+        await userEvent.click(screen.getByRole('button', {name: '요청 보내기'}));
+
+        await waitFor(() => expect(mocks.interpret).toHaveBeenCalledOnce());
+        const [, request] = mocks.interpret.mock.calls[0]!;
+
+        expect(request).toMatchObject({expectedRevision: 1, text: nextText});
+        expect(request).not.toHaveProperty('previousInterpretationId');
+        expect(screen.getByText(raw)).toBeVisible();
+        expect(mocks.execute).not.toHaveBeenCalled();
+        expect(mocks.reportClientFailure).not.toHaveBeenCalled();
+    });
+
+    it('keeps the question context editable when draft sync invalidates it before interpreting the answer', async () => {
+        const {raw, proposal} = semanticRequest('NEEDS_CLARIFICATION');
+        const answer = 'O로 배정해줘.';
+        const reviewedText = `${raw}\n추가 답변: ${answer}`;
+
+        invalidatePreviewOnDraftSync();
+        mocks.interpret.mockResolvedValueOnce(proposal);
+        renderSidebar();
+
+        await userEvent.type(await screen.findByRole('textbox'), answer);
+        mocks.draftFixed = true;
+        await userEvent.click(screen.getByRole('button', {name: '요청 보내기'}));
+
+        await screen.findByRole('alert');
+        expect(screen.getByRole('textbox')).toHaveValue(reviewedText);
+        expect(mocks.interpret).not.toHaveBeenCalled();
+
+        await userEvent.click(screen.getByRole('button', {name: '요청 보내기'}));
+        await waitFor(() => expect(mocks.interpret).toHaveBeenCalledOnce());
+        const [, request] = mocks.interpret.mock.calls[0]!;
+
+        expect(request).toMatchObject({expectedRevision: 1, text: reviewedText});
+        expect(request).not.toHaveProperty('previousInterpretationId');
+        expect(mocks.execute).not.toHaveBeenCalled();
+    });
 
     it('lets the user edit just the date while retaining every other original condition', async () => {
         const {raw, proposal} = semanticRequest();
@@ -5388,6 +5486,78 @@ describe('intent-first sidebar integration', () => {
         expect(screen.queryByRole('button', {name: i18n.t('aiConversationSidebar.authoring.keep')})).not.toBeInTheDocument();
         expect(mocks.execute).not.toHaveBeenCalled();
         expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
+    });
+
+    it('shows fresh same-grid consent after rejecting an earlier explicit request, while keeping the earlier rejection', async () => {
+        enable();
+
+        const result = intentResponse({
+            changedCells: [],
+            applicable: false,
+            validationTarget: 'CANDIDATE',
+            candidate: intentCandidate(),
+            authoringOutcome: intentOutcome({
+                draftState: 'CONSENT_REQUIRED',
+                candidateDigest: 'digest:1',
+                requestPriority: {version: 'request-first-v2', settingChangesRequired: true},
+            }),
+        });
+        const old = {...operation, operationType: 'ADJUST' as const, resultVersionId: null, applyStatus: 'NOT_APPLIED_REVIEW', result};
+
+        current.operations = [old];
+        mocks.version.mockResolvedValue(source);
+
+        const first = renderSidebar();
+
+        await userEvent.click(await screen.findByRole('button', {name: i18n.t('aiConversationSidebar.authoring.keep')}));
+        first.unmount();
+
+        const fresh = {
+            ...old,
+            operationId: 'operation:fresh',
+            interpretationId: 'interpretation:fresh',
+            sequence: old.sequence + 2,
+            result: {...result, candidate: intentCandidate({expiresAt: new Date(Date.now() + 600000).toISOString()})},
+        };
+
+        current.operations = [old, fresh];
+
+        const second = renderSidebar();
+
+        expect(await screen.findByRole('button', {name: i18n.t('aiConversationSidebar.authoring.settingConsentApply')})).toBeVisible();
+        expect(screen.getByRole('button', {name: i18n.t('aiConversationSidebar.authoring.keep')})).toBeVisible();
+        expect(mocks.execute).not.toHaveBeenCalled();
+        expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
+        second.unmount();
+        current.operations = [old];
+        renderSidebar();
+        await waitFor(() => expect(mocks.detail).toHaveBeenCalledTimes(3));
+        expect(screen.queryByRole('button', {name: i18n.t('aiConversationSidebar.authoring.settingConsentApply')})).not.toBeInTheDocument();
+    });
+
+    it('does not label an applied earlier setting proposal as a stale pending proposal', async () => {
+        enable();
+
+        const old = {
+            ...operation,
+            operationId: 'proposal:old',
+            sequence: 1,
+            resultVersionId: null,
+            applyStatus: 'NOT_APPLIED_REVIEW',
+            result: intentResponse({
+                changedCells: [],
+                applicable: false,
+                candidate: intentCandidate(),
+                authoringOutcome: intentOutcome({draftState: 'CONSENT_REQUIRED'}),
+            }),
+        };
+
+        current.conversation = {...current.conversation, currentVersionId: 'result:applied', revision: 1};
+        current.operations = [old, {...operation, operationId: 'operation:applied', sequence: 2, result: intentResponse()}];
+        renderSidebar();
+        await waitFor(() => expect(mocks.detail).toHaveBeenCalled());
+        expect(screen.queryByText(i18n.t('aiConversationSidebar.authoring.candidateSourceChanged'))).not.toBeInTheDocument();
+        expect(mocks.execute).not.toHaveBeenCalled();
     });
 
     it('keeps historical candidates read-only without stale or confirmation controls', async () => {

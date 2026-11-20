@@ -11,7 +11,6 @@ export function AiConversationResult({
     appliedLocally = false,
     undone = false,
     dismissDetails = false,
-    attempt,
     preview,
     changeSummary,
     children,
@@ -42,7 +41,13 @@ export function AiConversationResult({
     const saved = operation.applyStatus === 'APPLIED' || appliedLocally;
     const savedForLater = operation.applyStatus === 'NOT_APPLIED_SOURCE_CHANGED' && !appliedLocally && Boolean(operation.resultVersionId);
     const applied = saved && appliedLocally;
-    const visibleMessageKey = saved ? undefined : messageKey;
+    const visibleMessageKey = saved
+        ? undefined
+        : authoring?.draftState === 'CONSENT_REQUIRED'
+          ? authoring.requestPriority?.settingChangesRequired
+              ? 'settingReviewTitle'
+              : 'candidateReviewTitle'
+          : messageKey;
     const appliedStatusKey =
         saved && requestState === 'NEEDS_REVIEW' ? 'selectedReview' : saved && requestState === 'PARTIAL' ? 'PARTIAL' : undefined;
     const changedCount = result?.changedCells.length;
@@ -120,13 +125,13 @@ export function AiConversationResult({
             summary={
                 historical
                     ? undefined
-                    : qualityWarnings.length > 0
+                    : qualityWarnings.length > 0 && !result?.candidate
                       ? qualityWarnings[0]
                       : savedForLater && compactResult
                         ? t('aiAutofillUi.conversationResult.savedForLaterHint')
                         : reviewSummary
             }
-            attempt={saved || savedForLater ? undefined : attempt}
+            attempt={undefined}
             outcome={outcome}
             outcomeLabel={
                 appliedWithReview
@@ -173,6 +178,7 @@ export function AiConversationResult({
             secondaryActions={secondaryActions}
         >
             {!historical &&
+                !result?.candidate &&
                 authoring?.requestPriority?.userSummary &&
                 authoring.requestPriority.userSummary !==
                     (visibleMessageKey ? t(`aiConversationSidebar.authoring.${visibleMessageKey}`) : '') && (

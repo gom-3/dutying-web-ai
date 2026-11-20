@@ -1,6 +1,6 @@
 import {DragDropContext, Draggable, Droppable, type DropResult} from '@hello-pangea/dnd';
 import {Check, CircleAlert, Plus, X} from 'lucide-react';
-import {type ReactNode, useEffect, useMemo, useRef, useState} from 'react';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import toast from 'react-hot-toast';
 import {SixDotsIcon} from '@/shared/assets/svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
@@ -20,11 +20,11 @@ import {
     hasInvalidShiftShortNameLengthInput,
     normalizeShiftShortNameInput,
 } from '@/shared/lib/shift-short-name';
-import Card from '@/shared/ui/Card';
 import CompositionInput from '@/shared/ui/form-controls/CompositionInput';
 import ShiftClassificationDropdown from '@/shared/ui/ShiftClassificationDropdown';
 import {
     DEFAULT_SHIFT_TYPE_COLORS,
+    ONBOARDING_SHIFT_NAME_MAX_LENGTH,
     getAutomaticPreviousScheduleShiftMapping,
     isLastOnboardingAnnualLeave,
     isOnboardingShiftTypeActive,
@@ -33,6 +33,10 @@ import {
     type TOnboardingRotationMode,
     type TOnboardingWardShiftType,
 } from '../../model';
+import {ShiftTypeErrorHelp} from '../shift-type-error-help';
+import {ShiftTypeFeedback, type TShiftTypeFieldIssue} from '../shift-type-feedback';
+import {getShiftClassificationError} from '../shift-type-validation';
+import styles from './shift-type-step.module.css';
 
 interface IShiftTypeStepProps {
     shiftTypes: TOnboardingWardShiftType[];
@@ -52,14 +56,10 @@ interface IShiftTypeRequirementsProps {
 }
 
 const SHIFT_COLOR_OPTIONS = DEFAULT_SHIFT_TYPE_COLORS;
-const SHIFT_NAME_MAX_LENGTH = 12;
-const SHIFT_TYPE_GRID_COLS_WITH_ROTATION = 'grid-cols-[32px_72px_minmax(110px,0.95fr)_94px_170px_minmax(220px,1.35fr)_48px_40px]';
-const SHIFT_TYPE_GRID_COLS_WITHOUT_ROTATION = 'grid-cols-[32px_72px_minmax(110px,0.95fr)_170px_minmax(220px,1.35fr)_48px_40px]';
 const SHIFT_TYPE_INPUT_SURFACE_CLASS =
-    'rounded-[10px] border-0 bg-gray-7 ring-1 ring-transparent transition-[background-color,box-shadow] duration-150 ease-out hover:bg-gray-6/50 focus-visible:border-0 focus-visible:bg-white focus-visible:ring-1 focus-visible:ring-main-1/70';
+    'rounded-lg border-0 bg-gray-7 shadow-none ring-0 transition-colors duration-150 hover:bg-gray-6/50 focus-visible:border-0 focus-visible:bg-main-light focus-visible:text-main-1 focus-visible:ring-0';
 const SHIFT_TYPE_INPUT_ERROR_CLASS =
-    'bg-[#FFF7F8] ring-1 ring-red/45 focus-visible:border-0 focus-visible:bg-white focus-visible:ring-red/70';
-const SHIFT_TYPE_ROW_CONTROL_CLASS = 'h-10 items-center';
+    'bg-[#FFF1F3] text-[#B4234D] focus-visible:border-0 focus-visible:bg-[#FFE2E8] focus-visible:text-[#981E41] focus-visible:ring-0';
 const SHIFT_TIME_FORMAT_REGEX = /^\d{2}:\d{2}$/;
 const SHIFT_CLASSIFICATION_OPTIONS = [
     {value: 'DAY', labelKey: 'page.onboardingWardCreate.shiftType.classification.day'},
@@ -83,10 +83,14 @@ function getAvailableShiftClassificationOptions(rotationMode: TOnboardingRotatio
 }
 
 function getShiftClassificationForRotationSelection(shiftType: TOnboardingWardShiftType, rotationMode: TOnboardingRotationMode) {
-    return isOnboardingShiftMappingResolved(shiftType.mappingStatus)
-        ? shiftType.classification
-        : (getAutomaticPreviousScheduleShiftMapping(shiftType.shortName, rotationMode)?.classification ??
-              shiftType.mappingRecommendation?.classification);
+    if (isOnboardingShiftMappingResolved(shiftType.mappingStatus)) return shiftType.classification;
+
+    if (shiftType.importedCode) return undefined;
+
+    return (
+        getAutomaticPreviousScheduleShiftMapping(shiftType.shortName, rotationMode)?.classification ??
+        shiftType.mappingRecommendation?.classification
+    );
 }
 
 function getAvailableShiftRotationSystems(shiftType: TOnboardingWardShiftType, rotationMode: TOnboardingRotationMode) {
@@ -178,7 +182,7 @@ export function ShiftTypeRequirements({shiftTypes, rotationMode, requireNightCon
     };
 
     return (
-        <section id="required-shift-types" aria-labelledby="required-shift-types-title" className="mb-7 scroll-mt-6">
+        <section id="required-shift-types" tabIndex={-1} aria-labelledby="required-shift-types-title" className="mb-7 scroll-mt-6">
             <h2 id="required-shift-types-title" className="font-apple text-[16px] font-semibold text-sub-1">
                 {t(titleKey)}
             </h2>
@@ -201,12 +205,13 @@ export function ShiftTypeRequirements({shiftTypes, rotationMode, requireNightCon
                             {group.items.map((requiredShiftType) => {
                                 const {classificationLabel, scope} = getRequiredShiftTypeCopy(requiredShiftType);
                                 const isSatisfied = isRequiredRotationClassificationSatisfied(requiredShiftType);
+                                const duplicateCount = requiredShiftType.duplicateCount;
                                 const statusLabel = isSatisfied
                                     ? t('page.onboardingWardCreate.shiftType.requirements.satisfied', {
                                           scope,
                                           shiftType: classificationLabel,
                                       })
-                                    : requiredShiftType.count === 0
+                                    : duplicateCount <= 1 && requiredShiftType.count === 0
                                       ? t('page.onboardingWardCreate.shiftType.requirements.missing', {
                                             scope,
                                             shiftType: classificationLabel,
@@ -214,13 +219,13 @@ export function ShiftTypeRequirements({shiftTypes, rotationMode, requireNightCon
                                       : t('page.onboardingWardCreate.shiftType.requirements.duplicate', {
                                             scope,
                                             shiftType: classificationLabel,
-                                            count: requiredShiftType.count,
+                                            count: duplicateCount,
                                         });
                                 const issueLabel =
-                                    requiredShiftType.count === 0
+                                    duplicateCount <= 1 && requiredShiftType.count === 0
                                         ? t('page.onboardingWardCreate.shiftType.requirements.missingShort')
                                         : t('page.onboardingWardCreate.shiftType.requirements.duplicateShort', {
-                                              count: requiredShiftType.count,
+                                              count: duplicateCount,
                                           });
 
                                 return (
@@ -318,19 +323,6 @@ const toCanonicalShiftTime = (value: string) => {
     return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
 };
 
-function InlineFieldError({id, children}: {id?: string; children: ReactNode}) {
-    return (
-        <p
-            id={id}
-            className="mt-1 flex items-center justify-center gap-1 font-apple text-[11px] leading-none whitespace-nowrap text-red transition-opacity duration-150"
-            role="alert"
-        >
-            <CircleAlert className="h-3 w-3" aria-hidden="true" />
-            {children}
-        </p>
-    );
-}
-
 export function ShiftTypeStep({
     shiftTypes,
     rotationMode,
@@ -358,10 +350,12 @@ export function ShiftTypeStep({
     };
     const [openedColorShiftTypeId, setOpenedColorShiftTypeId] = useState<string | null>(null);
     const [shortNameErrorById, setShortNameErrorById] = useState<Record<string, string>>({});
+    const classificationErrorById = new Map(
+        shiftTypes.map((shiftType) => [shiftType.id, getShiftClassificationError(shiftType, shiftTypes, rotationMode, t)]),
+    );
     const openedColorContainerRef = useRef<HTMLDivElement | null>(null);
     const reviewRequiredCount = shiftTypes.filter((shiftType) => !isOnboardingShiftMappingResolved(shiftType.mappingStatus)).length;
     const showRotationSystemColumn = rotationMode === 'MIXED';
-    const shiftTypeGridCols = showRotationSystemColumn ? SHIFT_TYPE_GRID_COLS_WITH_ROTATION : SHIFT_TYPE_GRID_COLS_WITHOUT_ROTATION;
     const showProtectedDeleteToast = () => {
         toast.error(t('page.onboardingWardCreate.toast.previousScheduleDeleteLocked'));
     };
@@ -420,6 +414,10 @@ export function ShiftTypeStep({
 
         if (!normalizedShortName) return t('page.onboardingWardCreate.shiftType.validation.shortNameRequired');
 
+        if (hasInvalidShiftShortNameLengthInput(shortName)) {
+            return t('page.onboardingWardCreate.shiftType.validation.shortNameLength');
+        }
+
         if (hasInvalidShiftShortNameEntryKey(normalizedShortName)) {
             return t('page.onboardingWardCreate.shiftType.validation.shortNameFirstKey');
         }
@@ -432,6 +430,8 @@ export function ShiftTypeStep({
     };
     const getShiftNameError = (name: string) => {
         if (!name.trim()) return t('page.onboardingWardCreate.shiftType.validation.nameRequired');
+
+        if (name.trim().length > ONBOARDING_SHIFT_NAME_MAX_LENGTH) return t('page.onboardingWardCreate.shiftType.validation.nameLength');
 
         return null;
     };
@@ -456,43 +456,43 @@ export function ShiftTypeStep({
 
         return null;
     };
-    const getShiftDurationLabel = (shiftType: TOnboardingWardShiftType) => {
-        if (isOffShiftType(shiftType) || !isOnboardingShiftMappingResolved(shiftType.mappingStatus)) return '';
+    const fieldIssuesById = new Map(
+        shiftTypes.map((shiftType) => {
+            const issues: TShiftTypeFieldIssue[] = [];
+            const shortNameError = getShiftShortNameError(shiftType.id, shiftType.shortName);
+            const nameError = getShiftNameError(shiftType.name);
+            const timeError = getShiftTimeError(shiftType);
 
-        const startMinutes = parseShiftTimeToMinutes(shiftType.startTime.trim());
-        const endMinutes = parseShiftTimeToMinutes(shiftType.endTime.trim());
+            if (shortNameError) {
+                issues.push({
+                    id: `onboarding-shift-short-name-error-${shiftType.id}`,
+                    label: t('page.onboardingWardCreate.shiftType.shortName'),
+                    message: shortNameError,
+                    required: !shiftType.shortName.trim(),
+                });
+            }
 
-        if (startMinutes == null || endMinutes == null || endMinutes === startMinutes) {
-            return '-';
-        }
+            if (nameError) {
+                issues.push({
+                    id: `onboarding-shift-name-error-${shiftType.id}`,
+                    label: t('page.onboardingWardCreate.shiftType.name'),
+                    message: nameError,
+                    required: !shiftType.name.trim(),
+                });
+            }
 
-        const diffMinutes = endMinutes < startMinutes ? endMinutes + 24 * 60 - startMinutes : endMinutes - startMinutes;
-        const hours = Math.floor(diffMinutes / 60);
-        const minutes = diffMinutes % 60;
+            if (timeError) {
+                issues.push({
+                    id: `onboarding-shift-time-error-${shiftType.id}`,
+                    label: t('page.onboardingWardCreate.shiftType.workTime'),
+                    message: timeError,
+                    required: !shiftType.startTime.trim() || !shiftType.endTime.trim(),
+                });
+            }
 
-        if (minutes === 0) {
-            return `${hours}h`;
-        }
-
-        return `${hours}h ${minutes}m`;
-    };
-    const getMappingRecommendationLabel = (shiftType: TOnboardingWardShiftType) => {
-        const recommendation = shiftType.mappingRecommendation;
-
-        if (!recommendation || (!allowNightContinuation && recommendation.classification === 'NIGHT_CONTINUATION')) return null;
-
-        const classificationOption = SHIFT_CLASSIFICATION_OPTIONS.find((option) => option.value === recommendation.classification);
-        const classificationLabel = classificationOption ? t(classificationOption.labelKey) : recommendation.classification;
-
-        if (recommendation.rotationSystem === 'NONE') return classificationLabel;
-
-        const rotationLabel =
-            recommendation.rotationSystem === 'TWO'
-                ? t('page.onboardingWardCreate.shiftType.rotationTwo')
-                : t('page.onboardingWardCreate.shiftType.rotationThree');
-
-        return `${rotationLabel} · ${classificationLabel}`;
-    };
+            return [shiftType.id, issues] as const;
+        }),
+    );
 
     useEffect(() => {
         if (!openedColorShiftTypeId) return;
@@ -504,11 +504,19 @@ export function ShiftTypeStep({
 
             setOpenedColorShiftTypeId(null);
         };
+        const handleEscape = (event: KeyboardEvent) => {
+            if (event.key !== 'Escape') return;
+
+            openedColorContainerRef.current?.querySelector('button')?.focus();
+            setOpenedColorShiftTypeId(null);
+        };
 
         document.addEventListener('mousedown', handleOutsideClick);
+        document.addEventListener('keydown', handleEscape);
 
         return () => {
             document.removeEventListener('mousedown', handleOutsideClick);
+            document.removeEventListener('keydown', handleEscape);
         };
     }, [openedColorShiftTypeId]);
 
@@ -519,23 +527,13 @@ export function ShiftTypeStep({
                 rotationMode={rotationMode}
                 requireNightContinuation={requireNightContinuation}
             />
-            <p id="onboarding-shift-name-guidance" className="mb-4 max-w-[1120px] font-apple text-[13px] leading-relaxed text-gray-3">
-                {t('page.onboardingWardCreate.shiftType.nameGuidance')}
-            </p>
             {reviewRequiredCount > 0 ? (
-                <p aria-live="polite" className="mb-3 flex items-center gap-2 font-apple text-[13px] font-medium text-amber-900">
-                    <CircleAlert aria-hidden="true" className="h-4 w-4 shrink-0" />
+                <p aria-live="polite" className="mb-3 text-right font-apple text-sm font-medium text-main-1">
                     {t('page.onboardingWardCreate.shiftType.reviewCount', {count: reviewRequiredCount})}
                 </p>
             ) : null}
-            <Card
-                variant="elevated"
-                padding="none"
-                className="w-full max-w-[1120px] min-w-0 border-transparent bg-transparent p-0 shadow-none"
-            >
-                <div
-                    className={`mb-2 grid ${shiftTypeGridCols} items-center gap-4 px-3 text-center font-apple text-[13px] font-medium text-gray-3`}
-                >
+            <div className={styles.table} data-mixed={showRotationSystemColumn || undefined}>
+                <div className={styles.header}>
                     <span />
                     <span id="onboarding-shift-short-name-label">{t('page.onboardingWardCreate.shiftType.shortName')}</span>
                     <span id="onboarding-shift-name-label">{t('page.onboardingWardCreate.shiftType.name')}</span>
@@ -548,34 +546,18 @@ export function ShiftTypeStep({
                 <DragDropContext onDragEnd={onDragEnd}>
                     <Droppable droppableId="onboarding-shift-types">
                         {(provided) => (
-                            <div
-                                ref={provided.innerRef}
-                                {...provided.droppableProps}
-                                className="overflow-visible rounded-[16px] bg-white px-1 py-1"
-                            >
+                            <div ref={provided.innerRef} {...provided.droppableProps} className={styles.list}>
                                 {shiftTypes.map((shiftType, index) => (
                                     <Draggable key={shiftType.id} draggableId={shiftType.id} index={index}>
                                         {(dragProvided) => (
                                             <div
                                                 ref={dragProvided.innerRef}
                                                 {...dragProvided.draggableProps}
-                                                className={`grid ${shiftTypeGridCols} items-start gap-4 rounded-[12px] border-l-2 px-3 py-3 ${
-                                                    !isOnboardingShiftMappingResolved(shiftType.mappingStatus)
-                                                        ? 'border-amber-400 bg-amber-50'
-                                                        : 'border-transparent'
-                                                }`}
+                                                id={`onboarding-shift-row-${shiftType.id}`}
+                                                tabIndex={-1}
+                                                className={styles.row}
+                                                data-pending={!isOnboardingShiftMappingResolved(shiftType.mappingStatus) || undefined}
                                             >
-                                                {!isOnboardingShiftMappingResolved(shiftType.mappingStatus) ? (
-                                                    <div className="col-span-full flex flex-wrap items-center gap-x-3 gap-y-1 pl-2 font-apple text-[13px] leading-relaxed text-amber-900">
-                                                        <span className="inline-flex items-center gap-1.5 rounded-md bg-amber-100 px-2 py-1 font-medium">
-                                                            <CircleAlert aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
-                                                            {t('page.onboardingWardCreate.shiftType.reviewStatus', {
-                                                                code: shiftType.shortName || shiftType.name,
-                                                            })}
-                                                        </span>
-                                                        <span>{t('page.onboardingWardCreate.shiftType.reviewHint')}</span>
-                                                    </div>
-                                                ) : null}
                                                 <button
                                                     type="button"
                                                     {...dragProvided.dragHandleProps}
@@ -585,13 +567,20 @@ export function ShiftTypeStep({
                                                             shiftType.shortName ||
                                                             t('page.onboardingWardCreate.shiftType.work'),
                                                     })}
-                                                    className="hover:text-gray-2 flex h-10 w-8 cursor-grab items-center justify-center self-start text-gray-4 transition-colors active:cursor-grabbing"
+                                                    className={styles.drag}
                                                 >
                                                     <SixDotsIcon className="h-4 w-4" />
                                                 </button>
-                                                <div className="flex flex-col items-center gap-1">
+                                                <div className={styles.code} data-shift-field="code">
+                                                    <span aria-hidden="true" className={styles.mobileLabel}>
+                                                        {t('page.onboardingWardCreate.shiftType.shortName')}
+                                                    </span>
                                                     <CompositionInput
                                                         value={shiftType.shortName}
+                                                        onFocus={(event) => {
+                                                            if (shiftType.importedCode === shiftType.shortName)
+                                                                event.currentTarget.select();
+                                                        }}
                                                         onValueChange={(value) => {
                                                             const normalizedShortName = normalizeShiftShortNameInput(value);
 
@@ -602,6 +591,8 @@ export function ShiftTypeStep({
                                                                         'page.onboardingWardCreate.shiftType.validation.shortNameLength',
                                                                     ),
                                                                 }));
+
+                                                                if (shiftType.importedCode) return;
                                                             } else if (hasInvalidShiftShortNameEntryKey(normalizedShortName)) {
                                                                 setShortNameErrorById((prev) => ({
                                                                     ...prev,
@@ -624,51 +615,44 @@ export function ShiftTypeStep({
                                                                 ? `onboarding-shift-short-name-error-${shiftType.id}`
                                                                 : undefined
                                                         }
-                                                        className={`h-10 w-16 px-1 text-center font-apple text-[15px] ${SHIFT_TYPE_INPUT_SURFACE_CLASS} ${
+                                                        className={`h-11 w-full px-1 text-center font-apple text-[15px] ${SHIFT_TYPE_INPUT_SURFACE_CLASS} ${
                                                             getShiftShortNameError(shiftType.id, shiftType.shortName)
                                                                 ? SHIFT_TYPE_INPUT_ERROR_CLASS
                                                                 : ''
                                                         }`}
                                                         placeholder="-"
                                                     />
-                                                    {getShiftShortNameError(shiftType.id, shiftType.shortName) ? (
-                                                        <InlineFieldError id={`onboarding-shift-short-name-error-${shiftType.id}`}>
-                                                            {getShiftShortNameError(shiftType.id, shiftType.shortName)}
-                                                        </InlineFieldError>
-                                                    ) : null}
                                                 </div>
-                                                <div className="flex flex-col items-center gap-1">
+                                                <div className={styles.name} data-shift-field="name">
+                                                    <span aria-hidden="true" className={styles.mobileLabel}>
+                                                        {t('page.onboardingWardCreate.shiftType.name')}
+                                                    </span>
                                                     <CompositionInput
                                                         value={shiftType.name}
-                                                        maxLength={SHIFT_NAME_MAX_LENGTH}
+                                                        maxLength={ONBOARDING_SHIFT_NAME_MAX_LENGTH}
                                                         onValueChange={(value) => onChange(shiftType.id, {name: value})}
                                                         variant="foundation"
                                                         fieldSize="lg"
                                                         aria-labelledby="onboarding-shift-name-label"
                                                         aria-invalid={Boolean(getShiftNameError(shiftType.name))}
-                                                        aria-describedby={[
-                                                            'onboarding-shift-name-guidance',
+                                                        aria-describedby={
                                                             getShiftNameError(shiftType.name)
                                                                 ? `onboarding-shift-name-error-${shiftType.id}`
-                                                                : null,
-                                                        ]
-                                                            .filter(Boolean)
-                                                            .join(' ')}
-                                                        className={`h-10 w-full px-3 text-center font-apple text-[15px] ${SHIFT_TYPE_INPUT_SURFACE_CLASS} ${
+                                                                : undefined
+                                                        }
+                                                        className={`h-11 w-full px-3 text-center font-apple text-[15px] ${SHIFT_TYPE_INPUT_SURFACE_CLASS} ${
                                                             getShiftNameError(shiftType.name) ? SHIFT_TYPE_INPUT_ERROR_CLASS : ''
                                                         }`}
                                                         placeholder={t('page.onboardingWardCreate.shiftType.name')}
                                                     />
-                                                    {getShiftNameError(shiftType.name) ? (
-                                                        <InlineFieldError id={`onboarding-shift-name-error-${shiftType.id}`}>
-                                                            {getShiftNameError(shiftType.name)}
-                                                        </InlineFieldError>
-                                                    ) : null}
                                                 </div>
                                                 {showRotationSystemColumn ? (
-                                                    <div className="flex h-10 items-center justify-center">
+                                                    <div className={styles.rotation}>
+                                                        <span aria-hidden="true" className={styles.mobileLabel}>
+                                                            {t('page.onboardingWardCreate.shiftType.rotation')}
+                                                        </span>
                                                         {hasFixedNoneRotationSystem(shiftType) ? (
-                                                            <span className="flex h-10 w-full items-center justify-center rounded-[10px] bg-gray-7 px-2 font-apple text-[13px] text-gray-3">
+                                                            <span className="flex h-11 w-full items-center justify-center rounded-lg bg-gray-7 px-2 font-apple text-[13px] text-gray-3">
                                                                 {t('page.onboardingWardCreate.shiftType.rotationNone')}
                                                             </span>
                                                         ) : (
@@ -720,96 +704,118 @@ export function ShiftTypeStep({
                                                                         value as TSelectableShiftRotationSystem,
                                                                     );
                                                                 }}
-                                                                className="px-2 pr-7 text-[13px]"
+                                                                className="h-11 px-2 pr-7 text-[13px]"
                                                             />
                                                         )}
                                                     </div>
                                                 ) : null}
-                                                <div className="relative mx-auto flex w-full max-w-[180px] flex-col items-center gap-1">
-                                                    <ShiftClassificationDropdown
-                                                        value={
-                                                            isOnboardingShiftMappingResolved(shiftType.mappingStatus)
-                                                                ? shiftType.classification
-                                                                : 'UNASSIGNED'
-                                                        }
-                                                        options={[
-                                                            ...(shiftType.source === 'schedule-input'
-                                                                ? [
-                                                                      {
-                                                                          value: 'UNASSIGNED',
-                                                                          label: t(
-                                                                              'page.onboardingWardCreate.shiftType.classification.unassigned',
-                                                                          ),
-                                                                      },
-                                                                  ]
-                                                                : []),
-                                                            ...getAvailableShiftClassificationOptions(
-                                                                rotationMode,
-                                                                allowNightContinuation,
-                                                            ).map((option) => ({
-                                                                value: option.value,
-                                                                label: t(option.labelKey),
-                                                            })),
-                                                        ]}
-                                                        ariaLabel={t('page.onboardingWardCreate.shiftType.classificationAria', {
-                                                            shiftName:
-                                                                shiftType.name ||
-                                                                shiftType.shortName ||
-                                                                t('page.onboardingWardCreate.shiftType.work'),
-                                                        })}
-                                                        onChange={(value) => {
-                                                            if (value === 'UNASSIGNED') {
-                                                                onChange(shiftType.id, {
-                                                                    classification: 'OTHER_WORK',
-                                                                    rotationSystem: 'NONE',
-                                                                    isDefault: false,
-                                                                    isOff: false,
-                                                                    isCounted: true,
-                                                                    paidMinutes: null,
-                                                                    mappingStatus: 'UNASSIGNED',
-                                                                });
-
-                                                                return;
+                                                <div className={styles.classification} data-shift-field="classification">
+                                                    <span aria-hidden="true" className={styles.mobileLabel}>
+                                                        {t('page.onboardingWardCreate.shiftType.type')}
+                                                    </span>
+                                                    <div className={styles.classificationControl}>
+                                                        <ShiftClassificationDropdown
+                                                            value={
+                                                                isOnboardingShiftMappingResolved(shiftType.mappingStatus)
+                                                                    ? shiftType.classification
+                                                                    : 'UNASSIGNED'
                                                             }
-
-                                                            if (value === 'NIGHT_CONTINUATION' && !allowNightContinuation) return;
-
-                                                            const classification = value as TOnboardingWardShiftType['classification'];
-                                                            const currentRotationSystem =
-                                                                shiftType.rotationSystem ?? resolveOnboardingRotationSystem(shiftType);
-                                                            const selectableRotationSystems = getSelectableRotationSystemsForClassification(
-                                                                rotationMode,
-                                                                classification,
-                                                            );
-                                                            const rotationSystem = selectableRotationSystems.includes(currentRotationSystem)
-                                                                ? currentRotationSystem
-                                                                : (selectableRotationSystems[0] ?? 'NONE');
-
-                                                            onChange(
-                                                                shiftType.id,
-                                                                getSemanticShiftTypePatch(shiftType, classification, rotationSystem),
-                                                            );
-                                                        }}
-                                                    />
-                                                    {!isOnboardingShiftMappingResolved(shiftType.mappingStatus) ? (
-                                                        <p
-                                                            className={`text-center font-apple text-[11px] leading-[1.35] ${
-                                                                getMappingRecommendationLabel(shiftType) ? 'text-gray-3' : 'text-red'
+                                                            options={[
+                                                                ...(shiftType.source === 'schedule-input'
+                                                                    ? [
+                                                                          {
+                                                                              value: 'UNASSIGNED',
+                                                                              label: t('page.onboardingWardCreate.shiftType.selectType'),
+                                                                          },
+                                                                      ]
+                                                                    : []),
+                                                                ...getAvailableShiftClassificationOptions(
+                                                                    rotationMode,
+                                                                    allowNightContinuation,
+                                                                ).map((option) => ({
+                                                                    value: option.value,
+                                                                    label: t(option.labelKey),
+                                                                })),
+                                                            ]}
+                                                            ariaLabel={t('page.onboardingWardCreate.shiftType.classificationAria', {
+                                                                shiftName:
+                                                                    shiftType.name ||
+                                                                    shiftType.shortName ||
+                                                                    t('page.onboardingWardCreate.shiftType.work'),
+                                                            })}
+                                                            ariaInvalid={Boolean(classificationErrorById.get(shiftType.id))}
+                                                            ariaDescribedBy={
+                                                                classificationErrorById.get(shiftType.id)
+                                                                    ? `onboarding-shift-rotation-error-${shiftType.id}`
+                                                                    : undefined
+                                                            }
+                                                            className={`h-11 ${SHIFT_TYPE_INPUT_SURFACE_CLASS} ${
+                                                                classificationErrorById.get(shiftType.id)
+                                                                    ? `${SHIFT_TYPE_INPUT_ERROR_CLASS} pr-11 [&>svg]:hidden`
+                                                                    : ''
                                                             }`}
-                                                            role={getMappingRecommendationLabel(shiftType) ? undefined : 'alert'}
-                                                        >
-                                                            {getMappingRecommendationLabel(shiftType)
-                                                                ? t('page.onboardingWardCreate.shiftType.mappingRecommendation', {
-                                                                      shiftType: getMappingRecommendationLabel(shiftType) ?? '',
-                                                                  })
-                                                                : t('page.onboardingWardCreate.shiftType.mappingRequired')}
-                                                        </p>
-                                                    ) : null}
+                                                            onChange={(value) => {
+                                                                if (value === 'UNASSIGNED') {
+                                                                    onChange(shiftType.id, {
+                                                                        classification: 'OTHER_WORK',
+                                                                        rotationSystem: 'NONE',
+                                                                        isDefault: false,
+                                                                        isOff: false,
+                                                                        isCounted: true,
+                                                                        paidMinutes: null,
+                                                                        mappingStatus: 'UNASSIGNED',
+                                                                    });
+
+                                                                    return;
+                                                                }
+
+                                                                if (value === 'NIGHT_CONTINUATION' && !allowNightContinuation) return;
+
+                                                                const classification = value as TOnboardingWardShiftType['classification'];
+                                                                const currentRotationSystem =
+                                                                    shiftType.rotationSystem ?? resolveOnboardingRotationSystem(shiftType);
+                                                                const selectableRotationSystems =
+                                                                    getSelectableRotationSystemsForClassification(
+                                                                        rotationMode,
+                                                                        classification,
+                                                                    );
+                                                                const rotationSystem = selectableRotationSystems.includes(
+                                                                    currentRotationSystem,
+                                                                )
+                                                                    ? currentRotationSystem
+                                                                    : (selectableRotationSystems[0] ?? 'NONE');
+
+                                                                onChange(
+                                                                    shiftType.id,
+                                                                    getSemanticShiftTypePatch(shiftType, classification, rotationSystem),
+                                                                );
+                                                            }}
+                                                        />
+                                                        {classificationErrorById.get(shiftType.id) ? (
+                                                            <ShiftTypeErrorHelp
+                                                                id={`onboarding-shift-rotation-error-${shiftType.id}`}
+                                                                shiftName={
+                                                                    shiftType.name ||
+                                                                    shiftType.shortName ||
+                                                                    t('page.onboardingWardCreate.shiftType.work')
+                                                                }
+                                                                message={classificationErrorById.get(shiftType.id)!}
+                                                            />
+                                                        ) : null}
+                                                    </div>
                                                 </div>
-                                                <div className="ml-[12px] flex justify-center self-start">
-                                                    <div className="flex items-start">
-                                                        <div className="flex flex-col gap-1">
-                                                            <div className="flex items-center gap-2">
+                                                <div className={styles.time} data-shift-field="time">
+                                                    <span aria-hidden="true" className={styles.mobileLabel}>
+                                                        {t('page.onboardingWardCreate.shiftType.workTime')}
+                                                    </span>
+                                                    {isOffShiftType(shiftType) ||
+                                                    (!isOnboardingShiftMappingResolved(shiftType.mappingStatus) &&
+                                                        !shiftType.startTime &&
+                                                        !shiftType.endTime) ? (
+                                                        <span className={styles.emptyTime}>—</span>
+                                                    ) : (
+                                                        <>
+                                                            <div className={styles.timeFields}>
                                                                 <CompositionInput
                                                                     value={isOffShiftType(shiftType) ? '-' : shiftType.startTime}
                                                                     disabled={isOffShiftType(shiftType)}
@@ -831,7 +837,7 @@ export function ShiftTypeStep({
                                                                             ? `onboarding-shift-time-error-${shiftType.id}`
                                                                             : undefined
                                                                     }
-                                                                    className={`h-10 text-center font-poppins text-[15px] ${SHIFT_TYPE_INPUT_SURFACE_CLASS} ${
+                                                                    className={`h-11 min-w-0 text-center font-poppins text-[15px] ${SHIFT_TYPE_INPUT_SURFACE_CLASS} ${
                                                                         getShiftTimeError(shiftType) ? SHIFT_TYPE_INPUT_ERROR_CLASS : ''
                                                                     }`}
                                                                     placeholder="07:00"
@@ -858,25 +864,17 @@ export function ShiftTypeStep({
                                                                             ? `onboarding-shift-time-error-${shiftType.id}`
                                                                             : undefined
                                                                     }
-                                                                    className={`h-10 text-center font-poppins text-[15px] ${SHIFT_TYPE_INPUT_SURFACE_CLASS} ${
+                                                                    className={`h-11 min-w-0 text-center font-poppins text-[15px] ${SHIFT_TYPE_INPUT_SURFACE_CLASS} ${
                                                                         getShiftTimeError(shiftType) ? SHIFT_TYPE_INPUT_ERROR_CLASS : ''
                                                                     }`}
                                                                     placeholder="15:00"
                                                                 />
                                                             </div>
-                                                            {getShiftTimeError(shiftType) ? (
-                                                                <InlineFieldError id={`onboarding-shift-time-error-${shiftType.id}`}>
-                                                                    {getShiftTimeError(shiftType)}
-                                                                </InlineFieldError>
-                                                            ) : null}
-                                                        </div>
-                                                        <span className="ml-2 flex h-10 min-w-[52px] items-center font-poppins text-[11px] leading-none whitespace-nowrap text-gray-4">
-                                                            {getShiftDurationLabel(shiftType)}
-                                                        </span>
-                                                    </div>
+                                                        </>
+                                                    )}
                                                 </div>
                                                 <div
-                                                    className={`relative flex justify-center self-start ${SHIFT_TYPE_ROW_CONTROL_CLASS}`}
+                                                    className={styles.color}
                                                     ref={openedColorShiftTypeId === shiftType.id ? openedColorContainerRef : null}
                                                 >
                                                     <button
@@ -887,7 +885,8 @@ export function ShiftTypeStep({
                                                                 shiftType.shortName ||
                                                                 t('page.onboardingWardCreate.shiftType.work'),
                                                         })}
-                                                        className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-[10px] bg-gray-7"
+                                                        className={styles.colorTrigger}
+                                                        aria-expanded={openedColorShiftTypeId === shiftType.id}
                                                         onClick={() =>
                                                             setOpenedColorShiftTypeId((prev) =>
                                                                 prev === shiftType.id ? null : shiftType.id,
@@ -900,8 +899,12 @@ export function ShiftTypeStep({
                                                         />
                                                     </button>
                                                     {openedColorShiftTypeId === shiftType.id ? (
-                                                        <div className="absolute top-full left-1/2 z-[1000] mt-2 grid w-[126px] -translate-x-1/2 grid-cols-5 gap-2 rounded-[10px] bg-white p-2 shadow-[0px_10px_28px_rgba(95,100,135,0.16)]">
-                                                            {SHIFT_COLOR_OPTIONS.map((color) => {
+                                                        <div
+                                                            className={styles.palette}
+                                                            role="group"
+                                                            aria-label={t('page.onboardingWardCreate.shiftType.color')}
+                                                        >
+                                                            {Array.from(new Set([shiftType.color, ...SHIFT_COLOR_OPTIONS])).map((color) => {
                                                                 const isSelected = shiftType.color.toLowerCase() === color.toLowerCase();
 
                                                                 return (
@@ -914,7 +917,8 @@ export function ShiftTypeStep({
                                                                                 color,
                                                                             },
                                                                         )}
-                                                                        className="flex h-5 w-5 items-center justify-center rounded-[6px] border border-black/20 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.35)]"
+                                                                        className={styles.swatch}
+                                                                        aria-pressed={isSelected}
                                                                         style={{backgroundColor: color}}
                                                                         onClick={() => {
                                                                             onChange(shiftType.id, {color});
@@ -955,15 +959,15 @@ export function ShiftTypeStep({
 
                                                         onDelete(shiftType.id);
                                                     }}
-                                                    className={`flex w-10 justify-center self-start rounded-full text-gray-4 hover:bg-gray-7 hover:text-sub-1 ${SHIFT_TYPE_ROW_CONTROL_CLASS} ${
-                                                        shiftType.protectedByPreviousSchedule ||
-                                                        isLastOnboardingAnnualLeave(shiftTypes, shiftType.id)
-                                                            ? 'cursor-not-allowed opacity-50'
-                                                            : ''
-                                                    }`}
+                                                    className={styles.delete}
                                                 >
                                                     <X className="h-4 w-4" />
                                                 </button>
+                                                {fieldIssuesById.get(shiftType.id)!.length > 0 ? (
+                                                    <div className={styles.rowNotes}>
+                                                        <ShiftTypeFeedback issues={fieldIssuesById.get(shiftType.id)!} />
+                                                    </div>
+                                                ) : null}
                                             </div>
                                         )}
                                     </Draggable>
@@ -973,19 +977,15 @@ export function ShiftTypeStep({
                         )}
                     </Droppable>
                 </DragDropContext>
-                <div className="mt-4 flex justify-end">
-                    <button
-                        type="button"
-                        className="group flex items-center gap-2 font-apple text-[16px] font-medium text-gray-3 transition-colors hover:text-sub-2.5"
-                        onClick={onAdd}
-                    >
-                        <span className="flex h-[19px] w-[19px] items-center justify-center rounded-full bg-gray-3 transition-colors group-hover:bg-sub-2.5">
-                            <Plus className="h-[11px] w-[11px] text-white" />
+                <div className="mt-4 flex justify-center">
+                    <button type="button" className={`${styles.add} font-apple`} onClick={onAdd}>
+                        <span className={styles.addIcon}>
+                            <Plus className="h-[11px] w-[11px] text-white" aria-hidden="true" />
                         </span>
                         {t('page.onboardingWardCreate.shiftType.add')}
                     </button>
                 </div>
-            </Card>
+            </div>
         </div>
     );
 }

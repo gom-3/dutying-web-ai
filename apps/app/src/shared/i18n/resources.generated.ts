@@ -1008,7 +1008,10 @@ export const ko = {
             "verificationComplete": "인증 완료",
             "verificationConfirm": "확인",
             "verificationResend": "재전송",
-            "verificationSend": "인증"
+            "verificationSend": "인증",
+            "qaTitle": "QA 로그인",
+            "qaId": "QA 아이디",
+            "qaDescription": "관리자 화면에서 만든 QA 아이디로 로그인하세요. 처음 로그인하면 온보딩부터 시작하고, 다시 로그인하면 진행 상태가 유지됩니다."
         },
         "makeShift": {
             "aiRefill": {
@@ -2281,12 +2284,13 @@ export const ko = {
                 "invalidShiftTime": "근무 시간을 확인해 주세요.",
                 "invalidShiftType": "근무 유형 정보를 확인해 주세요.",
                 "unmappedShiftType": "근무표 코드 ‘{{shiftCode}}’의 근무 의미를 선택해 주세요.",
-                "invalidWardIdentity": "입력값은 한글, 영문, 숫자, 공백만 1~20자로 입력해 주세요.",
+                "invalidWardIdentity": "병원명은 100자 이하, 병동명은 50자 이하로 입력해 주세요. 줄바꿈이나 보이지 않는 제어문자는 지워 주세요.",
                 "missingHospitalName": "병원명을 입력해 주세요.",
                 "missingRequiredShiftTypes": "다음 유형을 추가해 주세요: {{shiftTypes}}",
                 "scheduleMissingNurseName": "근무가 입력된 행에는 간호사 이름을 입력해 주세요.",
                 "submitting": "병동을 생성하고 있어요. 잠시만 기다려 주세요.",
-                "success": "이미 병동 생성을 마쳤어요."
+                "success": "이미 병동 생성을 마쳤어요.",
+                "invalidNurseNameDetail": "{{name}}: {{reason}}"
             },
             "defaults": {
                 "newNurseName": "신규 간호사 {{index}}",
@@ -2296,7 +2300,10 @@ export const ko = {
                     "second": "김하늘",
                     "skilled": "이서윤"
                 },
-                "annualLeave": "연차"
+                "annualLeave": "연차",
+                "twoDay": "2교대 주간",
+                "twoNight": "2교대 야간",
+                "twoNightContinuation": "퇴근일 근무"
             },
             "deleteTeamAction": "팀 삭제하기",
             "fallback": {
@@ -2311,7 +2318,7 @@ export const ko = {
                 "wardNameOptional": "(선택) 병동명",
                 "wardNamePlaceholder": "병동명을 입력해 주세요",
                 "hospitalSearchError": "병원을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.",
-                "hospitalSearchLoading": "검색 중이에요",
+                "hospitalSearchLoading": "검색 중",
                 "hospitalFreeTextHint": "목록에 없으면 적은 그대로 두셔도 돼요",
                 "hospitalMatched": "카탈로그에서 찾은 병원이에요"
             },
@@ -2369,7 +2376,7 @@ export const ko = {
                 "description": "엑셀이나 이미지에서 이름과 날짜별 근무를 읽어 병동 초안에 채워요.",
                 "downloadTemplate": "양식 다운로드",
                 "dropzoneTitle": "엑셀이나 근무표 이미지를 선택해 주세요.",
-                "fileSupport": "엑셀(.xlsx, .xls) · 이미지(JPG, PNG, 최대 12MB)",
+                "fileSupport": "엑셀(.xlsx, .xls) · 이미지(JPG, PNG)",
                 "submit": "파일 적용",
                 "submitting": "업로드 중",
                 "template": {
@@ -2468,13 +2475,20 @@ export const ko = {
                 "validation": {
                     "nameDuplicate": "다른 근무명을 입력해 주세요.",
                     "nameRequired": "근무명을 입력해 주세요.",
-                    "shortNameDuplicate": "약자의 첫 글자가 겹치지 않게 입력해 주세요.",
-                    "shortNameFirstKey": "첫 글자는 일본어, 영문, 숫자 또는 기호(- . _ 등)로 입력해 주세요.",
-                    "shortNameLength": "공백 없이 2글자까지 입력해 주세요.",
+                    "shortNameDuplicate": "약자 첫 글자가 겹쳐요. 첫 글자를 바꿔 주세요.",
+                    "shortNameFirstKey": "약자는 영문·숫자·일본어·기호로 시작해 주세요.",
+                    "shortNameLength": "약자는 공백 없이 2자까지 입력해 주세요.",
                     "shortNameRequired": "약자를 입력해 주세요.",
-                    "timeFormat": "시간은 00:00 형식으로 입력해 주세요.",
-                    "timeOrder": "시작/종료 시간을 다르게 입력해 주세요.",
-                    "timeRequired": "시간을 입력해 주세요."
+                    "timeFormat": "근무 시간은 07:00처럼 입력해 주세요.",
+                    "timeOrder": "시작 시간과 종료 시간을 다르게 입력해 주세요.",
+                    "timeRequired": "시간을 입력해 주세요.",
+                    "nameLength": "근무명을 12자 이내로 줄여 주세요.",
+                    "rotationMismatch": "{{wardRotation}} 병동에서 이 {{shiftRotation}} 근무를 사용할 수 없어요. 유형이나 병동 교대제를 다시 선택해 주세요.",
+                    "shiftIssue": "‘{{shift}}’: {{reason}}",
+                    "unnamedShift": "{{index}}번째 근무",
+                    "duplicateClassification": "{{shiftType}} 유형이 중복돼요. {{shiftCodes}} 중 하나만 이 유형으로 남겨 주세요.",
+                    "errorDetailsAria": "{{shiftName}} 오류 안내",
+                    "missingFields": "{{fields}} 입력이 필요해요."
                 },
                 "work": "근무",
                 "workTime": "근무 시간",
@@ -2486,9 +2500,13 @@ export const ko = {
                 "twoDayLabel": "2교대 주간",
                 "twoNightLabel": "2교대 야간",
                 "nameGuidance": "약자를 기준으로 확인해 주세요. D·E·N·O 외 근무명은 자동으로 붙인 임시 설명일 수 있어요. 병동에서 쓰는 이름으로 바꾸고 유형을 확인해 주세요.",
-                "reviewCount": "확인이 필요한 근무 유형 {{count}}개",
+                "reviewCount": "유형 미선택 {{count}}개",
                 "reviewStatus": "{{code}} · 확인 필요",
-                "reviewHint": "근무명을 확인하고, 병동에서 쓰는 유형을 선택해 주세요."
+                "reviewHint": "근무명을 확인하고, 병동에서 쓰는 유형을 선택해 주세요.",
+                "originalCode": "원본 표기 · {{code}}",
+                "mapToExisting": "기존 근무유형에 연결",
+                "selectType": "유형 선택",
+                "rotationMixed": "2·3교대 혼합"
             },
             "teamTabs": {
                 "addTeam": "팀 추가하기"
@@ -2553,6 +2571,47 @@ export const ko = {
                 "retry": "다시 재생",
                 "loading": "영상을 불러오고 있어요.",
                 "playbackSpeed": "재생 속도"
+            },
+            "scheduleEntry": {
+                "title": "최근 근무표를 올려 주세요",
+                "titleHighlight": "최근 근무표",
+                "description": "우리 병동의 근무 패턴에 맞춰 자동 설정하려면 꼭 필요해요!",
+                "previousYear": "이전 연도",
+                "nextYear": "다음 연도",
+                "fileTypes": "JPG · PNG · Excel",
+                "chooseFile": "사진·엑셀 올리기",
+                "manualAction": "직접 작성하기",
+                "manualTitle": "이전 근무표를 직접 작성해 주세요",
+                "processingTitle": "근무표 읽는 중",
+                "reviewTitle": "불러온 근무표를 확인해 주세요",
+                "skipTitle": "이전 근무표를 되도록 불러와 주세요",
+                "skipDescription": "최근 확정된 한 달치 근무표를 엑셀이나 선명한 사진으로 올려 주세요.",
+                "skipConfirm": "그래도 건너뛰기",
+                "skipUpload": "근무표 올리기",
+                "reloadFile": "다시 불러오기",
+                "reloadTitle": "다시 불러올 근무표를 선택해 주세요",
+                "reloadTitleHighlight": "근무표",
+                "reloadDescription": "새 근무표를 불러오면 지금 보고 있는 표가 바뀌어요.",
+                "reviewNotes": "근무표 판독 안내",
+                "rawCodesTitle": "새로 읽은 표기",
+                "rawCodesHint": "약자와 근무 유형은 다음 단계에서 정해요.",
+                "legacyPhotoReview": "이 서버의 사진 판독기는 일부 기호를 비워 둘 수 있어요. 원본과 대조해 주세요."
+            },
+            "hospital": {
+                "restoreLoading": "진행 중인 병동 설정을 확인하고 있어요",
+                "restoreError": "병동 설정을 불러오지 못했어요",
+                "restoreErrorDescription": "기존 설정을 보호하기 위해 불러온 뒤 계속할 수 있어요.",
+                "retryRestore": "다시 불러오기",
+                "openingManagement": "병원 관리로 이동합니다",
+                "backToManagement": "병원 관리로 돌아가기",
+                "affiliation": "\u003chospital>{{hospitalName}}\u003c/hospital>에 새 병동으로 추가돼요!",
+                "nameLengthHint": "아래 병원명은 {{count}}자 이내로 입력해 주세요.",
+                "accessLoading": "병원 관리 권한을 확인하고 있어요",
+                "loadError": "병원 정보를 불러오지 못했어요",
+                "loadErrorDescription": "다시 시도해 주세요.",
+                "ownerRequired": "병원 최고 관리자만 병동을 만들 수 있어요",
+                "authorizedAccount": "권한이 있는 계정으로 로그인해 주세요.",
+                "myWorkspace": "내 관리 공간으로"
             }
         },
         "profile": {
@@ -2634,7 +2693,7 @@ export const ko = {
                 "save": "병동 저장",
                 "title": "새 병동을 만들어요",
                 "validation": {
-                    "wardName": "1~50자 한글, 영문, 일문, 숫자만 입력할 수 있어요."
+                    "wardName": "병원명과 병동명은 50자 이내의 문자·숫자와 공백, 일반적인 이름 기호로 입력해 주세요."
                 },
                 "wardName": "병동명"
             },
@@ -4305,7 +4364,10 @@ export const en: TLocale = {
             "verificationComplete": "Verified",
             "verificationConfirm": "Confirm",
             "verificationResend": "Resend",
-            "verificationSend": "Verify"
+            "verificationSend": "Verify",
+            "qaTitle": "QA sign-in",
+            "qaId": "QA ID",
+            "qaDescription": "Sign in with a QA ID created by an administrator. Your first sign-in starts onboarding; later sign-ins keep your progress."
         },
         "makeShift": {
             "aiRefill": {
@@ -5578,12 +5640,13 @@ export const en: TLocale = {
                 "invalidShiftTime": "Check the shift times.",
                 "invalidShiftType": "Check the shift type information.",
                 "unmappedShiftType": "Select a shift meaning for schedule code ‘{{shiftCode}}’.",
-                "invalidWardIdentity": "Use Korean, English, Japanese, numbers, and spaces only, within 1-20 characters.",
+                "invalidWardIdentity": "Use up to 100 characters for the hospital name and 50 for the ward name. Remove line breaks and invisible control characters.",
                 "missingHospitalName": "Enter a hospital name.",
                 "missingRequiredShiftTypes": "Please add the following shift types: {{shiftTypes}}",
                 "scheduleMissingNurseName": "Enter a nurse name for each row with shifts.",
                 "submitting": "Creating the ward. Please wait.",
-                "success": "Ward creation is already complete."
+                "success": "Ward creation is already complete.",
+                "invalidNurseNameDetail": "{{name}}: {{reason}}"
             },
             "defaults": {
                 "newNurseName": "New nurse {{index}}",
@@ -5593,7 +5656,10 @@ export const en: TLocale = {
                     "second": "Jamie Lee",
                     "skilled": "Morgan Park"
                 },
-                "annualLeave": "Annual leave"
+                "annualLeave": "Annual leave",
+                "twoDay": "Day (2)",
+                "twoNight": "Night (2)",
+                "twoNightContinuation": "Night end"
             },
             "deleteTeamAction": "Delete team",
             "fallback": {
@@ -5666,7 +5732,7 @@ export const en: TLocale = {
                 "description": "Read names and daily shifts from an Excel file or image to fill the ward draft.",
                 "downloadTemplate": "Download template",
                 "dropzoneTitle": "Choose or drop an Excel file or roster image.",
-                "fileSupport": "Excel (.xlsx, .xls) · Images (JPG, PNG, up to 12 MB)",
+                "fileSupport": "Excel (.xlsx, .xls) · Images (JPG, PNG)",
                 "submit": "Apply file",
                 "submitting": "Uploading",
                 "template": {
@@ -5765,13 +5831,20 @@ export const en: TLocale = {
                 "validation": {
                     "nameDuplicate": "Use a different shift name.",
                     "nameRequired": "Enter a shift name.",
-                    "shortNameDuplicate": "Use a different first letter.",
-                    "shortNameFirstKey": "Start with a Japanese character, Latin letter, number, or symbol like -, ., _.",
-                    "shortNameLength": "Use up to 2 characters without spaces.",
+                    "shortNameDuplicate": "Abbreviations share the same first character. Change the first character.",
+                    "shortNameFirstKey": "Start the abbreviation with a Latin letter, number, Japanese character, or symbol.",
+                    "shortNameLength": "Use up to 2 characters for the abbreviation, without spaces.",
                     "shortNameRequired": "Enter an abbreviation.",
-                    "timeFormat": "Use the 00:00 time format.",
-                    "timeOrder": "Use different start and end times.",
-                    "timeRequired": "Enter the time."
+                    "timeFormat": "Enter shift times in HH:mm format, for example 07:00.",
+                    "timeOrder": "Start and end times must be different.",
+                    "timeRequired": "Enter the time.",
+                    "nameLength": "Shorten the shift name to 12 characters or fewer.",
+                    "rotationMismatch": "This {{shiftRotation}} shift cannot be used in a {{wardRotation}} ward. Select its type or the ward rotation again.",
+                    "shiftIssue": "“{{shift}}”: {{reason}}",
+                    "unnamedShift": "Shift {{index}}",
+                    "duplicateClassification": "{{shiftType}} is assigned more than once. Keep this type for just one of: {{shiftCodes}}.",
+                    "errorDetailsAria": "{{shiftName}} error details",
+                    "missingFields": "Enter {{fields}}."
                 },
                 "work": "Work",
                 "workTime": "Shift time",
@@ -5783,9 +5856,13 @@ export const en: TLocale = {
                 "twoDayLabel": "Two-shift day",
                 "twoNightLabel": "Two-shift night",
                 "nameGuidance": "Start with the shift code. Names for codes other than D, E, N and O may be temporary, automatically assigned descriptions. Use your ward’s names and check each shift type.",
-                "reviewCount": "{{count}} shift types need review",
+                "reviewCount": "{{count}} types to set",
                 "reviewStatus": "{{code}} · Needs review",
-                "reviewHint": "Check the name and select the type used in your ward."
+                "reviewHint": "Check the name and select the type used in your ward.",
+                "originalCode": "On roster · {{code}}",
+                "mapToExisting": "Link to an existing shift type",
+                "selectType": "Select type",
+                "rotationMixed": "Mixed two- and three-shift"
             },
             "teamTabs": {
                 "addTeam": "Add team"
@@ -5850,6 +5927,47 @@ export const en: TLocale = {
                 "retry": "Try again",
                 "loading": "Loading video…",
                 "playbackSpeed": "Playback speed"
+            },
+            "scheduleEntry": {
+                "title": "Upload a recent schedule",
+                "titleHighlight": "recent schedule",
+                "description": "We need your schedule to set things up automatically around your ward’s shift patterns!",
+                "previousYear": "Previous year",
+                "nextYear": "Next year",
+                "fileTypes": "JPG · PNG · Excel",
+                "chooseFile": "Upload photo or Excel file",
+                "manualAction": "Enter manually",
+                "manualTitle": "Enter your previous schedule manually",
+                "processingTitle": "Reading schedule",
+                "reviewTitle": "Review your imported schedule",
+                "skipTitle": "Please upload a previous schedule if possible",
+                "skipDescription": "Upload a recent, finalized month of shifts as an Excel file or a clear photo.",
+                "skipConfirm": "Skip anyway",
+                "skipUpload": "Upload schedule",
+                "reloadFile": "Import again",
+                "reloadTitle": "Choose a schedule to import",
+                "reloadTitleHighlight": "schedule",
+                "reloadDescription": "Importing a new schedule replaces the one you’re reviewing.",
+                "reviewNotes": "Schedule import notes",
+                "rawCodesTitle": "New shift labels",
+                "rawCodesHint": "Set their abbreviations and shift types in the next step.",
+                "legacyPhotoReview": "This server’s photo reader may leave some symbols blank. Compare the grid with the original."
+            },
+            "hospital": {
+                "restoreLoading": "Checking for ward setup in progress",
+                "restoreError": "Could not load ward setup",
+                "restoreErrorDescription": "Load the saved setup before continuing to protect your changes.",
+                "retryRestore": "Try again",
+                "openingManagement": "Opening hospital management",
+                "backToManagement": "Back to hospital management",
+                "affiliation": "This ward will be added to \u003chospital>{{hospitalName}}\u003c/hospital>.",
+                "nameLengthHint": "Enter a hospital name of up to {{count}} characters below.",
+                "accessLoading": "Checking hospital access",
+                "loadError": "Could not load the hospital",
+                "loadErrorDescription": "Please try again.",
+                "ownerRequired": "Only the hospital owner can create wards",
+                "authorizedAccount": "Sign in with an authorized account.",
+                "myWorkspace": "My workspace"
             }
         },
         "profile": {
@@ -5931,7 +6049,7 @@ export const en: TLocale = {
                 "save": "Save ward",
                 "title": "Create a new ward",
                 "validation": {
-                    "wardName": "Use 1-50 Korean, English, Japanese, or numeric characters."
+                    "wardName": "Use up to 50 characters: letters, numbers, spaces, and common name punctuation."
                 },
                 "wardName": "Ward name"
             },
@@ -7600,7 +7718,10 @@ export const ja: TLocale = {
             "verificationComplete": "認証完了",
             "verificationConfirm": "確認",
             "verificationResend": "再送信",
-            "verificationSend": "認証"
+            "verificationSend": "認証",
+            "qaTitle": "QAログイン",
+            "qaId": "QA ID",
+            "qaDescription": "管理画面で作成したQA IDでログインしてください。初回は初期設定から始まり、次回以降は進行状況が引き継がれます。"
         },
         "makeShift": {
             "aiRefill": {
@@ -8873,12 +8994,13 @@ export const ja: TLocale = {
                 "invalidShiftTime": "勤務時間を確認してください。",
                 "invalidShiftType": "勤務区分情報を確認してください。",
                 "unmappedShiftType": "勤務表コード「{{shiftCode}}」の勤務区分を選択してください。",
-                "invalidWardIdentity": "入力値は韓国語、英語、日本語、数字、スペースのみ1〜20文字で入力してください。",
+                "invalidWardIdentity": "病院名は100文字以内、病棟名は50文字以内で入力してください。改行や不可視の制御文字は削除してください。",
                 "missingHospitalName": "病院名を入力してください。",
                 "missingRequiredShiftTypes": "次の勤務区分を追加してください：{{shiftTypes}}",
                 "scheduleMissingNurseName": "勤務が入力された行には看護師名を入力してください。",
                 "submitting": "病棟を作成しています。しばらくお待ちください。",
-                "success": "病棟作成はすでに完了しています。"
+                "success": "病棟作成はすでに完了しています。",
+                "invalidNurseNameDetail": "{{name}}：{{reason}}"
             },
             "defaults": {
                 "newNurseName": "新規看護師 {{index}}",
@@ -8888,7 +9010,10 @@ export const ja: TLocale = {
                     "second": "田中美咲",
                     "skilled": "高橋結衣"
                 },
-                "annualLeave": "年休"
+                "annualLeave": "年休",
+                "twoDay": "2交代・日勤",
+                "twoNight": "2交代・夜勤",
+                "twoNightContinuation": "夜勤終了日"
             },
             "deleteTeamAction": "チームを削除",
             "fallback": {
@@ -8961,7 +9086,7 @@ export const ja: TLocale = {
                 "description": "Excelまたは画像から氏名と日別勤務を読み取り、病棟の下書きに入力します。",
                 "downloadTemplate": "テンプレートをダウンロード",
                 "dropzoneTitle": "Excelファイルまたは勤務表の画像を選択してください。",
-                "fileSupport": "Excel（.xlsx、.xls）・画像（JPG、PNG、最大12MB）",
+                "fileSupport": "Excel（.xlsx、.xls）・画像（JPG、PNG）",
                 "submit": "ファイルを適用",
                 "submitting": "アップロード中",
                 "template": {
@@ -9060,27 +9185,38 @@ export const ja: TLocale = {
                 "validation": {
                     "nameDuplicate": "別の勤務名を入力してください。",
                     "nameRequired": "勤務名を入力してください。",
-                    "shortNameDuplicate": "略称の最初の文字が重ならないようにしてください。",
-                    "shortNameFirstKey": "最初の文字は日本語、英字、数字、記号（- . _ など）で入力してください。",
-                    "shortNameLength": "スペースなしで2文字まで入力してください。",
+                    "shortNameDuplicate": "略称の最初の文字が重複しています。最初の文字を変えてください。",
+                    "shortNameFirstKey": "略称の先頭は英字・数字・日本語・記号にしてください。",
+                    "shortNameLength": "略称はスペースなしで2文字まで入力してください。",
                     "shortNameRequired": "略称を入力してください。",
-                    "timeFormat": "時間は00:00形式で入力してください。",
-                    "timeOrder": "開始時間と終了時間は別にしてください。",
-                    "timeRequired": "時間を入力してください。"
+                    "timeFormat": "勤務時間は07:00のように入力してください。",
+                    "timeOrder": "開始時間と終了時間は異なる時刻にしてください。",
+                    "timeRequired": "時間を入力してください。",
+                    "nameLength": "勤務名を12文字以内に短くしてください。",
+                    "rotationMismatch": "{{wardRotation}}の病棟ではこの{{shiftRotation}}の勤務を使えません。勤務区分または病棟の交代制を選び直してください。",
+                    "shiftIssue": "「{{shift}}」：{{reason}}",
+                    "unnamedShift": "{{index}}番目の勤務",
+                    "duplicateClassification": "{{shiftType}}が重複しています。{{shiftCodes}}のうち1つだけをこの勤務区分にしてください。",
+                    "errorDetailsAria": "{{shiftName}}のエラー詳細",
+                    "missingFields": "{{fields}}を入力してください。"
                 },
                 "work": "勤務",
                 "workTime": "勤務時間",
-                "rotation": "Rotation",
-                "rotationAria": "Select rotation system for {{shiftName}}",
-                "rotationThree": "Three-shift",
-                "rotationTwo": "Two-shift",
-                "rotationNone": "Not applicable",
-                "twoDayLabel": "Two-shift day",
-                "twoNightLabel": "Two-shift night",
+                "rotation": "交代制",
+                "rotationAria": "{{shiftName}}の交代制を選択",
+                "rotationThree": "3交代制",
+                "rotationTwo": "2交代制",
+                "rotationNone": "該当なし",
+                "twoDayLabel": "2交代制・日勤",
+                "twoNightLabel": "2交代制・夜勤",
                 "nameGuidance": "略称を基準に確認してください。D・E・N・O以外の勤務名は、自動で付けられた仮の説明の場合があります。病棟で使う名前に変更し、勤務区分を確認してください。",
-                "reviewCount": "確認が必要な勤務区分：{{count}}件",
+                "reviewCount": "未選択 {{count}}件",
                 "reviewStatus": "{{code}} · 要確認",
-                "reviewHint": "勤務名を確認し、病棟で使う勤務区分を選択してください。"
+                "reviewHint": "勤務名を確認し、病棟で使う勤務区分を選択してください。",
+                "originalCode": "元の表記 · {{code}}",
+                "mapToExisting": "既存の勤務区分に割り当てる",
+                "selectType": "勤務区分を選択",
+                "rotationMixed": "2・3交代の混合"
             },
             "teamTabs": {
                 "addTeam": "チームを追加"
@@ -9145,6 +9281,47 @@ export const ja: TLocale = {
                 "retry": "もう一度再生",
                 "loading": "動画を読み込んでいます。",
                 "playbackSpeed": "再生速度"
+            },
+            "scheduleEntry": {
+                "title": "最近の勤務表をアップロードしてください",
+                "titleHighlight": "最近の勤務表",
+                "description": "病棟の勤務パターンに合わせて自動設定するために必要です！",
+                "previousYear": "前年",
+                "nextYear": "翌年",
+                "fileTypes": "JPG · PNG · Excel",
+                "chooseFile": "写真・Excelをアップロード",
+                "manualAction": "手入力する",
+                "manualTitle": "以前の勤務表を手入力してください",
+                "processingTitle": "勤務表を読み込み中",
+                "reviewTitle": "読み込んだ勤務表を確認してください",
+                "skipTitle": "可能であれば、以前の勤務表をアップロードしてください",
+                "skipDescription": "直近の確定済み1か月分の勤務表を、Excelファイルまたは鮮明な写真でアップロードしてください。",
+                "skipConfirm": "スキップして進む",
+                "skipUpload": "勤務表をアップロード",
+                "reloadFile": "読み込み直す",
+                "reloadTitle": "読み込み直す勤務表を選んでください",
+                "reloadTitleHighlight": "勤務表",
+                "reloadDescription": "新しい勤務表を読み込むと、表示中の勤務表が置き換わります。",
+                "reviewNotes": "勤務表の読み取りに関するお知らせ",
+                "rawCodesTitle": "新しく読み取った記号",
+                "rawCodesHint": "略称と勤務区分は次のステップで設定します。",
+                "legacyPhotoReview": "このサーバーでは、一部の記号が空欄になる場合があります。元の勤務表と照合してください。"
+            },
+            "hospital": {
+                "restoreLoading": "設定途中の病棟を確認しています",
+                "restoreError": "病棟の設定を読み込めませんでした",
+                "restoreErrorDescription": "入力内容を保護するため、保存済みの設定を読み込んでから続行してください。",
+                "retryRestore": "再読み込み",
+                "openingManagement": "病院管理に移動します",
+                "backToManagement": "病院管理に戻る",
+                "affiliation": "\u003chospital>{{hospitalName}}\u003c/hospital>に新しい病棟として追加されます。",
+                "nameLengthHint": "下の病院名は{{count}}文字以内で入力してください。",
+                "accessLoading": "病院の管理権限を確認しています",
+                "loadError": "病院情報を読み込めませんでした",
+                "loadErrorDescription": "もう一度お試しください。",
+                "ownerRequired": "病院のオーナーのみ病棟を作成できます",
+                "authorizedAccount": "権限のあるアカウントでログインしてください。",
+                "myWorkspace": "管理スペースへ"
             }
         },
         "profile": {
@@ -9226,7 +9403,7 @@ export const ja: TLocale = {
                 "save": "病棟を保存",
                 "title": "新しい病棟を作成",
                 "validation": {
-                    "wardName": "1〜50文字の韓国語、英語、日本語、数字で入力してください。"
+                    "wardName": "病院名と病棟名は50文字以内で、各言語の文字・数字、スペース、一般的な名前の記号を使用してください。"
                 },
                 "wardName": "病棟名"
             },
@@ -10010,10 +10187,10 @@ export const zh: TLocale = {
         },
         "registerWard": {
             "defaultShiftType": {
-                "day": "天",
-                "evening": "晚上",
-                "night": "骑士",
-                "off": "离开"
+                "day": "白班",
+                "evening": "小夜班",
+                "night": "夜班",
+                "off": "休息"
             },
             "shiftTeams": {
                 "addNamePlaceholder": "添加姓名",
@@ -10049,9 +10226,9 @@ export const zh: TLocale = {
                 "work": "在职的"
             },
             "validation": {
-                "nameRequired": "请输入您的工作名称。",
-                "shortNameRequired": "请输入 {{name}} 班次的工作缩写。",
-                "timeRequired": "{{name}} 请输入您轮班的工作时间。"
+                "nameRequired": "请输入班次名称。",
+                "shortNameRequired": "请输入 {{name}} 的班次缩写。",
+                "timeRequired": "请输入 {{name}} 的工作时间。"
             }
         },
         "requestShift": {
@@ -10895,7 +11072,10 @@ export const zh: TLocale = {
             "verificationComplete": "验证完成",
             "verificationConfirm": "查看",
             "verificationResend": "重传",
-            "verificationSend": "认证"
+            "verificationSend": "认证",
+            "qaTitle": "QA 登录",
+            "qaId": "QA 账号",
+            "qaDescription": "请使用管理员创建的 QA 账号登录。首次登录将进入初始设置，再次登录会保留之前的进度。"
         },
         "makeShift": {
             "aiRefill": {
@@ -12168,12 +12348,13 @@ export const zh: TLocale = {
                 "invalidShiftTime": "请检查班次时间。",
                 "invalidShiftType": "请检查您的班次类型信息。",
                 "unmappedShiftType": "请选择排班代码“{{shiftCode}}”的班次含义。",
-                "invalidWardIdentity": "请输入仅包含韩语、英语、数字和空格的 1 至 20 个字符。",
+                "invalidWardIdentity": "医院名称最多100个字符，病区名称最多50个字符。请删除换行和不可见控制字符。",
                 "missingHospitalName": "请输入医院名称。",
                 "missingRequiredShiftTypes": "请添加以下班次类型：{{shiftTypes}}",
                 "scheduleMissingNurseName": "请在输入班次的行中输入护士姓名。",
                 "submitting": "正在创建一个病区。请稍等。",
-                "success": "已完成病区的创建。"
+                "success": "已完成病区的创建。",
+                "invalidNurseNameDetail": "{{name}}：{{reason}}"
             },
             "defaults": {
                 "newNurseName": "新护士{{index}}",
@@ -12183,7 +12364,10 @@ export const zh: TLocale = {
                     "second": "金荷娜",
                     "skilled": "李瑞云"
                 },
-                "annualLeave": "年假"
+                "annualLeave": "年假",
+                "twoDay": "两班日班",
+                "twoNight": "两班夜班",
+                "twoNightContinuation": "夜班结束日"
             },
             "deleteTeamAction": "删除团队",
             "fallback": {
@@ -12256,7 +12440,7 @@ export const zh: TLocale = {
                 "description": "从 Excel 或图片读取姓名和每日班次，填入病区草稿。",
                 "downloadTemplate": "下载表格",
                 "dropzoneTitle": "请选择或拖放 Excel 文件或排班表图片。",
-                "fileSupport": "Excel（.xlsx、.xls）· 图片（JPG、PNG，最大 12 MB）",
+                "fileSupport": "Excel（.xlsx、.xls）· 图片（JPG、PNG）",
                 "submit": "申请文件",
                 "submitting": "上传中",
                 "template": {
@@ -12355,27 +12539,38 @@ export const zh: TLocale = {
                 "validation": {
                     "nameDuplicate": "请输入不同的职位名称。",
                     "nameRequired": "请输入您的工作名称。",
-                    "shortNameDuplicate": "请输入缩写的第一个字母，不要重叠。",
-                    "shortNameFirstKey": "首字符请输入日文、英文字母、数字或符号（如 -、.、_）。",
-                    "shortNameLength": "请输入最多 2 个字符，不含空格。",
+                    "shortNameDuplicate": "缩写的首字符重复，请更换首字符。",
+                    "shortNameFirstKey": "缩写请以英文字母、数字、日文或符号开头。",
+                    "shortNameLength": "缩写最多2个字符，请勿输入空格。",
                     "shortNameRequired": "请输入缩写。",
-                    "timeFormat": "请以 00:00 格式输入时间。",
-                    "timeOrder": "请输入不同的开始/结束时间。",
-                    "timeRequired": "请输入时间。"
+                    "timeFormat": "请按07:00这样的格式填写工作时间。",
+                    "timeOrder": "开始时间与结束时间不能相同。",
+                    "timeRequired": "请输入时间。",
+                    "nameLength": "请将班次名称缩短至12个字符以内。",
+                    "rotationMismatch": "{{wardRotation}}病区无法使用此{{shiftRotation}}班次。请重新选择班次类型或病区轮班制。",
+                    "shiftIssue": "“{{shift}}”：{{reason}}",
+                    "unnamedShift": "第{{index}}个班次",
+                    "duplicateClassification": "{{shiftType}}类型重复。请仅将{{shiftCodes}}中的一个保留为此类型。",
+                    "errorDetailsAria": "{{shiftName}}错误详情",
+                    "missingFields": "请填写{{fields}}。"
                 },
                 "work": "在职的",
                 "workTime": "时间",
-                "rotation": "Rotation",
-                "rotationAria": "Select rotation system for {{shiftName}}",
-                "rotationThree": "Three-shift",
-                "rotationTwo": "Two-shift",
-                "rotationNone": "Not applicable",
-                "twoDayLabel": "Two-shift day",
-                "twoNightLabel": "Two-shift night",
+                "rotation": "轮班制",
+                "rotationAria": "选择{{shiftName}}的轮班制",
+                "rotationThree": "三班制",
+                "rotationTwo": "两班制",
+                "rotationNone": "不适用",
+                "twoDayLabel": "两班制白班",
+                "twoNightLabel": "两班制夜班",
                 "nameGuidance": "请先核对缩写。D、E、N、O以外的班次名称可能是自动填写的临时说明。请改为病区使用的名称，并确认班次类型。",
-                "reviewCount": "有{{count}}个班次类型需要确认",
+                "reviewCount": "{{count}}项待选择",
                 "reviewStatus": "{{code}} · 待确认",
-                "reviewHint": "请核对班次名称，并选择病区使用的类型。"
+                "reviewHint": "请核对班次名称，并选择病区使用的类型。",
+                "originalCode": "原始标记 · {{code}}",
+                "mapToExisting": "关联到已有班次",
+                "selectType": "选择班次类型",
+                "rotationMixed": "两班制与三班制混合"
             },
             "teamTabs": {
                 "addTeam": "添加团队"
@@ -12440,6 +12635,47 @@ export const zh: TLocale = {
                 "retry": "重新播放",
                 "loading": "正在加载视频…",
                 "playbackSpeed": "播放速度"
+            },
+            "scheduleEntry": {
+                "title": "上传近期排班表",
+                "titleHighlight": "近期排班表",
+                "description": "要按病区的排班规律自动设置，就需要这份排班表！",
+                "previousYear": "上一年",
+                "nextYear": "下一年",
+                "fileTypes": "JPG · PNG · Excel",
+                "chooseFile": "上传照片或 Excel 文件",
+                "manualAction": "手动填写",
+                "manualTitle": "请手动填写之前的排班表",
+                "processingTitle": "正在读取排班表",
+                "reviewTitle": "请确认导入的排班表",
+                "skipTitle": "建议尽量上传之前的排班表",
+                "skipDescription": "请上传最近一个月已确定的排班表，可使用 Excel 文件或清晰照片。",
+                "skipConfirm": "仍然跳过",
+                "skipUpload": "上传排班表",
+                "reloadFile": "重新导入",
+                "reloadTitle": "选择要重新导入的排班表",
+                "reloadTitleHighlight": "排班表",
+                "reloadDescription": "导入新排班表后，当前查看的排班表将被替换。",
+                "reviewNotes": "排班表识别提示",
+                "rawCodesTitle": "新识别的班次标记",
+                "rawCodesHint": "下一步可设置简称和班次类型。",
+                "legacyPhotoReview": "此服务器可能无法读入某些符号，请对照原图检查空白单元格。"
+            },
+            "hospital": {
+                "restoreLoading": "正在检查未完成的病区设置",
+                "restoreError": "无法加载病区设置",
+                "restoreErrorDescription": "请先加载已保存的设置，再继续操作，以保留已有更改。",
+                "retryRestore": "重新加载",
+                "openingManagement": "正在进入医院管理",
+                "backToManagement": "返回医院管理",
+                "affiliation": "此病区将添加到\u003chospital>{{hospitalName}}\u003c/hospital>。",
+                "nameLengthHint": "请在下方输入不超过{{count}}个字符的医院名称。",
+                "accessLoading": "正在检查医院管理权限",
+                "loadError": "无法加载医院信息",
+                "loadErrorDescription": "请重试。",
+                "ownerRequired": "仅医院所有者可以创建病区",
+                "authorizedAccount": "请使用有权限的账号登录。",
+                "myWorkspace": "我的管理空间"
             }
         },
         "profile": {
@@ -12521,7 +12757,7 @@ export const zh: TLocale = {
                 "save": "保存病区",
                 "title": "创建新病区",
                 "validation": {
-                    "wardName": "只能输入 1 至 50 个韩语、英语、日语和数字字符。"
+                    "wardName": "医院和病区名称请使用不超过50个字符的文字、数字、空格和常用名称标点。"
                 },
                 "wardName": "病区名称"
             },
@@ -13305,10 +13541,10 @@ export const zhTW: TLocale = {
         },
         "registerWard": {
             "defaultShiftType": {
-                "day": "天",
-                "evening": "晚上",
-                "night": "騎士",
-                "off": "離開"
+                "day": "白班",
+                "evening": "小夜班",
+                "night": "夜班",
+                "off": "休息"
             },
             "shiftTeams": {
                 "addNamePlaceholder": "新增姓名",
@@ -13344,9 +13580,9 @@ export const zhTW: TLocale = {
                 "work": "在職的"
             },
             "validation": {
-                "nameRequired": "請輸入您的工作名稱。",
-                "shortNameRequired": "請輸入 {{name}} 班次的工作縮寫。",
-                "timeRequired": "{{name}} 請輸入您輪班的工作時間。"
+                "nameRequired": "請輸入班別名稱。",
+                "shortNameRequired": "請輸入 {{name}} 的班別縮寫。",
+                "timeRequired": "請輸入 {{name}} 的工作時間。"
             }
         },
         "requestShift": {
@@ -14190,7 +14426,10 @@ export const zhTW: TLocale = {
             "verificationComplete": "驗證完成",
             "verificationConfirm": "檢視",
             "verificationResend": "重傳",
-            "verificationSend": "認證"
+            "verificationSend": "認證",
+            "qaTitle": "QA 登入",
+            "qaId": "QA 帳號",
+            "qaDescription": "請使用管理員建立的 QA 帳號登入。首次登入將進入初始設定，再次登入會保留先前的進度。"
         },
         "makeShift": {
             "aiRefill": {
@@ -15463,12 +15702,13 @@ export const zhTW: TLocale = {
                 "invalidShiftTime": "請檢查班次時間。",
                 "invalidShiftType": "請檢查您的班次型別資訊。",
                 "unmappedShiftType": "請選擇排班程式碼“{{shiftCode}}”的班次含義。",
-                "invalidWardIdentity": "請輸入僅包含韓語、英語、數字和空格的 1 至 20 個字元。",
+                "invalidWardIdentity": "醫院名稱最多100個字元，病區名稱最多50個字元。請刪除換行與不可見控制字元。",
                 "missingHospitalName": "請輸入醫院名稱。",
                 "missingRequiredShiftTypes": "請新增以下班次型別：{{shiftTypes}}",
                 "scheduleMissingNurseName": "請在輸入班次的行中輸入護理師姓名。",
                 "submitting": "正在建立一個病房。請稍等。",
-                "success": "已完成病房的建立。"
+                "success": "已完成病房的建立。",
+                "invalidNurseNameDetail": "{{name}}：{{reason}}"
             },
             "defaults": {
                 "newNurseName": "新護理師{{index}}",
@@ -15478,7 +15718,10 @@ export const zhTW: TLocale = {
                     "second": "金荷娜",
                     "skilled": "李瑞雲"
                 },
-                "annualLeave": "年假"
+                "annualLeave": "年假",
+                "twoDay": "兩班日班",
+                "twoNight": "兩班夜班",
+                "twoNightContinuation": "夜班結束日"
             },
             "deleteTeamAction": "刪除團隊",
             "fallback": {
@@ -15551,7 +15794,7 @@ export const zhTW: TLocale = {
                 "description": "從 Excel 或圖片讀取姓名與每日班別，填入病房草稿。",
                 "downloadTemplate": "下載表格",
                 "dropzoneTitle": "請選擇或拖放 Excel 檔案或班表圖片。",
-                "fileSupport": "Excel（.xlsx、.xls）· 圖片（JPG、PNG，最大 12MB）",
+                "fileSupport": "Excel（.xlsx、.xls）· 圖片（JPG、PNG）",
                 "submit": "申請檔案",
                 "submitting": "上傳中",
                 "template": {
@@ -15650,27 +15893,38 @@ export const zhTW: TLocale = {
                 "validation": {
                     "nameDuplicate": "請輸入不同的職位名稱。",
                     "nameRequired": "請輸入您的工作名稱。",
-                    "shortNameDuplicate": "請輸入縮寫的第一個字母，不要重疊。",
-                    "shortNameFirstKey": "首字元請輸入日文、英文字母、數字或符號（如 -、.、_）。",
-                    "shortNameLength": "請輸入最多 2 個字元，不含空格。",
+                    "shortNameDuplicate": "縮寫的首字元重複，請更換首字元。",
+                    "shortNameFirstKey": "縮寫請以英文字母、數字、日文或符號開頭。",
+                    "shortNameLength": "縮寫最多2個字元，請勿輸入空格。",
                     "shortNameRequired": "請輸入縮寫。",
-                    "timeFormat": "請以 00:00 格式輸入時間。",
-                    "timeOrder": "請輸入不同的開始/結束時間。",
-                    "timeRequired": "請輸入時間。"
+                    "timeFormat": "請依07:00這樣的格式填寫工作時間。",
+                    "timeOrder": "開始時間與結束時間不能相同。",
+                    "timeRequired": "請輸入時間。",
+                    "nameLength": "請將班別名稱縮短至12個字元以內。",
+                    "rotationMismatch": "{{wardRotation}}病區無法使用此{{shiftRotation}}班次。請重新選擇班次類型或病區輪班制。",
+                    "shiftIssue": "「{{shift}}」：{{reason}}",
+                    "unnamedShift": "第{{index}}個班次",
+                    "duplicateClassification": "{{shiftType}}類型重複。請僅將{{shiftCodes}}中的一個保留為此類型。",
+                    "errorDetailsAria": "{{shiftName}}錯誤詳情",
+                    "missingFields": "請填寫{{fields}}。"
                 },
                 "work": "在職的",
                 "workTime": "時間",
-                "rotation": "Rotation",
-                "rotationAria": "Select rotation system for {{shiftName}}",
-                "rotationThree": "Three-shift",
-                "rotationTwo": "Two-shift",
-                "rotationNone": "Not applicable",
-                "twoDayLabel": "Two-shift day",
-                "twoNightLabel": "Two-shift night",
+                "rotation": "輪班制",
+                "rotationAria": "選擇{{shiftName}}的輪班制",
+                "rotationThree": "三班制",
+                "rotationTwo": "兩班制",
+                "rotationNone": "不適用",
+                "twoDayLabel": "兩班制白班",
+                "twoNightLabel": "兩班制夜班",
                 "nameGuidance": "請先核對縮寫。D、E、N、O以外的班次名稱可能是自動填寫的暫時說明。請改為病房使用的名稱，並確認班次類型。",
-                "reviewCount": "有{{count}}個班次類型需要確認",
+                "reviewCount": "{{count}}項待選擇",
                 "reviewStatus": "{{code}} · 待確認",
-                "reviewHint": "請核對班次名稱，並選擇病房使用的類型。"
+                "reviewHint": "請核對班次名稱，並選擇病房使用的類型。",
+                "originalCode": "原始標記 · {{code}}",
+                "mapToExisting": "連結至現有班別",
+                "selectType": "選擇班別類型",
+                "rotationMixed": "兩班制與三班制混合"
             },
             "teamTabs": {
                 "addTeam": "新增團隊"
@@ -15735,6 +15989,47 @@ export const zhTW: TLocale = {
                 "retry": "重新播放",
                 "loading": "正在載入影片…",
                 "playbackSpeed": "播放速度"
+            },
+            "scheduleEntry": {
+                "title": "上傳近期班表",
+                "titleHighlight": "近期班表",
+                "description": "要依照病房的排班模式自動設定，就需要這份班表！",
+                "previousYear": "上一年",
+                "nextYear": "下一年",
+                "fileTypes": "JPG · PNG · Excel",
+                "chooseFile": "上傳照片或 Excel 檔案",
+                "manualAction": "手動填寫",
+                "manualTitle": "請手動填寫先前的班表",
+                "processingTitle": "正在讀取班表",
+                "reviewTitle": "請確認匯入的班表",
+                "skipTitle": "建議盡量上傳先前的班表",
+                "skipDescription": "請上傳最近一個月已確定的班表，可使用 Excel 檔案或清晰照片。",
+                "skipConfirm": "仍要略過",
+                "skipUpload": "上傳班表",
+                "reloadFile": "重新匯入",
+                "reloadTitle": "選擇要重新匯入的班表",
+                "reloadTitleHighlight": "班表",
+                "reloadDescription": "匯入新班表後，會取代目前顯示的班表。",
+                "reviewNotes": "班表辨識提示",
+                "rawCodesTitle": "新辨識的班別符號",
+                "rawCodesHint": "在下一步設定簡稱和班別類型。",
+                "legacyPhotoReview": "此伺服器可能無法讀入某些符號，請對照原圖檢查空白儲存格。"
+            },
+            "hospital": {
+                "restoreLoading": "正在檢查未完成的病房設定",
+                "restoreError": "無法載入病房設定",
+                "restoreErrorDescription": "請先載入已儲存的設定，再繼續操作，以保留已有變更。",
+                "retryRestore": "重新載入",
+                "openingManagement": "正在進入醫院管理",
+                "backToManagement": "返回醫院管理",
+                "affiliation": "此病房將新增至\u003chospital>{{hospitalName}}\u003c/hospital>。",
+                "nameLengthHint": "請在下方輸入不超過{{count}}個字元的醫院名稱。",
+                "accessLoading": "正在檢查醫院管理權限",
+                "loadError": "無法載入醫院資訊",
+                "loadErrorDescription": "請再試一次。",
+                "ownerRequired": "僅醫院擁有者可以建立病房",
+                "authorizedAccount": "請使用有權限的帳號登入。",
+                "myWorkspace": "我的管理空間"
             }
         },
         "profile": {
@@ -15816,7 +16111,7 @@ export const zhTW: TLocale = {
                 "save": "儲存病房",
                 "title": "建立新病房",
                 "validation": {
-                    "wardName": "只能輸入 1 至 50 個韓語、英語、日語和數字字元。"
+                    "wardName": "醫院與病房名稱請使用不超過50個字元的文字、數字、空格及常用名稱標點。"
                 },
                 "wardName": "病房名稱"
             },
@@ -16600,10 +16895,10 @@ export const th: TLocale = {
         },
         "registerWard": {
             "defaultShiftType": {
-                "day": "วัน",
-                "evening": "ตอนเย็น",
-                "night": "กลางคืน",
-                "off": "ปิด"
+                "day": "เวรเช้า",
+                "evening": "เวรบ่าย",
+                "night": "เวรดึก",
+                "off": "หยุด"
             },
             "shiftTeams": {
                 "addNamePlaceholder": "เพิ่มชื่อ",
@@ -17485,7 +17780,10 @@ export const th: TLocale = {
             "verificationComplete": "ตรวจสอบแล้ว",
             "verificationConfirm": "ยืนยัน",
             "verificationResend": "ส่งอีกครั้ง",
-            "verificationSend": "ตรวจสอบ"
+            "verificationSend": "ตรวจสอบ",
+            "qaTitle": "เข้าสู่ระบบ QA",
+            "qaId": "รหัส QA",
+            "qaDescription": "เข้าสู่ระบบด้วยรหัส QA ที่ผู้ดูแลสร้างไว้ การเข้าสู่ระบบครั้งแรกจะเริ่มตั้งค่า และครั้งถัดไปจะคงความคืบหน้าเดิม"
         },
         "makeShift": {
             "aiRefill": {
@@ -18758,12 +19056,13 @@ export const th: TLocale = {
                 "invalidShiftTime": "ตรวจสอบเวลากะ",
                 "invalidShiftType": "ตรวจสอบข้อมูลประเภทกะ",
                 "unmappedShiftType": "เลือกความหมายของกะสำหรับรหัสตาราง ‘{{shiftCode}}’",
-                "invalidWardIdentity": "ใช้ภาษาเกาหลี อังกฤษ ญี่ปุ่น ตัวเลข และช่องว่างเท่านั้น โดยมีความยาวไม่เกิน 1-20 อักขระ",
+                "invalidWardIdentity": "ชื่อโรงพยาบาลไม่เกิน 100 ตัวอักษร และชื่อหอผู้ป่วยไม่เกิน 50 ตัวอักษร โปรดลบการขึ้นบรรทัดใหม่และอักขระควบคุมที่มองไม่เห็น",
                 "missingHospitalName": "ป้อนชื่อโรงพยาบาล",
                 "missingRequiredShiftTypes": "โปรดเพิ่มประเภทกะต่อไปนี้: {{shiftTypes}}",
                 "scheduleMissingNurseName": "ป้อนชื่อพยาบาลสำหรับแต่ละแถวที่มีกะ",
                 "submitting": "การสร้างวอร์ด โปรดรอ.",
-                "success": "การสร้างวอร์ดเสร็จสมบูรณ์แล้ว"
+                "success": "การสร้างวอร์ดเสร็จสมบูรณ์แล้ว",
+                "invalidNurseNameDetail": "{{name}}: {{reason}}"
             },
             "defaults": {
                 "newNurseName": "พยาบาลคนใหม่ {{index}}",
@@ -18773,7 +19072,10 @@ export const th: TLocale = {
                     "second": "เจมี่ ลี",
                     "skilled": "มอร์แกน พาร์ค"
                 },
-                "annualLeave": "ลาพักร้อน"
+                "annualLeave": "ลาพักร้อน",
+                "twoDay": "กลางวัน(2)",
+                "twoNight": "กลางคืน(2)",
+                "twoNightContinuation": "หลังเวรดึก"
             },
             "deleteTeamAction": "ลบทีม",
             "fallback": {
@@ -18846,7 +19148,7 @@ export const th: TLocale = {
                 "description": "อ่านชื่อและกะรายวันจาก Excel หรือรูปภาพเพื่อกรอกแบบร่างวอร์ด",
                 "downloadTemplate": "ดาวน์โหลดเทมเพลต",
                 "dropzoneTitle": "เลือกหรือลากไฟล์ Excel หรือรูปตารางเวร",
-                "fileSupport": "Excel (.xlsx, .xls) · รูปภาพ (JPG, PNG ไม่เกิน 12 MB)",
+                "fileSupport": "Excel (.xlsx, .xls) · รูปภาพ (JPG, PNG)",
                 "submit": "ไฟล์ Apply",
                 "submitting": "กำลังอัพโหลด",
                 "template": {
@@ -18945,27 +19247,38 @@ export const th: TLocale = {
                 "validation": {
                     "nameDuplicate": "ใช้ชื่อกะอื่น",
                     "nameRequired": "ป้อนชื่อกะ",
-                    "shortNameDuplicate": "ใช้อักษรตัวแรกอื่น",
-                    "shortNameFirstKey": "ขึ้นต้นด้วยอักษรญี่ปุ่น อักษรละติน ตัวเลข หรือสัญลักษณ์ เช่น -, ., _",
-                    "shortNameLength": "ใช้ได้ถึง 2 ตัวอักษรโดยไม่ต้องเว้นวรรค",
+                    "shortNameDuplicate": "อักษรตัวแรกของคำย่อซ้ำกัน โปรดเปลี่ยนอักษรตัวแรก",
+                    "shortNameFirstKey": "คำย่อต้องขึ้นต้นด้วยอักษรละติน ตัวเลข อักษรญี่ปุ่น หรือสัญลักษณ์",
+                    "shortNameLength": "คำย่อใช้ได้ไม่เกิน 2 ตัวอักษร โดยไม่เว้นวรรค",
                     "shortNameRequired": "ป้อนคำย่อ",
-                    "timeFormat": "ใช้รูปแบบเวลา 00:00",
-                    "timeOrder": "ใช้เวลาเริ่มต้นและเวลาสิ้นสุดที่แตกต่างกัน",
-                    "timeRequired": "ป้อนเวลา"
+                    "timeFormat": "กรอกเวลาเวรในรูปแบบ เช่น 07:00",
+                    "timeOrder": "เวลาเริ่มและสิ้นสุดต้องไม่ตรงกัน",
+                    "timeRequired": "ป้อนเวลา",
+                    "nameLength": "ย่อชื่อเวรให้ไม่เกิน 12 ตัวอักษร",
+                    "rotationMismatch": "หอผู้ป่วยแบบ {{wardRotation}} ใช้กะ {{shiftRotation}} นี้ไม่ได้ โปรดเลือกประเภทกะหรือระบบกะของหอผู้ป่วยอีกครั้ง",
+                    "shiftIssue": "“{{shift}}”: {{reason}}",
+                    "unnamedShift": "กะที่ {{index}}",
+                    "duplicateClassification": "ประเภท {{shiftType}} ซ้ำกัน โปรดเลือกเพียงรายการเดียวจาก {{shiftCodes}} ให้เป็นประเภทนี้",
+                    "errorDetailsAria": "รายละเอียดข้อผิดพลาด {{shiftName}}",
+                    "missingFields": "กรุณากรอก{{fields}}"
                 },
                 "work": "งาน",
                 "workTime": "เวลากะ",
-                "rotation": "Rotation",
-                "rotationAria": "Select rotation system for {{shiftName}}",
-                "rotationThree": "Three-shift",
-                "rotationTwo": "Two-shift",
-                "rotationNone": "Not applicable",
-                "twoDayLabel": "Two-shift day",
-                "twoNightLabel": "Two-shift night",
+                "rotation": "ระบบกะ",
+                "rotationAria": "เลือกระบบกะสำหรับ{{shiftName}}",
+                "rotationThree": "ระบบ 3 กะ",
+                "rotationTwo": "ระบบ 2 กะ",
+                "rotationNone": "ไม่เกี่ยวข้อง",
+                "twoDayLabel": "กะกลางวันระบบ 2 กะ",
+                "twoNightLabel": "กะกลางคืนระบบ 2 กะ",
                 "nameGuidance": "โปรดตรวจสอบจากรหัสเวรก่อน ชื่อเวรที่ไม่ใช่ D, E, N และ O อาจเป็นคำอธิบายชั่วคราวที่ระบบตั้งให้อัตโนมัติ โปรดเปลี่ยนเป็นชื่อที่วอร์ดใช้และตรวจสอบประเภทเวร",
-                "reviewCount": "มีประเภทเวรที่ต้องตรวจสอบ {{count}} รายการ",
+                "reviewCount": "ยังไม่เลือกประเภท {{count}} รายการ",
                 "reviewStatus": "{{code}} · ต้องตรวจสอบ",
-                "reviewHint": "ตรวจสอบชื่อเวรและเลือกประเภทที่วอร์ดใช้"
+                "reviewHint": "ตรวจสอบชื่อเวรและเลือกประเภทที่วอร์ดใช้",
+                "originalCode": "รหัสในต้นฉบับ · {{code}}",
+                "mapToExisting": "เชื่อมกับประเภทเวรที่มีอยู่",
+                "selectType": "เลือกประเภทกะ",
+                "rotationMixed": "ผสม 2 และ 3 ผลัด"
             },
             "teamTabs": {
                 "addTeam": "เพิ่มทีม"
@@ -19030,6 +19343,47 @@ export const th: TLocale = {
                 "retry": "เล่นอีกครั้ง",
                 "loading": "กำลังโหลดวิดีโอ…",
                 "playbackSpeed": "ความเร็วในการเล่น"
+            },
+            "scheduleEntry": {
+                "title": "อัปโหลดตารางเวรล่าสุด",
+                "titleHighlight": "ตารางเวรล่าสุด",
+                "description": "ต้องใช้ตารางเวรเพื่อตั้งค่าให้ตรงกับรูปแบบเวรของวอร์ดโดยอัตโนมัติ!",
+                "previousYear": "ปีก่อนหน้า",
+                "nextYear": "ปีถัดไป",
+                "fileTypes": "JPG · PNG · Excel",
+                "chooseFile": "อัปโหลดรูปหรือไฟล์ Excel",
+                "manualAction": "กรอกเอง",
+                "manualTitle": "กรอกตารางเวรเดิมด้วยตนเอง",
+                "processingTitle": "กำลังอ่านตารางเวร",
+                "reviewTitle": "ตรวจสอบตารางเวรที่นำเข้า",
+                "skipTitle": "หากเป็นไปได้ กรุณาอัปโหลดตารางเวรเดิม",
+                "skipDescription": "อัปโหลดตารางเวรล่าสุดที่ยืนยันแล้วครบหนึ่งเดือน เป็นไฟล์ Excel หรือภาพถ่ายที่ชัดเจน",
+                "skipConfirm": "ข้ามขั้นตอนนี้",
+                "skipUpload": "อัปโหลดตารางเวร",
+                "reloadFile": "นำเข้าอีกครั้ง",
+                "reloadTitle": "เลือกตารางเวรที่จะนำเข้าใหม่",
+                "reloadTitleHighlight": "ตารางเวร",
+                "reloadDescription": "เมื่อนำเข้าตารางเวรใหม่ ตารางเวรปัจจุบันจะถูกแทนที่",
+                "reviewNotes": "หมายเหตุการอ่านตารางเวร",
+                "rawCodesTitle": "สัญลักษณ์กะที่อ่านได้ใหม่",
+                "rawCodesHint": "กำหนดตัวย่อและประเภทกะในขั้นตอนถัดไป",
+                "legacyPhotoReview": "ระบบอ่านภาพของเซิร์ฟเวอร์นี้อาจเว้นสัญลักษณ์บางตัวไว้ กรุณาเทียบกับต้นฉบับ"
+            },
+            "hospital": {
+                "restoreLoading": "กำลังตรวจสอบการตั้งค่าวอร์ดที่ยังไม่เสร็จ",
+                "restoreError": "โหลดการตั้งค่าวอร์ดไม่สำเร็จ",
+                "restoreErrorDescription": "กรุณาโหลดการตั้งค่าที่บันทึกไว้ก่อนดำเนินการต่อ เพื่อรักษาการแก้ไขเดิม",
+                "retryRestore": "โหลดใหม่",
+                "openingManagement": "กำลังเปิดหน้าจัดการโรงพยาบาล",
+                "backToManagement": "กลับไปจัดการโรงพยาบาล",
+                "affiliation": "วอร์ดนี้จะถูกเพิ่มใน \u003chospital>{{hospitalName}}\u003c/hospital>",
+                "nameLengthHint": "กรอกชื่อโรงพยาบาลด้านล่างไม่เกิน {{count}} อักขระ",
+                "accessLoading": "กำลังตรวจสอบสิทธิ์จัดการโรงพยาบาล",
+                "loadError": "โหลดข้อมูลโรงพยาบาลไม่สำเร็จ",
+                "loadErrorDescription": "กรุณาลองอีกครั้ง",
+                "ownerRequired": "เฉพาะเจ้าของโรงพยาบาลเท่านั้นที่สร้างวอร์ดได้",
+                "authorizedAccount": "กรุณาเข้าสู่ระบบด้วยบัญชีที่มีสิทธิ์",
+                "myWorkspace": "พื้นที่จัดการของฉัน"
             }
         },
         "profile": {
@@ -19111,7 +19465,7 @@ export const th: TLocale = {
                 "save": "บันทึกวอร์ด",
                 "title": "สร้างวอร์ดใหม่",
                 "validation": {
-                    "wardName": "ใช้อักขระภาษาเกาหลี อังกฤษ ญี่ปุ่น หรือตัวเลข 1-50 ตัว"
+                    "wardName": "ใช้ตัวอักษรทุกภาษา ตัวเลข ช่องว่าง และเครื่องหมายที่ใช้ในชื่อทั่วไป ไม่เกิน 50 อักขระ"
                 },
                 "wardName": "ชื่อวอร์ด"
             },
@@ -19934,9 +20288,9 @@ export const vi: TLocale = {
                 "work": "công việc"
             },
             "validation": {
-                "nameRequired": "Nhập tên ca.",
-                "shortNameRequired": "Nhập tên viết nghỉ của {{name}}.",
-                "timeRequired": "Nhập giờ làm việc cho {{name}}."
+                "nameRequired": "Nhập tên ca làm việc.",
+                "shortNameRequired": "Nhập ký hiệu viết tắt cho ca {{name}}.",
+                "timeRequired": "Nhập giờ làm việc của ca {{name}}."
             }
         },
         "requestShift": {
@@ -20780,7 +21134,10 @@ export const vi: TLocale = {
             "verificationComplete": "Đã xác minh",
             "verificationConfirm": "Xác nhận",
             "verificationResend": "Gửi lại",
-            "verificationSend": "Xác minh"
+            "verificationSend": "Xác minh",
+            "qaTitle": "Đăng nhập QA",
+            "qaId": "Mã QA",
+            "qaDescription": "Đăng nhập bằng mã QA do quản trị viên tạo. Lần đầu sẽ bắt đầu thiết lập; các lần sau giữ nguyên tiến trình."
         },
         "makeShift": {
             "aiRefill": {
@@ -22053,12 +22410,13 @@ export const vi: TLocale = {
                 "invalidShiftTime": "Kiểm tra thời gian thay đổi.",
                 "invalidShiftType": "Kiểm tra thông tin loại ca.",
                 "unmappedShiftType": "Chọn ý nghĩa ca cho mã lịch ‘{{shiftCode}}’.",
-                "invalidWardIdentity": "Chỉ sử dụng tiếng Hàn, tiếng Anh, tiếng Nhật, số và dấu cách, trong vòng 1-20 ký tự.",
+                "invalidWardIdentity": "Tên bệnh viện tối đa 100 ký tự, tên khoa tối đa 50 ký tự. Hãy xóa dấu xuống dòng và ký tự điều khiển ẩn.",
                 "missingHospitalName": "Nhập tên bệnh viện.",
                 "missingRequiredShiftTypes": "Vui lòng thêm các loại ca sau: {{shiftTypes}}",
                 "scheduleMissingNurseName": "Nhập tên điều dưỡng cho mỗi hàng theo ca.",
                 "submitting": "Tạo khoa. Vui lòng chờ.",
-                "success": "Việc tạo khoa đã hoàn tất."
+                "success": "Việc tạo khoa đã hoàn tất.",
+                "invalidNurseNameDetail": "{{name}}: {{reason}}"
             },
             "defaults": {
                 "newNurseName": "điều dưỡng mới {{index}}",
@@ -22068,7 +22426,10 @@ export const vi: TLocale = {
                     "second": "Jamie Lee",
                     "skilled": "Công viên Morgan"
                 },
-                "annualLeave": "Nghỉ phép"
+                "annualLeave": "Nghỉ phép",
+                "twoDay": "Ngày (2 ca)",
+                "twoNight": "Đêm (2 ca)",
+                "twoNightContinuation": "Sau ca đêm"
             },
             "deleteTeamAction": "Xóa đội",
             "fallback": {
@@ -22141,7 +22502,7 @@ export const vi: TLocale = {
                 "description": "Đọc tên và ca làm từng ngày từ Excel hoặc ảnh để điền vào bản nháp khoa.",
                 "downloadTemplate": "Tải xuống mẫu",
                 "dropzoneTitle": "Chọn hoặc thả tệp Excel hoặc ảnh lịch trực.",
-                "fileSupport": "Excel (.xlsx, .xls) · Ảnh (JPG, PNG, tối đa 12 MB)",
+                "fileSupport": "Excel (.xlsx, .xls) · Ảnh (JPG, PNG)",
                 "submit": "Áp dụng tập tin",
                 "submitting": "Đang tải lên",
                 "template": {
@@ -22240,27 +22601,38 @@ export const vi: TLocale = {
                 "validation": {
                     "nameDuplicate": "Sử dụng tên ca khác.",
                     "nameRequired": "Nhập tên ca.",
-                    "shortNameDuplicate": "Sử dụng chữ cái đầu tiên khác.",
-                    "shortNameFirstKey": "Bắt đầu bằng ký tự tiếng Nhật, chữ cái Latinh, số hoặc ký hiệu như -, ., _.",
-                    "shortNameLength": "Sử dụng tối đa 2 ký tự không có dấu cách.",
+                    "shortNameDuplicate": "Các viết tắt trùng ký tự đầu. Hãy đổi ký tự đầu.",
+                    "shortNameFirstKey": "Bắt đầu viết tắt bằng chữ Latinh, số, ký tự tiếng Nhật hoặc ký hiệu.",
+                    "shortNameLength": "Nhập viết tắt tối đa 2 ký tự, không có dấu cách.",
                     "shortNameRequired": "Nhập một từ viết nghỉ.",
-                    "timeFormat": "Sử dụng định dạng thời gian 00:00.",
-                    "timeOrder": "Sử dụng thời gian bắt đầu và kết thúc khác nhau.",
-                    "timeRequired": "Nhập thời gian."
+                    "timeFormat": "Nhập giờ ca theo dạng như 07:00.",
+                    "timeOrder": "Giờ bắt đầu và kết thúc phải khác nhau.",
+                    "timeRequired": "Nhập thời gian.",
+                    "nameLength": "Rút gọn tên ca xuống tối đa 12 ký tự.",
+                    "rotationMismatch": "Khoa {{wardRotation}} không dùng được ca {{shiftRotation}} này. Hãy chọn lại loại ca hoặc chế độ kíp của khoa.",
+                    "shiftIssue": "“{{shift}}”: {{reason}}",
+                    "unnamedShift": "Ca {{index}}",
+                    "duplicateClassification": "Loại {{shiftType}} bị trùng. Chỉ giữ loại này cho một trong các mã: {{shiftCodes}}.",
+                    "errorDetailsAria": "Chi tiết lỗi {{shiftName}}",
+                    "missingFields": "Nhập {{fields}}."
                 },
                 "work": "công việc",
                 "workTime": "thời gian thay đổi",
-                "rotation": "Rotation",
-                "rotationAria": "Select rotation system for {{shiftName}}",
-                "rotationThree": "Three-shift",
-                "rotationTwo": "Two-shift",
-                "rotationNone": "Not applicable",
-                "twoDayLabel": "Two-shift day",
-                "twoNightLabel": "Two-shift night",
+                "rotation": "Chế độ luân ca",
+                "rotationAria": "Chọn chế độ luân ca cho {{shiftName}}",
+                "rotationThree": "Chế độ 3 ca",
+                "rotationTwo": "Chế độ 2 ca",
+                "rotationNone": "Không áp dụng",
+                "twoDayLabel": "Ca ngày của chế độ 2 ca",
+                "twoNightLabel": "Ca đêm của chế độ 2 ca",
                 "nameGuidance": "Hãy kiểm tra mã ca trước. Tên của các mã ngoài D, E, N và O có thể là mô tả tạm thời do hệ thống tự đặt. Hãy đổi thành tên dùng tại khoa và kiểm tra loại ca.",
-                "reviewCount": "Có {{count}} loại ca cần kiểm tra",
+                "reviewCount": "{{count}} loại ca chưa chọn",
                 "reviewStatus": "{{code}} · Cần kiểm tra",
-                "reviewHint": "Kiểm tra tên ca và chọn loại ca được dùng tại khoa."
+                "reviewHint": "Kiểm tra tên ca và chọn loại ca được dùng tại khoa.",
+                "originalCode": "Ký hiệu gốc · {{code}}",
+                "mapToExisting": "Liên kết với loại ca hiện có",
+                "selectType": "Chọn loại ca",
+                "rotationMixed": "Kết hợp 2 và 3 kíp"
             },
             "teamTabs": {
                 "addTeam": "Thêm đội"
@@ -22325,6 +22697,47 @@ export const vi: TLocale = {
                 "retry": "Phát lại",
                 "loading": "Đang tải video…",
                 "playbackSpeed": "Tốc độ phát"
+            },
+            "scheduleEntry": {
+                "title": "Tải lên lịch trực gần đây",
+                "titleHighlight": "lịch trực gần đây",
+                "description": "Cần lịch trực để tự động thiết lập theo cách xếp ca của khoa!",
+                "previousYear": "Năm trước",
+                "nextYear": "Năm sau",
+                "fileTypes": "JPG · PNG · Excel",
+                "chooseFile": "Tải ảnh hoặc tệp Excel lên",
+                "manualAction": "Nhập thủ công",
+                "manualTitle": "Nhập thủ công lịch trực trước đây",
+                "processingTitle": "Đang đọc lịch trực",
+                "reviewTitle": "Kiểm tra lịch trực đã nhập",
+                "skipTitle": "Nếu có thể, hãy tải lịch trực trước đây lên",
+                "skipDescription": "Hãy tải lịch trực trọn tháng gần nhất đã chốt, bằng tệp Excel hoặc ảnh rõ nét.",
+                "skipConfirm": "Vẫn bỏ qua",
+                "skipUpload": "Tải lịch trực lên",
+                "reloadFile": "Nhập lại",
+                "reloadTitle": "Chọn lịch trực để nhập lại",
+                "reloadTitleHighlight": "lịch trực",
+                "reloadDescription": "Lịch trực mới sẽ thay thế lịch bạn đang xem.",
+                "reviewNotes": "Ghi chú khi đọc lịch trực",
+                "rawCodesTitle": "Ký hiệu ca mới",
+                "rawCodesHint": "Đặt tên viết tắt và loại ca ở bước tiếp theo.",
+                "legacyPhotoReview": "Bộ đọc ảnh của máy chủ này có thể bỏ trống một số ký hiệu. Hãy đối chiếu với ảnh gốc."
+            },
+            "hospital": {
+                "restoreLoading": "Đang kiểm tra thiết lập khoa còn dang dở",
+                "restoreError": "Không thể tải thiết lập khoa",
+                "restoreErrorDescription": "Vui lòng tải thiết lập đã lưu trước khi tiếp tục để giữ các thay đổi trước đó.",
+                "retryRestore": "Tải lại",
+                "openingManagement": "Đang mở trang quản lý bệnh viện",
+                "backToManagement": "Quay lại quản lý bệnh viện",
+                "affiliation": "Khoa mới sẽ được thêm vào \u003chospital>{{hospitalName}}\u003c/hospital>.",
+                "nameLengthHint": "Nhập tên bệnh viện bên dưới, tối đa {{count}} ký tự.",
+                "accessLoading": "Đang kiểm tra quyền quản lý bệnh viện",
+                "loadError": "Không thể tải thông tin bệnh viện",
+                "loadErrorDescription": "Vui lòng thử lại.",
+                "ownerRequired": "Chỉ chủ sở hữu bệnh viện mới có thể tạo khoa",
+                "authorizedAccount": "Vui lòng đăng nhập bằng tài khoản có quyền truy cập.",
+                "myWorkspace": "Không gian quản lý của tôi"
             }
         },
         "profile": {
@@ -22406,7 +22819,7 @@ export const vi: TLocale = {
                 "save": "Lưu khoa",
                 "title": "Tạo một khoa mới",
                 "validation": {
-                    "wardName": "Sử dụng 1-50 ký tự tiếng Hàn, tiếng Anh, tiếng Nhật hoặc số."
+                    "wardName": "Dùng tối đa 50 ký tự gồm chữ cái các ngôn ngữ, chữ số, dấu cách và dấu câu thông dụng trong tên."
                 },
                 "wardName": "Tên khoa"
             },

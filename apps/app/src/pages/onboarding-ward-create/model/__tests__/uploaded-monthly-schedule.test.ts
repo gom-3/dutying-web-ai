@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest';
-import {buildUploadedMonthlySchedulesFromParsedWardData} from '../adapter';
+import {buildOnboardingParseDraftInjection, buildUploadedMonthlySchedulesFromParsedWardData} from '../adapter';
 import {applyUploadedScheduleTemplateDraft, createInitialDraft, getScheduleMonthKey} from '../draft';
 
 // 월별 탭(7월·8월·9월)을 한 파일에 쌓아 올리면 달마다 근무표 칸이 따로 채워져야 한다.
@@ -63,5 +63,66 @@ describe('여러 달 시트를 담은 근무표 파일', () => {
         expect(july.rows.map((row) => row.shifts)).toEqual([{'1': 'D'}, {'2': 'E'}]);
         // 지난 달 행도 같은 간호사에 매달려야 저장할 때 사람이 복제되지 않는다.
         expect(july.rows.map((row) => row.nurseId)).toEqual(draft.nurses.map((nurse) => nurse.id));
+        expect(
+            draft.nurses.map((nurse) =>
+                draft.shiftTypes
+                    .filter((type) => !type.isOff && nurse.possibleShiftTypeIds.includes(type.id))
+                    .map((type) => type.shortName),
+            ),
+        ).toEqual([
+            ['D', 'E', 'N'],
+            ['D', 'E'],
+        ]);
+    });
+    it('carries the parsed ward team, group and nurse settings with each imported row', () => {
+        const {parsedWardData} = buildOnboardingParseDraftInjection(
+            {
+                teams: [{name: 'A', divisions: [{divisionNum: 1, name: 'RN'}]}, {name: 'B'}],
+                nurses: [
+                    {
+                        name: 'Sam',
+                        teamName: 'A',
+                        divisionNum: 1,
+                        memo: '멘토',
+                        isPreceptor: true,
+                        employmentDate: '2025-03-01',
+                        possibleShiftShortNames: ['D'],
+                        assignments: {'2026-11-01': 'D', '2026-12-01': 'D', '2026-12-02': '/'},
+                    },
+                    {
+                        name: 'Sam',
+                        teamName: 'B',
+                        divisionNum: 2,
+                        groupName: 'RN2',
+                        isWorker: false,
+                        possibleShiftShortNames: ['N'],
+                        assignments: {'2026-11-02': 'N', '2026-12-02': 'N'},
+                    },
+                ],
+            },
+            'photo.jpg',
+        );
+        const monthlySchedules = buildUploadedMonthlySchedulesFromParsedWardData(parsedWardData);
+        const primary = monthlySchedules[1]!;
+        const {draft} = applyUploadedScheduleTemplateDraft(createInitialDraft(), {
+            fileName: 'photo.jpg',
+            ...primary,
+            monthlySchedules: [{...monthlySchedules[0]!, teamSchedules: [...monthlySchedules[0]!.teamSchedules].reverse()}],
+        });
+        const [teamA, teamB] = draft.teams;
+        const [nurseA, nurseB] = draft.nurses;
+        const codeById = new Map(draft.shiftTypes.map((shiftType) => [shiftType.id, shiftType.shortName]));
+
+        expect(draft.teams.map((team) => [team.name, team.divisions])).toEqual([
+            ['A', [{divisionNum: 1, name: 'RN'}]],
+            ['B', [{divisionNum: 1, name: 'RN2'}]],
+        ]);
+        expect(nurseA).toMatchObject({teamId: teamA!.id, isPreceptor: true, employmentDate: '2025-03-01', memo: '멘토'});
+        expect(nurseB).toMatchObject({teamId: teamB!.id, isWorker: false, isPreceptor: false});
+        expect(nurseA!.possibleShiftTypeIds.map((id) => codeById.get(id))).toEqual(['D', '/', 'A']);
+        expect(nurseB!.possibleShiftTypeIds.map((id) => codeById.get(id))).toEqual(['N', '/', 'A']);
+        expect(draft.scheduleInputs[teamA!.id]?.['2026-12']?.rows[0]?.shifts).toEqual({'1': 'D', '2': '/'});
+        expect(draft.scheduleInputs[teamB!.id]?.['2026-12']?.rows[0]?.shifts).toEqual({'2': 'N'});
+        expect(draft.scheduleInputs[teamB!.id]?.['2026-11']?.rows[0]).toMatchObject({nurseId: nurseB!.id, shifts: {'2': 'N'}});
     });
 });

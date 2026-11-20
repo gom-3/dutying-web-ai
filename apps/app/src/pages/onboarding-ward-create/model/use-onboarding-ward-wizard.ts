@@ -7,23 +7,25 @@ import {type DropResult} from '@hello-pangea/dnd';
 import * as Sentry from '@sentry/react';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import toast from 'react-hot-toast';
+import {useTranslation} from 'react-i18next';
 import useRegister from '@/features/register';
 import {FileAPI} from '@/shared/api';
 import type {TOnboardingWardParseOptions} from '@/shared/api/file/type';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {getDefaultDivisionName} from '@/shared/lib/division-label';
+import {HOSPITAL_NAME_MAX_LENGTH, isValidWardIdentityName} from '@/shared/lib/ward-name';
 import {captureRosterImportEvent} from '@/shared/util/abto';
 import {
     applyParsedWardData,
     buildUploadedMonthlySchedulesFromParsedWardData,
     buildUploadedTeamSchedulesFromParsedWardData,
-    restoreParsedNursePossibleShiftTypes,
     buildOnboardingParseDraftInjection,
     getOnboardingUploadFailureMessage,
     isOnboardingImageFile,
     isSupportedOnboardingUploadFile,
     type TOnboardingParsedShiftType,
 } from './adapter';
+import {normalizeOnboardingDivisions} from './divisions';
 import {
     addNurseDraft,
     addDivisionAfterNurseDraft,
@@ -32,6 +34,7 @@ import {
     addTeamDraft,
     applyScheduleInputDraft,
     applyUploadedScheduleTemplateDraft,
+    assignImportedShiftColors,
     canComplete,
     canGoNext,
     canGoPrev,
@@ -45,10 +48,13 @@ import {
     getCompletionValidationIssues,
     getScheduleMonthKey,
     getStepValidation,
+    getScheduleInputDraft,
     goNextStep as goNextStepDraft,
     goPreviousStep as goPreviousStepDraft,
     hasScheduleInputDraft,
     isOnboardingShiftTypeActive,
+    mergeImportedShiftTypeDraft,
+    getShiftTypesForNewUpload,
     MAX_ONBOARDING_NURSES,
     MAX_ONBOARDING_TEAMS,
     normalizeOnboardingShiftCode,
@@ -67,12 +73,17 @@ import {
     updateShiftTypeDraft,
     updateTeamDivisionNameDraft,
     updateTeamNameDraft,
+    withScheduleInputUpdate,
 } from './draft';
+import {applyRosterAvailability} from './nurse-availability';
 import {withOnboardingEdit, withOnboardingImport, normalizeOnboardingSignals} from './onboarding-measurement';
+import {prepareOnboardingPhoto} from './prepare-onboarding-photo';
 import {normalizeOnboardingScheduleFile, parseOnboardingScheduleTemplate} from './schedule-template-parser';
+import {localizeOnboardingShiftNames} from './shift-type-labels';
 import {sortNursesByMode} from './sort';
 import {createOnboardingWardCreateExecutor, type TOnboardingWardCreateSubmission} from './submission';
 import type {TSortMode} from './types';
+import {buildOnboardingWardIdentityPayload} from './ward-identity';
 
 const MAX_STEP = 5;
 const ONBOARDING_DRAFT_FLOW_VERSION = 2;
@@ -253,6 +264,7 @@ const normalizeRestoredNurses = (nurses: TOnboardingWardDraft['nurses']): TOnboa
             isWorker: nurse.isWorker,
             employmentDate: nurse.employmentDate,
             possibleShiftTypeIds: nurse.possibleShiftTypeIds,
+            workShiftOverride: nurse.workShiftOverride,
             initialShifts: nurse.initialShifts,
         };
     });
@@ -268,6 +280,7 @@ const normalizeRestoredConstraintCandidates = (
             severity: constraint.severity,
             category: constraint.category,
             params: constraint.params,
+            ...(constraint.paramsByTeamId ? {paramsByTeamId: constraint.paramsByTeamId} : {}),
             severityRecommendation: constraint.severityRecommendation,
             confidence: constraint.confidence,
             confidenceBand: constraint.confidenceBand,
@@ -277,10 +290,11 @@ const normalizeRestoredConstraintCandidates = (
         }));
 const normalizePersistedDraft = (draft: TOnboardingWardDraft, labels?: TOnboardingDraftLabels): TOnboardingWardDraft =>
     ensureOnboardingAnnualLeave(
-        {
+        normalizeOnboardingDivisions({
             onboardingSignals: normalizeOnboardingSignals(draft.onboardingSignals),
             currentStep: draft.currentStep,
             uploadedFileName: draft.uploadedFileName,
+            importWarnings: Array.isArray(draft.importWarnings) ? draft.importWarnings.filter((item) => typeof item === 'string') : [],
             wardName: draft.wardName,
             hospitalName: draft.hospitalName,
             hospitalId: draft.hospitalId,
@@ -297,7 +311,12 @@ const normalizePersistedDraft = (draft: TOnboardingWardDraft, labels?: TOnboardi
                           ? 'NIGHT_CONTINUATION'
                           : 'OFF'))
                     : null,
-            shiftTypes: draft.shiftTypes.map((shiftType) => ({
+            // Import-color repair belongs to the source page. Once configuration
+            // starts, preserve the colors chosen in the shift-type editor.
+            shiftTypes: ((draft.scheduleInputState?.initialized ?? draft.currentStep >= 4)
+                ? draft.shiftTypes
+                : assignImportedShiftColors(draft.shiftTypes)
+            ).map((shiftType) => ({
                 ...shiftType,
                 rotationSystem: resolveOnboardingRotationSystem(shiftType),
                 paidMinutes: resolveOnboardingRotationSystem(shiftType) === 'NONE' ? null : (shiftType.paidMinutes ?? null),
@@ -305,8 +324,16 @@ const normalizePersistedDraft = (draft: TOnboardingWardDraft, labels?: TOnboardi
             teams: normalizeRestoredTeams(draft.teams, normalizeRestoredNurses(draft.nurses)),
             nurses: normalizeRestoredNurses(draft.nurses),
             scheduleInputs: normalizeScheduleInputs(draft.scheduleInputs),
+            scheduleInputState: {
+                shiftTypes: assignImportedShiftColors(
+                    Array.isArray(draft.scheduleInputState?.shiftTypes) ? draft.scheduleInputState.shiftTypes : draft.shiftTypes,
+                ),
+                initialized: draft.scheduleInputState?.initialized ?? draft.currentStep >= 4,
+                needsImport: draft.scheduleInputState?.needsImport ?? !(draft.scheduleInputState?.initialized ?? draft.currentStep >= 4),
+                replaceOnEntry: draft.scheduleInputState?.replaceOnEntry === true,
+            },
             constraintCandidates: normalizeRestoredConstraintCandidates(draft.constraintCandidates),
-        },
+        }),
         labels,
     );
 const migrateLegacyDraftStep = (step: TOnboardingWardDraft['currentStep'], flowVersion: unknown) =>
@@ -337,9 +364,11 @@ const readServerOnboardingWardDraftPayload = (payload: unknown, labels?: TOnboar
         ...(draft as TOnboardingWardDraft),
         currentStep: migrateLegacyDraftStep(draft.currentStep, payload.flowVersion),
     };
+    const normalized = normalizePersistedDraft(restoredDraft, labels);
+    const restoreAvailability = normalized.currentStep === 5 || normalized.onboardingSignals?.possibleShiftsEdited;
 
     return {
-        draft: normalizePersistedDraft(restoredDraft, labels),
+        draft: restoreAvailability ? applyRosterAvailability(normalized, {restoreSavedChoices: true}) : normalized,
         draftWardId,
         selectedTeamId: typeof payload.selectedTeamId === 'string' ? payload.selectedTeamId : '',
         sortMode: isSortMode(payload.sortMode) ? payload.sortMode : 'manual',
@@ -587,20 +616,6 @@ const applySchedulePreviewToDraft = (
         },
         labels,
     );
-    const shiftIdByShortName = new Map(
-        draftWithShiftTypes.shiftTypes.filter(isOnboardingShiftTypeActive).map((shiftType) => [shiftType.shortName, shiftType.id]),
-    );
-    const previewPossibleShiftTypeIds = response.wardShiftTypes
-        .map((shiftType) => shiftIdByShortName.get(normalizeOnboardingShiftCode(shiftType.shortName) ?? shiftType.shortName))
-        .filter((shiftTypeId): shiftTypeId is string => Boolean(shiftTypeId));
-    const protectedPreviousShiftTypeIds = draftWithShiftTypes.shiftTypes
-        .filter(
-            (shiftType) =>
-                isOnboardingShiftTypeActive(shiftType) &&
-                (shiftType.protectedByPreviousSchedule === true || shiftType.classification === 'ANNUAL_LEAVE'),
-        )
-        .map((shiftType) => shiftType.id);
-    const possibleShiftTypeIds = Array.from(new Set([...previewPossibleShiftTypeIds, ...protectedPreviousShiftTypeIds]));
     const fallbackPossibleShiftTypeIds = draftWithShiftTypes.shiftTypes
         .filter(isOnboardingShiftTypeActive)
         .map((shiftType) => shiftType.id);
@@ -628,7 +643,7 @@ const applySchedulePreviewToDraft = (
             isPreceptee: existingNurse?.isPreceptee ?? false,
             isWorker: existingNurse?.isWorker ?? true,
             employmentDate: existingNurse?.employmentDate ?? defaultEmploymentDate,
-            possibleShiftTypeIds: possibleShiftTypeIds.length > 0 ? possibleShiftTypeIds : fallbackPossibleShiftTypeIds,
+            possibleShiftTypeIds: existingNurse?.possibleShiftTypeIds ?? fallbackPossibleShiftTypeIds,
             initialShifts: mergeInitialShifts(
                 existingNurse?.initialShifts,
                 nurse.initialShifts?.map((shift) => {
@@ -769,22 +784,12 @@ const updateConstraintParamsStaffingCount = (
     };
 };
 const buildDraftWardIdentityPayload = (draft: TOnboardingWardDraft, fallbackWardName: string) => {
-    const normalizedWardName = draft.wardName.trim();
-    const normalizedHospitalName = draft.hospitalName.trim();
-    const fallbackName = normalizedWardName || normalizedHospitalName || fallbackWardName;
-
-    return {
-        name: normalizedWardName || normalizedHospitalName || fallbackName,
-        // 카탈로그에서 고른 경우 서버가 카탈로그 이름을 정본으로 쓴다. 이름도 함께 보내
-        // 구버전 서버나 목록에 없는 병원에서도 그대로 동작하게 둔다.
-        ...(typeof draft.hospitalId === 'number' ? {hospitalId: draft.hospitalId} : {}),
-        hospitalName: normalizedHospitalName || normalizedWardName || fallbackName,
-        rotationMode: draft.rotationMode,
-    };
+    return buildOnboardingWardIdentityPayload(draft, fallbackWardName);
 };
 
 function useOnboardingWardWizard(options: TOnboardingWardWizardOptions = {}) {
     const {t} = useTypedTranslation();
+    const {i18n} = useTranslation();
     const register = useRegister();
     const {
         createWard,
@@ -810,9 +815,9 @@ function useOnboardingWardWizard(options: TOnboardingWardWizardOptions = {}) {
                 night: t('feature.registerWard.defaultShiftType.night'),
                 off: t('feature.registerWard.defaultShiftType.off'),
                 annualLeave: t('page.onboardingWardCreate.defaults.annualLeave'),
-                twoDay: t('page.onboardingWardCreate.shiftType.twoDayLabel'),
-                twoNight: t('page.onboardingWardCreate.shiftType.twoNightLabel'),
-                twoNightContinuation: t('page.onboardingWardCreate.shiftType.classification.nightContinuation'),
+                twoDay: t('page.onboardingWardCreate.defaults.twoDay'),
+                twoNight: t('page.onboardingWardCreate.defaults.twoNight'),
+                twoNightContinuation: t('page.onboardingWardCreate.defaults.twoNightContinuation'),
             },
         }),
         [t],
@@ -824,14 +829,15 @@ function useOnboardingWardWizard(options: TOnboardingWardWizardOptions = {}) {
         const initialDraft = createInitialDraft(onboardingDraftLabels);
         const hospitalName = options.initialHospitalName?.trim();
 
-        return hospitalName && hospitalName.length <= 20 ? {...initialDraft, hospitalName} : initialDraft;
+        return hospitalName && isValidWardIdentityName(hospitalName, HOSPITAL_NAME_MAX_LENGTH)
+            ? {...initialDraft, hospitalName}
+            : initialDraft;
     });
     const [selectedTeamId, setSelectedTeamId] = useState('');
     const [sortMode, setSortModeState] = useState<TSortMode>('manual');
     const [submissionStatus, setSubmissionStatus] = useState<TSubmissionStatus>('idle');
     const [uploadStatus, setUploadStatus] = useState<TUploadStatus>('idle');
     const [uploadError, setUploadError] = useState<string | null>(null);
-    const [uploadWarnings, setUploadWarnings] = useState<string[]>([]);
     const [draftWardId, setDraftWardId] = useState<number | null>(null);
     const [draftCreationStatus, setDraftCreationStatus] = useState<TDraftCreationStatus>('idle');
     const [draftRestoreStatus, setDraftRestoreStatus] = useState<TDraftRestoreStatus>('loading');
@@ -842,9 +848,14 @@ function useOnboardingWardWizard(options: TOnboardingWardWizardOptions = {}) {
     const draftSaveChainRef = useRef<Promise<unknown>>(Promise.resolve());
     const fallbackWardName = t('page.onboardingWardCreate.fallback.wardName');
     const onboardingWardCreateExecutor = useMemo(
-        () => createOnboardingWardCreateExecutor(createWard, completeOnboardingWardDraft, draftWardId),
-        [completeOnboardingWardDraft, createWard, draftWardId],
+        () => createOnboardingWardCreateExecutor(createWard, completeOnboardingWardDraft, draftWardId, fallbackWardName),
+        [completeOnboardingWardDraft, createWard, draftWardId, fallbackWardName],
     );
+
+    useEffect(() => {
+        setDraft((current) => localizeOnboardingShiftNames(current, onboardingDraftLabels));
+    }, [draft.shiftTypes, draft.scheduleInputState?.shiftTypes, onboardingDraftLabels]);
+
     const markDraftTouched = () => {
         draftTouchedRef.current = true;
     };
@@ -1140,8 +1151,17 @@ function useOnboardingWardWizard(options: TOnboardingWardWizardOptions = {}) {
         }
     };
     const saveScheduleInputAndGoNext = async () => {
-        const schedulePreviewTargets = draft.teams.flatMap((team) => {
-            const schedules = getTeamSchedules(draft.scheduleInputs?.[team.id]);
+        const inputDraft = getScheduleInputDraft(draft);
+
+        if (
+            (draft.scheduleInputState?.initialized && !draft.scheduleInputState.needsImport && !draft.scheduleInputState.replaceOnEntry) ||
+            inputDraft.shiftTypes.some((type) => type.importedCode)
+        ) {
+            return saveAndReloadDraft(goNextStepDraft(draft));
+        }
+
+        const schedulePreviewTargets = inputDraft.teams.flatMap((team) => {
+            const schedules = getTeamSchedules(inputDraft.scheduleInputs?.[team.id]);
 
             return schedules.flatMap((schedule) => {
                 const previewInput = toScheduleInputPreviewRequest(schedule);
@@ -1161,9 +1181,9 @@ function useOnboardingWardWizard(options: TOnboardingWardWizardOptions = {}) {
             const previewDraft = previewResults.reduce(
                 (currentDraft, {teamId, schedule, response}) =>
                     applySchedulePreviewToDraft(currentDraft, teamId, schedule, response, onboardingDraftLabels),
-                draft,
+                inputDraft,
             );
-            const nextDraft = goNextStepDraft(previewDraft);
+            const nextDraft = goNextStepDraft(withScheduleInputUpdate(draft, () => previewDraft));
 
             return saveAndReloadDraft(nextDraft);
         } catch (error) {
@@ -1247,13 +1267,36 @@ function useOnboardingWardWizard(options: TOnboardingWardWizardOptions = {}) {
     };
     const updateRotationMode = (rotationMode: TOnboardingWardDraft['rotationMode']) => {
         markDraftTouched();
-        setDraft((prev) => updateRotationModeDraft(prev, rotationMode, onboardingDraftLabels));
+        setDraft((prev) => {
+            const next = updateRotationModeDraft(prev, rotationMode, onboardingDraftLabels);
+
+            if (!prev.scheduleInputState) return next;
+
+            const source = updateRotationModeDraft(getScheduleInputDraft(prev), rotationMode, onboardingDraftLabels);
+
+            return {...next, scheduleInputState: {...prev.scheduleInputState, shiftTypes: source.shiftTypes, needsImport: true}};
+        });
     };
     const updateTwoShiftNightRecoveryDisplay = (display: NonNullable<TOnboardingWardDraft['twoShiftNightRecoveryDisplay']>) => {
         markDraftTouched();
-        setDraft((prev) =>
-            withOnboardingEdit(prev, updateTwoShiftNightRecoveryDisplayDraft(prev, display, onboardingDraftLabels), 'constraintsEdited'),
-        );
+        setDraft((prev) => {
+            const next = updateTwoShiftNightRecoveryDisplayDraft(prev, display, onboardingDraftLabels);
+            const source = prev.scheduleInputState
+                ? updateTwoShiftNightRecoveryDisplayDraft(getScheduleInputDraft(prev), display, onboardingDraftLabels)
+                : null;
+
+            return withOnboardingEdit(
+                prev,
+                source
+                    ? {...next, scheduleInputState: {...prev.scheduleInputState!, shiftTypes: source.shiftTypes, needsImport: true}}
+                    : next,
+                'constraintsEdited',
+            );
+        });
+    };
+    const mergeImportedShiftType = (sourceId: string, targetId: string) => {
+        markDraftTouched();
+        setDraft((prev) => withOnboardingEdit(prev, mergeImportedShiftTypeDraft(prev, sourceId, targetId), 'shiftTypesEdited'));
     };
     const updateShiftType = (shiftTypeId: string, updater: Parameters<typeof updateShiftTypeDraft>[2]) => {
         markDraftTouched();
@@ -1276,21 +1319,21 @@ function useOnboardingWardWizard(options: TOnboardingWardWizardOptions = {}) {
                 return prev;
             }
 
-            const nextNurse = {...targetNurse, ...updater};
+            const updated = updateNurseDraft(prev, nurseId, updater);
             const isWorkerToggled =
                 typeof updater.isWorker === 'boolean' && targetNurse.isWorker !== updater.isWorker && sortMode === 'manual';
 
             if (!isWorkerToggled) {
-                return withOnboardingEdit(prev, updateNurseDraft(prev, nurseId, updater), 'possibleShiftsEdited');
+                return withOnboardingEdit(prev, updated, 'possibleShiftsEdited');
             }
 
-            const teamNurses = prev.nurses.filter((nurse) => nurse.teamId === targetNurse.teamId);
-            const nextTeamNurses = teamNurses.filter((nurse) => nurse.id !== nurseId);
+            const nextNurse = updated.nurses.find((nurse) => nurse.id === nurseId)!;
+            const nextTeamNurses = updated.nurses.filter((nurse) => nurse.teamId === targetNurse.teamId && nurse.id !== nurseId);
             const reorderedTeamNurses = insertAtWorkerBoundary(nextTeamNurses, nextNurse);
 
             return withOnboardingEdit(
                 prev,
-                replaceTeamNurses(prev, targetNurse.teamId, enforceWorkerGroupOrder(reorderedTeamNurses)),
+                replaceTeamNurses(updated, targetNurse.teamId, enforceWorkerGroupOrder(reorderedTeamNurses)),
                 'possibleShiftsEdited',
             );
         });
@@ -1410,15 +1453,17 @@ function useOnboardingWardWizard(options: TOnboardingWardWizardOptions = {}) {
     };
     const updateScheduleInput = (teamId: string, schedule: TOnboardingTeamScheduleDraft) => {
         markDraftTouched();
-        setDraft((prev) => applyScheduleInputDraft(prev, teamId, schedule, onboardingDraftLabels));
+        setDraft((prev) =>
+            withScheduleInputUpdate(prev, (source) => applyScheduleInputDraft(source, teamId, schedule, onboardingDraftLabels)),
+        );
     };
     const addScheduleDivisionAfterRow = (teamId: string, schedule: TOnboardingTeamScheduleDraft, rowId: string) => {
         markDraftTouched();
-        setDraft((prev) => addScheduleDivisionAfterRowDraft(prev, teamId, schedule, rowId));
+        setDraft((prev) => withScheduleInputUpdate(prev, (source) => addScheduleDivisionAfterRowDraft(source, teamId, schedule, rowId)));
     };
     const deleteScheduleDivision = (teamId: string, schedule: TOnboardingTeamScheduleDraft, divisionNum: number) => {
         markDraftTouched();
-        setDraft((prev) => deleteScheduleDivisionDraft(prev, teamId, schedule, divisionNum));
+        setDraft((prev) => withScheduleInputUpdate(prev, (source) => deleteScheduleDivisionDraft(source, teamId, schedule, divisionNum)));
     };
     const toggleConstraintCandidate = (constraintId: string, selected: boolean) => {
         markDraftTouched();
@@ -1490,7 +1535,7 @@ function useOnboardingWardWizard(options: TOnboardingWardWizardOptions = {}) {
                 return prev;
             }
 
-            const displayedTeamNurses = sortNursesByMode(teamNurses, sortMode);
+            const displayedTeamNurses = sortNursesByMode(teamNurses, sortMode, i18n.resolvedLanguage ?? i18n.language);
             const sourceDivisionNurses = displayedTeamNurses.filter((nurse) => (nurse.divisionNum ?? 1) === (sourceDrop.divisionNum ?? 1));
             const destinationDivisionNurses = displayedTeamNurses.filter((nurse) => (nurse.divisionNum ?? 1) === destinationDivisionNum);
             const sourceNurse = sourceDivisionNurses[source.index];
@@ -1557,7 +1602,7 @@ function useOnboardingWardWizard(options: TOnboardingWardWizardOptions = {}) {
         markDraftTouched();
         setDraft((prev) => withOnboardingEdit(prev, reorderShiftTypes(prev, {destination, source}), 'shiftTypesEdited'));
     };
-    const applyUploadedFile = async (file: File, options?: TOnboardingWardParseOptions) => {
+    const applyUploadedFile = async (file: File, options?: TOnboardingWardParseOptions, replacingFile = false): Promise<boolean> => {
         markDraftTouched();
 
         if (!isSupportedOnboardingUploadFile(file.name)) {
@@ -1565,21 +1610,21 @@ function useOnboardingWardWizard(options: TOnboardingWardWizardOptions = {}) {
 
             setUploadStatus('error');
             setUploadError(message);
-            setUploadWarnings([]);
             toast.error(message);
 
-            return;
+            return false;
         }
 
         setUploadStatus('uploading');
         setUploadError(null);
-        setUploadWarnings([]);
 
         let serverImportFormat: 'PHOTO' | 'EXCEL' | undefined;
 
         try {
             const image = isOnboardingImageFile(file.name);
-            const fileForParsing = image ? file : await normalizeOnboardingScheduleFile(file);
+            const fileForParsing = image
+                ? await prepareOnboardingPhoto(file, t('page.onboardingWardCreate.upload.parseFailed'))
+                : await normalizeOnboardingScheduleFile(file);
             const scheduleTemplate = image ? [] : await parseScheduleTemplateSafely(fileForParsing, options);
             const targetYear = options?.targetYear;
             const targetMonth = options?.targetMonth;
@@ -1587,22 +1632,28 @@ function useOnboardingWardWizard(options: TOnboardingWardWizardOptions = {}) {
             if (targetYear && targetMonth && scheduleTemplate.length > 0) {
                 let nextActiveTeamId: string | null = null;
 
-                setDraft((prev) => {
-                    const result = applyUploadedScheduleTemplateDraft(
+                setDraft((prev) =>
+                    withScheduleInputUpdate(
                         prev,
-                        {
-                            fileName: file.name,
-                            year: targetYear,
-                            month: targetMonth,
-                            teamSchedules: scheduleTemplate,
+                        (source) => {
+                            const result = applyUploadedScheduleTemplateDraft(
+                                {...source, shiftTypes: getShiftTypesForNewUpload(source.shiftTypes)},
+                                {
+                                    fileName: file.name,
+                                    year: targetYear,
+                                    month: targetMonth,
+                                    teamSchedules: scheduleTemplate,
+                                },
+                                onboardingDraftLabels,
+                            );
+
+                            nextActiveTeamId = result.activeTeamId;
+
+                            return withOnboardingImport({...result.draft, importWarnings: []}, 'EXCEL');
                         },
-                        onboardingDraftLabels,
-                    );
-
-                    nextActiveTeamId = result.activeTeamId;
-
-                    return withOnboardingImport(result.draft, 'EXCEL');
-                });
+                        {replace: true},
+                    ),
+                );
 
                 if (nextActiveTeamId) {
                     setSelectedTeamId(nextActiveTeamId);
@@ -1614,7 +1665,7 @@ function useOnboardingWardWizard(options: TOnboardingWardWizardOptions = {}) {
                 setUploadStatus('success');
                 toast.success(t('page.onboardingWardCreate.toast.uploadApplied'));
 
-                return;
+                return true;
             }
 
             serverImportFormat = image ? 'PHOTO' : 'EXCEL';
@@ -1625,51 +1676,65 @@ function useOnboardingWardWizard(options: TOnboardingWardWizardOptions = {}) {
                 failedSheet: (sheetName) => t('page.onboardingWardCreate.upload.failedSheet', {sheetName}),
                 failedRow: (rowLabel) => t('page.onboardingWardCreate.upload.failedRow', {rowLabel}),
             });
+            const monthlySchedules = scheduleTemplate.length > 0 ? [] : buildUploadedMonthlySchedulesFromParsedWardData(parsedWardData);
+            const detectedMonth =
+                monthlySchedules.length > 1 || (targetYear && targetMonth) ? monthlySchedules[monthlySchedules.length - 1] : undefined;
+            const teamSchedules =
+                scheduleTemplate.length > 0
+                    ? scheduleTemplate
+                    : (detectedMonth?.teamSchedules ?? buildUploadedTeamSchedulesFromParsedWardData(parsedWardData));
+            const year = detectedMonth?.year ?? targetYear;
+            const month = detectedMonth?.month ?? targetMonth;
+
+            if (replacingFile && !teamSchedules.length) {
+                throw new Error(t('page.onboardingWardCreate.upload.parseFailed'));
+            }
 
             let nextActiveTeamId: string | null = null;
 
-            setDraft((prev) => {
-                const parsedDraft = applyParsedWardData(prev, parsedWardData, onboardingDraftLabels);
-                // 월별 탭이 여러 장인 파일은 달마다 근무표 칸을 따로 채운다. 명단은 최신 달이 정한다.
-                const monthlySchedules = scheduleTemplate.length > 0 ? [] : buildUploadedMonthlySchedulesFromParsedWardData(parsedWardData);
-                const primaryMonth = monthlySchedules.length > 1 ? monthlySchedules[monthlySchedules.length - 1] : null;
-                // 서식 파일이 아니면 서버 분석 결과에서 근무표 칸을 만든다.
-                const teamSchedules =
-                    scheduleTemplate.length > 0
-                        ? scheduleTemplate
-                        : (primaryMonth?.teamSchedules ?? buildUploadedTeamSchedulesFromParsedWardData(parsedWardData));
-                const targetYear = primaryMonth?.year ?? options?.targetYear;
-                const targetMonth = primaryMonth?.month ?? options?.targetMonth;
+            setDraft((prev) =>
+                withScheduleInputUpdate(
+                    prev,
+                    (source) => {
+                        const parsedDraft = applyParsedWardData(
+                            {...source, importWarnings: [...new Set(warnings)]},
+                            parsedWardData,
+                            onboardingDraftLabels,
+                        );
 
-                if (!targetYear || !targetMonth || teamSchedules.length === 0) {
-                    return parsedDraft;
-                }
+                        if (!year || !month || teamSchedules.length === 0) {
+                            return parsedDraft;
+                        }
 
-                const result = applyUploadedScheduleTemplateDraft(
-                    parsedDraft,
-                    {
-                        fileName: file.name,
-                        year: targetYear,
-                        month: targetMonth,
-                        teamSchedules,
-                        monthlySchedules: primaryMonth ? monthlySchedules : undefined,
+                        const result = applyUploadedScheduleTemplateDraft(
+                            parsedDraft,
+                            {
+                                fileName: file.name,
+                                year,
+                                month,
+                                teamSchedules,
+                                monthlySchedules,
+                            },
+                            onboardingDraftLabels,
+                        );
+
+                        nextActiveTeamId = result.activeTeamId;
+
+                        return withOnboardingImport(result.draft, image ? 'PHOTO' : 'EXCEL');
                     },
-                    onboardingDraftLabels,
-                );
-
-                nextActiveTeamId = result.activeTeamId;
-
-                return withOnboardingImport(restoreParsedNursePossibleShiftTypes(result.draft, parsedWardData), image ? 'PHOTO' : 'EXCEL');
-            });
+                    {replace: true},
+                ),
+            );
 
             if (nextActiveTeamId) {
                 setSelectedTeamId(nextActiveTeamId);
             }
 
-            setUploadWarnings(warnings);
             setUploadStatus(warnings.length > 0 ? 'warning' : 'success');
             toast.success(t(image ? 'page.onboardingWardCreate.upload.reviewImage' : 'page.onboardingWardCreate.toast.uploadApplied'));
             captureRosterImportEvent('roster_import_draft_ready', serverImportFormat);
+
+            return Boolean(year && month && teamSchedules.length);
         } catch (error) {
             if (serverImportFormat) captureRosterImportEvent('roster_import_failed', serverImportFormat);
 
@@ -1680,8 +1745,9 @@ function useOnboardingWardWizard(options: TOnboardingWardWizardOptions = {}) {
 
             setUploadStatus('error');
             setUploadError(message);
-            setUploadWarnings([]);
             toast.error(message);
+
+            return false;
         }
     };
     const complete = async () => {
@@ -1763,6 +1829,7 @@ function useOnboardingWardWizard(options: TOnboardingWardWizardOptions = {}) {
         skipOrComplete,
         addShiftType,
         updateShiftType,
+        mergeImportedShiftType,
         deleteShiftType,
         addTeam,
         addNurse,
@@ -1785,7 +1852,7 @@ function useOnboardingWardWizard(options: TOnboardingWardWizardOptions = {}) {
         applyUploadedFile,
         uploadStatus,
         uploadError,
-        uploadWarnings,
+        uploadWarnings: draft.importWarnings ?? [],
         draftCreationStatus,
         draftRestoreStatus,
         retryDraftRestore: () => setDraftRestoreAttempt((attempt) => attempt + 1),

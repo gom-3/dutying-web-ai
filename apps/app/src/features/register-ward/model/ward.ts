@@ -74,7 +74,7 @@ export function createDefaultWardShiftTypes(t: TRegisterWardTranslator): TCreate
         ...shiftType,
         name:
             shiftType.classification === 'ANNUAL_LEAVE'
-                ? t('annualLeave.display.annualLeave')
+                ? t('page.onboardingWardCreate.defaults.annualLeave')
                 : t(
                       `feature.registerWard.defaultShiftType.${DEFAULT_SHIFT_TYPE_NAME_KEY_BY_SHORT_NAME[shiftType.shortName as 'D' | 'E' | 'N' | 'O']}`,
                   ),

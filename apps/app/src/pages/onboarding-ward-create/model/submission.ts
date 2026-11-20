@@ -29,9 +29,10 @@ export const createOnboardingWardCreateExecutor =
         createWard: TOnboardingWardCreateAction,
         completeOnboardingWardDraft?: TOnboardingWardCompleteDraftAction,
         draftWardId?: number | null,
+        fallbackWardName?: string,
     ): TOnboardingWardCreateExecutor =>
     async (draft) => {
-        const wardCreatePayload = buildCreateWardPayload(draft);
+        const wardCreatePayload = buildCreateWardPayload(draft, fallbackWardName);
         const ward =
             draftWardId && completeOnboardingWardDraft
                 ? await completeOnboardingWardDraft(draftWardId, wardCreatePayload, {navigateOnLinked: false})

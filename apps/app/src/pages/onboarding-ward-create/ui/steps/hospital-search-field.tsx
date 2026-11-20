@@ -3,7 +3,9 @@ import type {TServiceRegion} from '@dutying/domain';
 import {Check} from 'lucide-react';
 import {useEffect, useRef, useState} from 'react';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import {HOSPITAL_NAME_MAX_LENGTH} from '@/shared/lib/ward-name';
 import {useHospitalSearch} from '../../model/use-hospital-search';
+import styles from './hospital-search-field.module.css';
 
 export type THospitalSelection = {
     hospitalId?: number;
@@ -19,7 +21,6 @@ interface IHospitalSearchFieldProps {
     onChange: (selection: THospitalSelection) => void;
 }
 
-const NAME_FIELD_MAX_LENGTH = 50;
 /** 한 글자로는 후보가 너무 많아 목록이 화면을 덮는다. 두 글자부터 연다. */
 const MIN_KEYWORD_LENGTH = 2;
 
@@ -104,7 +105,7 @@ function HospitalSearchField({
                     autoComplete="off"
                     value={keyword}
                     placeholder={t('page.onboardingWardCreate.identity.hospitalNamePlaceholder')}
-                    maxLength={NAME_FIELD_MAX_LENGTH}
+                    maxLength={HOSPITAL_NAME_MAX_LENGTH}
                     className={`${fieldClassName} ${isMatched ? 'pr-11' : ''}`}
                     onChange={(event) => {
                         setKeyword(event.target.value);
@@ -147,8 +148,15 @@ function HospitalSearchField({
                         );
                     })}
                     {isLoading && results.length === 0 && (
-                        <li className="px-4 py-3 text-[13px] text-gray-3">
-                            {t('page.onboardingWardCreate.identity.hospitalSearchLoading')}
+                        <li role="presentation" className="px-4 py-3 text-[13px] text-gray-3">
+                            <span role="status" className="inline-flex items-center gap-1.5">
+                                <span>{t('page.onboardingWardCreate.identity.hospitalSearchLoading')}</span>
+                                <span aria-hidden="true" className="inline-flex items-center gap-[3px] text-main-1">
+                                    <span className={styles.dot} />
+                                    <span className={styles.dot} />
+                                    <span className={styles.dot} />
+                                </span>
+                            </span>
                         </li>
                     )}
                     {!isLoading && hasSearchError && (

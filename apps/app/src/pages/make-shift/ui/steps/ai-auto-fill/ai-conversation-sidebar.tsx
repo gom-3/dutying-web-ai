@@ -55,6 +55,8 @@ import {lastAppliedScheduleObservation, reportScheduleJourney} from '../../../mo
 import {
     declinedSettingCandidates as storedDeclines,
     rememberDeclinedSettingCandidate,
+    settingCandidateIdentity,
+    isSettingCandidateDeclined,
     settingConsentReply,
 } from '../../../model/setting-consent-reply';
 import {useAiActiveConditions} from '../../../model/use-ai-active-conditions';
@@ -1307,8 +1309,11 @@ export default function AiConversationSidebar({
 
         if (!candidate) return;
 
-        declinedSettingCandidates.current.add(candidate.candidateDigest);
-        rememberDeclinedSettingCandidate(chatKey, candidate.candidateDigest, candidate.expiresAt);
+        const identity = settingCandidateIdentity(operation);
+
+        if (identity) declinedSettingCandidates.current.add(identity);
+
+        rememberDeclinedSettingCandidate(chatKey, operation);
         setNotice(t('aiConversationSidebar.authoring.keep'));
     };
     const interpret = async (request = text, reference = previousId, {removeConditionId}: {removeConditionId?: string} = {}) => {
@@ -1390,28 +1395,45 @@ export default function AiConversationSidebar({
 
                     stage = 'GUARD';
 
-                    // Applying a result clears the server's latest interpretation. A completed
-                    // request is history, not a stale edit target for the next ordinary message.
-                    const activeReference =
-                        !editingRequest &&
-                        !current.conversation.latestInterpretationId &&
-                        current.operations.some((op) => op.interpretationId === reference && isExecutionFinished(op))
-                            ? undefined
-                            : reference;
+                    const state = current.conversationState;
+                    const latestInterpretationId = current.conversation.latestInterpretationId;
+                    const invalidatedReference = !state && Boolean(reference) && !latestInterpretationId;
 
-                    if (!current.conversationState && activeReference && current.conversation.latestInterpretationId !== activeReference) {
+                    if (before && before.conversation.conversationId !== current.conversation.conversationId)
                         throw new AiConversationInputError('staleRequest');
+
+                    if (!state && reference && latestInterpretationId && reference !== latestInterpretationId)
+                        throw new AiConversationInputError('staleRequest');
+
+                    if (invalidatedReference) {
+                        setPreviousId(undefined);
+                        setEditingRequest(null);
+                        setChange('ADD');
+                    }
+
+                    // A reply to a question that disappeared during sync needs its original context before resubmission.
+                    if (!state && !latestInterpretationId && !editingRequest && before?.conversation.latestInterpretationId) {
+                        const question = before.turns.find(
+                            (turn) =>
+                                turn.interpretationId === before.conversation.latestInterpretationId &&
+                                turn.semanticPlan?.state === 'NEEDS_CLARIFICATION',
+                        );
+                        const originalRequest = question ? requestTextForTurn(before, question) : '';
+
+                        if (originalRequest && message !== originalRequest) {
+                            setText(`${originalRequest}\n추가 답변: ${message}`);
+                            throw new AiConversationInputError('staleRequest');
+                        }
                     }
 
                     const previous =
-                        activeReference ??
+                        (invalidatedReference ? undefined : reference) ??
                         current.turns.find(
                             (turn) =>
-                                turn.interpretationId === current.conversation.latestInterpretationId &&
+                                turn.interpretationId === latestInterpretationId &&
                                 (Boolean(turn.semanticPlan) || isConversationConfirmationCurrent(current, turn, false)),
                         )?.interpretationId;
                     const priorPlan = current.turns.find((turn) => turn.interpretationId === previous && turn.semanticPlan);
-                    const state = current.conversationState;
                     const currentPlan = current.turns.find(
                         (turn) => turn.interpretationId === current.conversation.latestInterpretationId && turn.semanticPlan,
                     )?.semanticPlan;
@@ -1457,7 +1479,11 @@ export default function AiConversationSidebar({
                             surfaceVersion: 'conversation-minimal-v1',
                             entryChoice: entryChoice ?? undefined,
                             inputMode:
-                                editingRequest || removeConditionId ? 'revision' : state?.pendingQuestion ? 'clarification' : 'request',
+                                (editingRequest && !invalidatedReference) || removeConditionId
+                                    ? 'revision'
+                                    : state?.pendingQuestion
+                                      ? 'clarification'
+                                      : 'request',
                             typedText: message,
                         },
                         ...(intentFirstEnabled ? {authoringContractVersion: INTENT_FIRST_CONTRACT} : {}),
@@ -2383,11 +2409,18 @@ export default function AiConversationSidebar({
                     key={`${operation.operationId}:${operation.result.candidate.candidateDigest}`}
                     result={operation.result}
                     currentVersionId={detail.conversation.currentVersionId}
+                    sourceChanged={
+                        operation.operationId === latestOperation?.operationId &&
+                        !isSettingCandidateDeclined(operation, declinedSettingCandidates.current) &&
+                        (localDirty ||
+                            operation.baseRevision !== detail.conversation.revision ||
+                            operation.result.candidate.sourceVersionId !== detail.conversation.currentVersionId)
+                    }
                     current={
                         intentFirstEnabled &&
                         !localDirty &&
                         !preparing &&
-                        !declinedSettingCandidates.current.has(operation.result.candidate.candidateDigest) &&
+                        !isSettingCandidateDeclined(operation, declinedSettingCandidates.current) &&
                         operation.baseRevision === detail.conversation.revision &&
                         operation.operationId === latestOperation?.operationId
                     }
@@ -2396,7 +2429,7 @@ export default function AiConversationSidebar({
                     loadVersion={api.version}
                     nurseName={(id) => doc.workerMeta[String(id)]?.name ?? String(id)}
                     onApply={() => {
-                        if (storedDeclines(chatKey).has(operation.result!.candidate!.candidateDigest)) return;
+                        if (isSettingCandidateDeclined(operation, storedDeclines(chatKey))) return;
 
                         void execute(
                             operation.operationType as 'GENERATE' | 'ADJUST',

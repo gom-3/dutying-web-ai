@@ -197,7 +197,8 @@ describe('plain candidate copy', () => {
             expect(screen.getByText(title)).toBeVisible();
             expect(screen.getAllByText(prompt)).toHaveLength(1);
             expect(container).not.toHaveTextContent(/EXACT|REVIEW|정성|미검증|검사|unverified|qualitative|未検証|定性的/);
-            expect(container.querySelector('details')).toBeNull();
+            expect(container.querySelector('details')).toHaveAttribute('open');
+            expect(container).not.toHaveTextContent(/1회차|attempt 1/i);
             rerender(
                 <AiConversationResult
                     appliedLocally
@@ -221,8 +222,8 @@ describe('plain candidate copy', () => {
 
 describe('material consent title', () => {
     it.each([
-        {locale: 'ko', title: '일부 조건을 지키지 못해요. 이대로 반영할까요?', impact: '11월 1일 휴무가 1명 줄어들어요.'},
-        {locale: 'ja', title: '一部の条件を満たせません。このまま反映しますか？', impact: '11月1日の休みが1人減ります。'},
+        {locale: 'ko', title: '요청한 근무 변경안을 확인해 주세요', impact: '11월 1일 휴무가 1명 줄어들어요.'},
+        {locale: 'ja', title: '依頼した勤務変更案をご確認ください', impact: '11月1日の休みが1人減ります。'},
     ])('describes unmet conditions rather than editing settings in $locale', async ({locale, title, impact}) => {
         await i18n.changeLanguage(locale);
 
@@ -427,4 +428,123 @@ it('keeps a measured quality impact visible in the compact applied result', () =
     );
     expect(screen.getByText('합성 간호사 A님의 연속근무가 4일에서 6일로 늘었어요.')).toBeVisible();
     expect(screen.getByRole('img', {name: i18n.t('aiAutofillUi.conversationResult.scheduleNeedsReview')})).toBeVisible();
+});
+
+it('separates named requested shifts, exact monthly permission and measured side effects without retry counts', async () => {
+    const input = props();
+    const a = {...candidate().changedCells[0]!, date: '2026-10-31', cellKey: '1:2026-10-31', wardShiftTypeId: 3, shiftCode: 'N'};
+    const b = {...a, shiftNurseId: 2, cellKey: '2:2026-10-31', wardShiftTypeId: 2, shiftCode: 'E'};
+    input.baseline = [
+        {...a, wardShiftTypeId: 4, shiftCode: 'O'},
+        {...b, wardShiftTypeId: 3, shiftCode: 'N'},
+    ];
+    input.result.candidate = candidate({changedCells: [a, b], selectionReason: 'MATERIAL_TRADEOFF'});
+    input.result.authoringOutcome = outcome({
+        draftState: 'CONSENT_REQUIRED',
+        candidateDigest: 'digest:1',
+        requestPriority: {
+            version: 'request-first-v2',
+            settingChangesRequired: true,
+            candidateImpactsAvailable: true,
+            shiftDisplayNames: {'2': '이브닝', '3': '긴밤', '4': '휴무'},
+            userQualityWarnings: ['합성 간호사 A님의 연속 야간근무가 0일에서 1일로 늘었어요.'],
+            requestedAssignments: [
+                {
+                    clauseId: 'exact:1',
+                    coversWholeClause: true,
+                    shiftNurseId: 1,
+                    nurseName: '가상하나',
+                    date: '2026-10-31',
+                    beforeShiftName: '휴무',
+                    afterShiftName: '긴밤',
+                    beforeWardShiftTypeId: 4,
+                    afterWardShiftTypeId: 3,
+                    alreadyMatched: false,
+                },
+                {
+                    clauseId: 'exact:2',
+                    coversWholeClause: true,
+                    shiftNurseId: 3,
+                    nurseName: '가상셋',
+                    date: '2026-10-31',
+                    beforeShiftName: '휴무',
+                    afterShiftName: '휴무',
+                    beforeWardShiftTypeId: 4,
+                    afterWardShiftTypeId: 4,
+                    alreadyMatched: true,
+                },
+            ],
+            availabilityChanges: [
+                {
+                    kind: 'ADD_ALLOWED_SHIFT',
+                    shiftNurseId: '1',
+                    nurseId: 11,
+                    code: 'N',
+                    wardShiftTypeId: 3,
+                    currentValue: [1, 4],
+                    proposedValue: [1, 3, 4],
+                    year: 2026,
+                    month: 10,
+                    lifetime: 'EXACT_CANDIDATE_OPERATION',
+                    dates: ['2026-10-31'],
+                    userMessage: '가상하나는 현재 긴밤 근무를 하지 않도록 설정돼 있어요. 이번 달 이 변경안에만 긴밤 근무를 허용할까요?',
+                },
+            ],
+            candidateImpacts: [
+                {
+                    kind: 'recovery',
+                    state: 'VERIFIED',
+                    message: '가상둘: 10/31 07:00 종료 → 10/31 15:00 시작, 간격 8시간. 기존은 16시간이었어요.',
+                    details: {beforeMinutes: 960, afterMinutes: 480},
+                },
+                {
+                    kind: 'assignmentCounts',
+                    state: 'VERIFIED',
+                    message: '야간 배정 횟수: 가상하나 0회 → 1회 / 가상둘 2회 → 1회.',
+                    details: {},
+                },
+            ],
+        },
+    });
+    const result = input.result;
+    const {container} = render(
+        <AiConversationResult
+            operation={{
+                operationId: 'proposal:ux',
+                sequence: 1,
+                operationType: 'ADJUST',
+                fillPolicy: null,
+                sourceVersionId: 'source:1',
+                resultVersionId: null,
+                interpretationId: 'fresh-plan',
+                baseRevision: 0,
+                executionStatus: 'SUCCEEDED',
+                applyStatus: 'NOT_APPLIED_REVIEW',
+                failureReason: null,
+                result,
+                createdAt: '',
+            }}
+            attempt={4}
+            copy={(ko) => ko}
+        >
+            <AiAuthoringCandidate {...input} />
+        </AiConversationResult>,
+    );
+    expect(screen.getByText('10/31 가상하나: 휴무 → 긴밤')).toBeVisible();
+    expect(screen.getByText('10/31 가상셋: 이미 휴무예요')).toBeVisible();
+    const request = screen.getByText('요청별 결과');
+    const settings = screen.getByText(i18n.t('aiConversationSidebar.authoring.settingChangesTitle'));
+    const impacts = screen.getByText('함께 달라지는 근무');
+    expect(request.compareDocumentPosition(settings) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(settings.compareDocumentPosition(impacts) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByText(/가상하나는 현재 긴밤/)).toBeVisible();
+    expect(screen.getByText(/간격 8시간/)).toBeVisible();
+    expect(screen.getByText(/가상하나 0회 → 1회/)).toBeVisible();
+    expect(screen.queryByText(/연속 야간근무가 0일/)).not.toBeInTheDocument();
+    expect(container).not.toHaveTextContent(/4회차|조건 2개|조건 1개/);
+    expect(screen.getByRole('button', {name: '위 설정을 이번 달만 허용하고 근무 반영'})).toBeEnabled();
+    expect(input.onApply).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByText('전체 2칸 변경 내역 보기'));
+    expect(screen.getByRole('table')).toHaveTextContent('긴밤');
+    expect(screen.getByRole('table')).toHaveTextContent('이브닝');
 });

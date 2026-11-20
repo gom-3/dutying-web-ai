@@ -35,7 +35,8 @@ const TWO_DAY_CODES = new Set(['ⓓ', 'Ⓓ']);
 const TWO_NIGHT_CODES = new Set(['ⓝ', 'Ⓝ']);
 const MIXED_TWO_DAY_CODE = '1';
 const MIXED_TWO_NIGHT_CODE = '2';
-const normalizePreviousScheduleShiftCode = (value: string) =>
+
+export const normalizePreviousScheduleShiftCode = (value: string) =>
     value
         .trim()
         .replace(/Ⓓ/g, 'ⓓ')

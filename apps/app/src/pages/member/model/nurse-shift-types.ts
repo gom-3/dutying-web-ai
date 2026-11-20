@@ -231,6 +231,4 @@ export const resolveNurseShiftTypeOptions = (
     });
 };
 
-/** Missing metadata is not guessed from labels: the API/catalog supplies classification. */
-export const isRestShiftOption = (type: Pick<TNurseShiftType, 'classification' | 'isOff'>) =>
-    type.isOff === true || ['OFF', 'ANNUAL_LEAVE', 'OTHER_LEAVE'].includes(type.classification ?? '');
+export {isRestShiftOption} from '@/shared/lib/shift-rotation-selection';

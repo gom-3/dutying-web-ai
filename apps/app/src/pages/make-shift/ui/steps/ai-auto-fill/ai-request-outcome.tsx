@@ -23,9 +23,13 @@ export function AiRequestOutcome({result, showChangedSummary = true}: {result: T
 
     if (outcome?.validation.spring !== 'VERIFIED') return null;
 
+    const assignments = outcome.requestPriority?.requestedAssignments ?? [];
+    const explained = new Set(assignments.filter((item) => item.coversWholeClause).map((item) => item.clauseId));
     const requests = new Map<string, Map<string, TOutcomeRow>>();
 
     for (const clause of outcome.clauses) {
+        if (explained.has(clause.clauseId)) continue;
+
         const label = clause.displayText?.trim();
 
         if (!label) continue;
@@ -48,7 +52,7 @@ export function AiRequestOutcome({result, showChangedSummary = true}: {result: T
         requests.set(label, rows);
     }
 
-    if (!requests.size) return null;
+    if (!requests.size && !assignments.length) return null;
 
     const changes = result.candidate?.changedCells ?? result.changedCells;
 
@@ -56,6 +60,25 @@ export function AiRequestOutcome({result, showChangedSummary = true}: {result: T
         <section className="mt-5 space-y-2 text-[13px] leading-5" aria-label={t('aiConversationSidebar.authoring.requestResults')}>
             <h3 className="text-sm font-semibold text-sub-1">{t('aiConversationSidebar.authoring.requestResults')}</h3>
             <ul className="space-y-2">
+                {assignments.map((item) => (
+                    <li
+                        key={`${item.clauseId}:${item.shiftNurseId}:${item.date}`}
+                        className="rounded-lg bg-[#F5F6F8] px-3 py-2.5 font-medium text-[#344054]"
+                    >
+                        {t(
+                            item.alreadyMatched
+                                ? 'aiConversationSidebar.authoring.assignmentUnchanged'
+                                : 'aiConversationSidebar.authoring.assignmentChanged',
+                            {
+                                date: item.date.replace(/^\d{4}-0?(\d+)-0?(\d+)$/u, '$1/$2'),
+                                name: item.nurseName,
+                                before: item.beforeShiftName,
+                                after: item.afterShiftName,
+                                shift: item.afterShiftName,
+                            },
+                        )}
+                    </li>
+                ))}
                 {Array.from(requests, ([label, rows]) => (
                     <li key={label} className="flex min-w-0 items-start gap-2.5 rounded-[10px] bg-[#F5F6F8] px-3 py-2.5">
                         <span className="grid size-6 shrink-0 place-items-center rounded-full bg-[#EEEAF8] text-[#6546A9]">
@@ -64,7 +87,7 @@ export function AiRequestOutcome({result, showChangedSummary = true}: {result: T
                         <div className="min-w-0 flex-1 pt-0.5">
                             <p className="font-medium [overflow-wrap:anywhere] break-keep text-[#344054]">{label}</p>
                             <ul className="mt-2 flex flex-wrap gap-x-2 gap-y-1.5">
-                                {Array.from(rows, ([key, {status, measurement, count}]) => {
+                                {Array.from(rows, ([key, {status, measurement}]) => {
                                     const {Icon, colors} = statusAppearance[status] ?? statusAppearance.UNVERIFIED;
 
                                     return (
@@ -75,14 +98,6 @@ export function AiRequestOutcome({result, showChangedSummary = true}: {result: T
                                                 <Icon aria-hidden className="size-3.5 shrink-0" />
                                                 <span className="min-w-0 [overflow-wrap:anywhere] break-keep">
                                                     {t(`aiConversationSidebar.authoring.clause.${status}`)}
-                                                    {(rows.size > 1 || count > 1) && (
-                                                        <>
-                                                            {' '}
-                                                            <span className="tabular-nums">
-                                                                {t('aiConversationSidebar.authoring.clauseCount', {count})}
-                                                            </span>
-                                                        </>
-                                                    )}
                                                 </span>
                                             </span>
                                             {measurement && (

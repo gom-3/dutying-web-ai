@@ -10,6 +10,9 @@ export type TSelectableShiftClassification =
     | 'OTHER_LEAVE';
 export type TSelectableWardRotationMode = 'THREE' | 'TWO' | 'MIXED';
 
+export const isRestShiftOption = (type: {classification?: string; isOff?: boolean}) =>
+    type.isOff === true || type.classification === 'OFF' || type.classification === 'ANNUAL_LEAVE' || type.classification === 'OTHER_LEAVE';
+
 export const SELECTABLE_SHIFT_ROTATION_SYSTEMS = ['THREE', 'TWO', 'NONE'] as const;
 
 const SELECTABLE_SHIFT_ROTATION_SYSTEMS_BY_WARD_MODE = {
@@ -114,8 +117,14 @@ export function getRequiredRotationClassifications(
 }
 
 // OFF and core rotations are unique; full-day and half-day annual leave may coexist.
-export function isRequiredRotationClassificationSatisfied(requirement: {classification: TSelectableShiftClassification; count: number}) {
-    return requirement.classification === 'ANNUAL_LEAVE' ? requirement.count >= 1 : requirement.count === 1;
+export function isRequiredRotationClassificationSatisfied(requirement: {
+    classification: TSelectableShiftClassification;
+    count: number;
+    duplicateCount?: number;
+}) {
+    return requirement.classification === 'ANNUAL_LEAVE'
+        ? requirement.count >= 1
+        : requirement.count === 1 && (requirement.duplicateCount ?? requirement.count) <= 1;
 }
 
 export function getRequiredRotationClassificationCounts(
@@ -132,6 +141,13 @@ export function getRequiredRotationClassificationCounts(
             (shiftType) =>
                 shiftType.rotationSystem === requiredShiftType.rotationSystem &&
                 shiftType.classification === requiredShiftType.classification,
+        ).length,
+        // A single-rotation ward has one slot per type, even when imported
+        // shifts still carry an incompatible rotation. Mixed wards keep both slots.
+        duplicateCount: shiftTypes.filter(
+            (shiftType) =>
+                shiftType.classification === requiredShiftType.classification &&
+                (rotationMode !== 'MIXED' || shiftType.rotationSystem === requiredShiftType.rotationSystem),
         ).length,
     }));
 }

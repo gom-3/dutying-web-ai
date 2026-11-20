@@ -2,12 +2,15 @@
 import {DragDropContext, Draggable, Droppable, type DropResult} from '@hello-pangea/dnd';
 import {Check, ChevronDown, Info, Plus, UsersRound, X} from 'lucide-react';
 import {useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
+import {useTranslation} from 'react-i18next';
 import {PersonIcon, SixDotsIcon} from '@/shared/assets/svg';
 import {useTypedTranslation, type TI18nKey} from '@/shared/hook/use-typed-translation';
 import {getDivisionCustomName} from '@/shared/lib/division-label';
-import {sanitizeNurseNameInput} from '@/shared/lib/nurse-name';
+import {isValidOnboardingNurseName, sanitizeNurseNameInput} from '@/shared/lib/nurse-name';
+import {isRestShiftOption} from '@/shared/lib/shift-rotation-selection';
 import {Input} from '@/shared/ui/primitives/input';
 import {Switch} from '@/shared/ui/primitives/switch';
+import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from '@/shared/ui/primitives/tooltip';
 import {
     isOnboardingShiftTypeActive,
     groupItemsByDivision,
@@ -66,38 +69,57 @@ const NURSE_ROLE_HELP: Record<TNurseRoleHelp, {labelKey: TI18nKey; descriptionKe
 function NurseRoleHeaderHelp({
     type,
     openedType,
-    onToggle,
+    onOpenChange,
 }: {
     type: TNurseRoleHelp;
     openedType: TNurseRoleHelp | null;
-    onToggle: (type: TNurseRoleHelp) => void;
+    onOpenChange: (type: TNurseRoleHelp | null) => void;
 }) {
     const {t} = useTypedTranslation();
     const help = NURSE_ROLE_HELP[type];
     const label = t(help.labelKey);
     const isOpen = openedType === type;
+    const openBeforeTouch = useRef<boolean | null>(null);
 
     return (
-        <span className="group relative inline-flex items-center justify-center gap-1">
+        <span className="inline-flex items-center justify-center gap-1">
             <span>{label}</span>
-            <button
-                type="button"
-                aria-label={t('page.member.roleHelp.aria', {label})}
-                aria-expanded={isOpen}
-                className="flex h-4 w-4 items-center justify-center rounded-full text-gray-4 transition-colors hover:bg-gray-6 hover:text-main-1 focus-visible:outline-2 focus-visible:outline-main-1"
-                onClick={() => onToggle(type)}
-            >
-                <Info className="h-3 w-3" />
-            </button>
-            <span
-                role="tooltip"
-                className={cn(
-                    'pointer-events-none absolute top-full left-1/2 z-30 mt-2 w-[218px] -translate-x-1/2 rounded-[8px] bg-[#242428] px-3 py-2 text-left font-apple text-[12px] leading-5 text-white opacity-0 shadow-[0px_10px_24px_rgba(23,23,28,0.18)] transition-opacity duration-150 group-focus-within:opacity-100 group-hover:opacity-100',
-                    isOpen && 'opacity-100',
-                )}
-            >
-                {t(help.descriptionKey)}
-            </span>
+            <TooltipProvider delayDuration={120}>
+                <Tooltip open={isOpen} onOpenChange={(open) => onOpenChange(open ? type : null)}>
+                    <TooltipTrigger asChild>
+                        <button
+                            type="button"
+                            aria-label={t('page.member.roleHelp.aria', {label})}
+                            aria-expanded={isOpen}
+                            className="flex h-4 w-4 items-center justify-center rounded-full text-gray-4 transition-colors hover:bg-gray-6 hover:text-main-1 focus-visible:outline-2 focus-visible:outline-main-1"
+                            onPointerDown={(event) => {
+                                openBeforeTouch.current = event.pointerType === 'touch' ? isOpen : null;
+                            }}
+                            onPointerCancel={() => {
+                                openBeforeTouch.current = null;
+                            }}
+                            onKeyDown={() => {
+                                openBeforeTouch.current = null;
+                            }}
+                            onClick={(event) => {
+                                event.preventDefault();
+                                onOpenChange(openBeforeTouch.current == null || !openBeforeTouch.current ? type : null);
+                                openBeforeTouch.current = null;
+                            }}
+                        >
+                            <Info className="h-3 w-3" />
+                        </button>
+                    </TooltipTrigger>
+                    <TooltipContent
+                        side="bottom"
+                        sideOffset={8}
+                        collisionPadding={12}
+                        className="z-[1400] w-[218px] max-w-[calc(100vw-24px)] rounded-lg bg-[#242428] px-3 py-2 text-left font-apple text-[12px] leading-5 [overflow-wrap:anywhere] break-keep whitespace-normal text-white shadow-none"
+                    >
+                        {t(help.descriptionKey)}
+                    </TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
         </span>
     );
 }
@@ -120,6 +142,8 @@ function NurseStep({
     onDragEnd,
 }: INurseStepProps) {
     const {t} = useTypedTranslation();
+    const {i18n} = useTranslation();
+    const language = i18n.resolvedLanguage ?? i18n.language;
     const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
     const [openedRoleHelp, setOpenedRoleHelp] = useState<TNurseRoleHelp | null>(null);
     const [editingDivisionNum, setEditingDivisionNum] = useState<number | null>(null);
@@ -132,7 +156,7 @@ function NurseStep({
     const selectedSortOption = availableSortOptions.find((option) => option.value === sortMode) ?? availableSortOptions[0];
     const selectedSortOptionLabel = selectedSortOption ? t(selectedSortOption.labelKey) : '';
     const currentNurses = useMemo(() => draft.nurses.filter((nurse) => nurse.teamId === selectedTeamId), [draft.nurses, selectedTeamId]);
-    const sortedNurses = useMemo(() => sortNursesByMode(currentNurses, sortMode), [currentNurses, sortMode]);
+    const sortedNurses = useMemo(() => sortNursesByMode(currentNurses, sortMode, language), [currentNurses, sortMode, language]);
     const currentTeam = draft.teams.find((team) => team.id === selectedTeamId);
     const divisionGroups = useMemo(
         () => groupItemsByDivision(sortedNurses, currentTeam?.divisions),
@@ -142,8 +166,11 @@ function NurseStep({
     const tutorialNurseId = renderedNurseIds[0];
     const hasTeams = draft.teams.length > 0;
     const hasNursesInSelectedTeam = hasTeams && currentNurses.length > 0;
-    const activeShiftTypes = useMemo(
-        () => draft.shiftTypes.filter((shiftType) => isOnboardingShiftTypeActive(shiftType) && shiftType.shortName),
+    const workShiftTypes = useMemo(
+        () =>
+            draft.shiftTypes.filter(
+                (shiftType) => isOnboardingShiftTypeActive(shiftType) && shiftType.shortName && !isRestShiftOption(shiftType),
+            ),
         [draft.shiftTypes],
     );
     const gridTemplateClass = NURSE_GRID_COLS_STEP_3;
@@ -320,294 +347,311 @@ function NurseStep({
             ) : null}
 
             {hasNursesInSelectedTeam ? (
-                <div
-                    className={cn(
-                        'grid items-center font-apple text-[16px] text-gray-3',
-                        NURSE_GRID_GAP_CLASS,
-                        NURSE_GRID_PADDING_X,
-                        gridTemplateClass,
-                    )}
-                >
-                    <div />
-                    <div className="flex h-8 w-full items-center justify-center">
-                        <span
-                            className="flex min-w-0 items-center justify-center gap-1.5"
-                            aria-label={t('page.onboardingWardCreate.nurse.selectedTeamCountAria', {count: currentNurses.length})}
+                <div className="max-w-full overflow-x-auto pb-2">
+                    <div className="min-w-[944px] space-y-4">
+                        <div
+                            className={cn(
+                                'grid items-center font-apple text-[16px] text-gray-3',
+                                NURSE_GRID_GAP_CLASS,
+                                NURSE_GRID_PADDING_X,
+                                gridTemplateClass,
+                            )}
                         >
-                            <span>{t('page.member.table.name')}</span>
-                            <span className="inline-flex h-4 items-center gap-0.5 align-middle font-poppins text-[13px] leading-none font-semibold text-[#6B7280]">
-                                <PersonIcon className="block h-3.5 w-3.5 shrink-0 text-[#7B8494]" aria-hidden="true" />
-                                <span className="block leading-none tabular-nums">{currentNurses.length}</span>
-                            </span>
-                        </span>
-                    </div>
-                    <div className="flex h-8 w-full items-center justify-center">
-                        <span className="block w-full text-center">{t('page.member.table.shiftTypes')}</span>
-                    </div>
-                    <div className="flex h-8 w-full items-center justify-center">
-                        <NurseRoleHeaderHelp
-                            type="preceptor"
-                            openedType={openedRoleHelp}
-                            onToggle={(type) => setOpenedRoleHelp((prev) => (prev === type ? null : type))}
-                        />
-                    </div>
-                    <div className="flex h-8 w-full items-center justify-center">
-                        <NurseRoleHeaderHelp
-                            type="preceptee"
-                            openedType={openedRoleHelp}
-                            onToggle={(type) => setOpenedRoleHelp((prev) => (prev === type ? null : type))}
-                        />
-                    </div>
-                    <div className="flex h-8 w-full items-center justify-center">
-                        <span className="block w-full text-center">{t('page.member.table.isWorker')}</span>
-                    </div>
-                    <div />
-                </div>
-            ) : null}
+                            <div />
+                            <div className="flex h-8 w-full items-center justify-center">
+                                <span
+                                    className="flex min-w-0 items-center justify-center gap-1.5"
+                                    aria-label={t('page.onboardingWardCreate.nurse.selectedTeamCountAria', {count: currentNurses.length})}
+                                >
+                                    <span>{t('page.member.table.name')}</span>
+                                    <span className="inline-flex h-4 items-center gap-0.5 align-middle font-poppins text-[13px] leading-none font-semibold text-[#6B7280]">
+                                        <PersonIcon className="block h-3.5 w-3.5 shrink-0 text-[#7B8494]" aria-hidden="true" />
+                                        <span className="block leading-none tabular-nums">{currentNurses.length}</span>
+                                    </span>
+                                </span>
+                            </div>
+                            <div className="flex h-8 w-full items-center justify-center">
+                                <span className="block w-full text-center">{t('page.member.table.shiftTypes')}</span>
+                            </div>
+                            <div className="flex h-8 w-full items-center justify-center">
+                                <NurseRoleHeaderHelp type="preceptor" openedType={openedRoleHelp} onOpenChange={setOpenedRoleHelp} />
+                            </div>
+                            <div className="flex h-8 w-full items-center justify-center">
+                                <NurseRoleHeaderHelp type="preceptee" openedType={openedRoleHelp} onOpenChange={setOpenedRoleHelp} />
+                            </div>
+                            <div className="flex h-8 w-full items-center justify-center">
+                                <span className="block w-full text-center">{t('page.member.table.isWorker')}</span>
+                            </div>
+                            <div />
+                        </div>
+                        <DragDropContext onDragEnd={handleDragEnd}>
+                            <div className="space-y-1.5">
+                                {divisionGroups.map((group, groupIndex) => {
+                                    const isEditingDivision = editingDivisionNum === group.divisionNum;
+                                    const canDeleteDivision = groupIndex > 0;
 
-            {hasNursesInSelectedTeam ? (
-                <DragDropContext onDragEnd={handleDragEnd}>
-                    <div className="space-y-1.5">
-                        {divisionGroups.map((group, groupIndex) => {
-                            const isEditingDivision = editingDivisionNum === group.divisionNum;
-                            const canDeleteDivision = groupIndex > 0;
+                                    return (
+                                        <div key={`${selectedTeamId}:${group.divisionNum}`} className="flex flex-col">
+                                            <OnboardingDivisionHeader
+                                                divisionNum={group.divisionNum}
+                                                divisionName={group.divisionName}
+                                                itemCount={group.items.length}
+                                                isEditing={isEditingDivision}
+                                                draftName={editingDivisionName}
+                                                canDelete={canDeleteDivision}
+                                                onStartEdit={() => {
+                                                    setEditingDivisionNum(group.divisionNum);
+                                                    setEditingDivisionName(getDivisionCustomName(group.divisionNum, group.divisionName));
+                                                }}
+                                                onDraftNameChange={setEditingDivisionName}
+                                                onSubmit={handleSubmitDivisionName}
+                                                onCancel={handleCancelDivisionName}
+                                                onDelete={() => onDeleteDivision(selectedTeamId, group.divisionNum, renderedNurseIds)}
+                                            />
+                                            <Droppable droppableId={getOnboardingDivisionDroppableId(selectedTeamId, group.divisionNum)}>
+                                                {(provided) => (
+                                                    <div ref={provided.innerRef} {...provided.droppableProps} className="flex flex-col">
+                                                        {group.items.map((nurse, index) => {
+                                                            const isPreceptor = nurse.isPreceptor;
+                                                            const isPreceptee = nurse.isPreceptee;
+                                                            const fadedClass = nurse.isWorker ? '' : 'opacity-45';
+                                                            const nurseNameForAria = nurse.name || t('page.member.common.nurseFallback');
 
-                            return (
-                                <div key={`${selectedTeamId}:${group.divisionNum}`} className="flex flex-col">
-                                    <OnboardingDivisionHeader
-                                        divisionNum={group.divisionNum}
-                                        divisionName={group.divisionName}
-                                        itemCount={group.items.length}
-                                        isEditing={isEditingDivision}
-                                        draftName={editingDivisionName}
-                                        canDelete={canDeleteDivision}
-                                        onStartEdit={() => {
-                                            setEditingDivisionNum(group.divisionNum);
-                                            setEditingDivisionName(getDivisionCustomName(group.divisionNum, group.divisionName));
-                                        }}
-                                        onDraftNameChange={setEditingDivisionName}
-                                        onSubmit={handleSubmitDivisionName}
-                                        onCancel={handleCancelDivisionName}
-                                        onDelete={() => onDeleteDivision(selectedTeamId, group.divisionNum, renderedNurseIds)}
-                                    />
-                                    <Droppable droppableId={getOnboardingDivisionDroppableId(selectedTeamId, group.divisionNum)}>
-                                        {(provided) => (
-                                            <div ref={provided.innerRef} {...provided.droppableProps} className="flex flex-col">
-                                                {group.items.map((nurse, index) => {
-                                                    const isPreceptor = nurse.isPreceptor;
-                                                    const isPreceptee = nurse.isPreceptee;
-                                                    const fadedClass = nurse.isWorker ? '' : 'opacity-45';
-                                                    const nurseNameForAria = nurse.name || t('page.member.common.nurseFallback');
+                                                            return (
+                                                                <div key={nurse.id} className="flex flex-col">
+                                                                    <Draggable draggableId={nurse.id} index={index}>
+                                                                        {(dragProvided) => (
+                                                                            <div
+                                                                                ref={(element) => {
+                                                                                    dragProvided.innerRef(element);
+                                                                                    rowRefByNurseId.current[nurse.id] = element;
+                                                                                }}
+                                                                                {...dragProvided.draggableProps}
+                                                                                id={
+                                                                                    nurse.id === tutorialNurseId
+                                                                                        ? 'onboarding_nurse_order_sample'
+                                                                                        : undefined
+                                                                                }
+                                                                                className={cn(
+                                                                                    'grid items-center rounded-[12px] bg-white py-1',
+                                                                                    NURSE_GRID_GAP_CLASS,
+                                                                                    NURSE_GRID_PADDING_X,
+                                                                                    gridTemplateClass,
+                                                                                    !nurse.isWorker && 'bg-[#FAFBFD]',
+                                                                                )}
+                                                                            >
+                                                                                <button
+                                                                                    type="button"
+                                                                                    id={
+                                                                                        nurse.id === tutorialNurseId
+                                                                                            ? 'onboarding_nurse_order_handle'
+                                                                                            : undefined
+                                                                                    }
+                                                                                    aria-label={t(
+                                                                                        'page.onboardingWardCreate.nurse.dragAria',
+                                                                                    )}
+                                                                                    {...dragProvided.dragHandleProps}
+                                                                                    className={cn(
+                                                                                        'flex h-6 w-6 items-center justify-center text-gray-4 transition-colors hover:text-gray-3',
+                                                                                        fadedClass,
+                                                                                    )}
+                                                                                >
+                                                                                    <SixDotsIcon className="h-4 w-4" />
+                                                                                </button>
 
-                                                    return (
-                                                        <div key={nurse.id} className="flex flex-col">
-                                                            <Draggable draggableId={nurse.id} index={index}>
-                                                                {(dragProvided) => (
-                                                                    <div
-                                                                        ref={(element) => {
-                                                                            dragProvided.innerRef(element);
-                                                                            rowRefByNurseId.current[nurse.id] = element;
-                                                                        }}
-                                                                        {...dragProvided.draggableProps}
-                                                                        id={
-                                                                            nurse.id === tutorialNurseId
-                                                                                ? 'onboarding_nurse_order_sample'
-                                                                                : undefined
-                                                                        }
-                                                                        className={cn(
-                                                                            'grid items-center rounded-[12px] bg-white py-1',
-                                                                            NURSE_GRID_GAP_CLASS,
-                                                                            NURSE_GRID_PADDING_X,
-                                                                            gridTemplateClass,
-                                                                            !nurse.isWorker && 'bg-[#FAFBFD]',
-                                                                        )}
-                                                                    >
-                                                                        <button
-                                                                            type="button"
-                                                                            id={
-                                                                                nurse.id === tutorialNurseId
-                                                                                    ? 'onboarding_nurse_order_handle'
-                                                                                    : undefined
-                                                                            }
-                                                                            aria-label={t('page.onboardingWardCreate.nurse.dragAria')}
-                                                                            {...dragProvided.dragHandleProps}
-                                                                            className={cn(
-                                                                                'flex h-6 w-6 items-center justify-center text-gray-4 transition-colors hover:text-gray-3',
-                                                                                fadedClass,
-                                                                            )}
-                                                                        >
-                                                                            <SixDotsIcon className="h-4 w-4" />
-                                                                        </button>
+                                                                                <Input
+                                                                                    value={nurse.name}
+                                                                                    title={nurse.name}
+                                                                                    aria-invalid={!isValidOnboardingNurseName(nurse.name)}
+                                                                                    onChange={(event) =>
+                                                                                        onNurseChange(nurse.id, {
+                                                                                            name: limitNurseNameInput(event.target.value),
+                                                                                        })
+                                                                                    }
+                                                                                    variant="flush"
+                                                                                    fieldSize="default"
+                                                                                    className={cn(
+                                                                                        'h-8 text-center text-[16px] font-medium',
+                                                                                        fadedClass,
+                                                                                    )}
+                                                                                    placeholder={t('page.member.table.name')}
+                                                                                    maxLength={MAX_ONBOARDING_NURSE_NAME_LENGTH}
+                                                                                />
 
-                                                                        <Input
-                                                                            value={nurse.name}
-                                                                            title={nurse.name}
-                                                                            onChange={(event) =>
-                                                                                onNurseChange(nurse.id, {
-                                                                                    name: limitNurseNameInput(event.target.value),
-                                                                                })
-                                                                            }
-                                                                            variant="flush"
-                                                                            fieldSize="default"
-                                                                            className={cn(
-                                                                                'h-8 text-center text-[16px] font-medium',
-                                                                                fadedClass,
-                                                                            )}
-                                                                            placeholder={t('page.member.table.name')}
-                                                                            maxLength={MAX_ONBOARDING_NURSE_NAME_LENGTH}
-                                                                        />
+                                                                                <div
+                                                                                    className={cn(
+                                                                                        'flex flex-wrap items-center justify-center gap-1.5',
+                                                                                        fadedClass,
+                                                                                    )}
+                                                                                >
+                                                                                    {workShiftTypes.map((shiftType) => {
+                                                                                        const selected =
+                                                                                            nurse.possibleShiftTypeIds.includes(
+                                                                                                shiftType.id,
+                                                                                            );
 
-                                                                        <div
-                                                                            className={cn(
-                                                                                'flex flex-wrap items-center justify-center gap-1.5',
-                                                                                fadedClass,
-                                                                            )}
-                                                                        >
-                                                                            {activeShiftTypes.map((shiftType) => {
-                                                                                const selected = nurse.possibleShiftTypeIds.includes(
-                                                                                    shiftType.id,
-                                                                                );
+                                                                                        return (
+                                                                                            <button
+                                                                                                key={shiftType.id}
+                                                                                                type="button"
+                                                                                                aria-pressed={selected}
+                                                                                                className={cn(
+                                                                                                    'group relative cursor-pointer rounded-[7px] p-[1px] transition-opacity duration-150 ease-out focus-visible:outline-2 focus-visible:outline-main-1/35',
+                                                                                                    selected
+                                                                                                        ? 'opacity-100'
+                                                                                                        : 'opacity-55 hover:opacity-100',
+                                                                                                )}
+                                                                                                onClick={() => {
+                                                                                                    const nextPossibleShiftTypeIds =
+                                                                                                        selected
+                                                                                                            ? nurse.possibleShiftTypeIds.filter(
+                                                                                                                  (value) =>
+                                                                                                                      value !==
+                                                                                                                      shiftType.id,
+                                                                                                              )
+                                                                                                            : [
+                                                                                                                  ...nurse.possibleShiftTypeIds,
+                                                                                                                  shiftType.id,
+                                                                                                              ];
 
-                                                                                return (
+                                                                                                    onNurseChange(nurse.id, {
+                                                                                                        possibleShiftTypeIds:
+                                                                                                            nextPossibleShiftTypeIds,
+                                                                                                    });
+                                                                                                }}
+                                                                                            >
+                                                                                                <ShiftBadge
+                                                                                                    shiftType={shiftType}
+                                                                                                    selected={selected}
+                                                                                                />
+                                                                                            </button>
+                                                                                        );
+                                                                                    })}
+                                                                                </div>
+
+                                                                                <div
+                                                                                    className={cn(
+                                                                                        'flex items-center justify-center',
+                                                                                        fadedClass,
+                                                                                    )}
+                                                                                >
                                                                                     <button
-                                                                                        key={shiftType.id}
                                                                                         type="button"
-                                                                                        aria-pressed={selected}
+                                                                                        role="checkbox"
+                                                                                        aria-checked={isPreceptor}
+                                                                                        aria-label={t('page.member.row.preceptorAria', {
+                                                                                            nurseName: nurseNameForAria,
+                                                                                        })}
                                                                                         className={cn(
-                                                                                            'group relative cursor-pointer rounded-[7px] p-[1px] transition-opacity duration-150 ease-out focus-visible:outline-2 focus-visible:outline-main-1/35',
-                                                                                            selected
-                                                                                                ? 'opacity-100'
-                                                                                                : 'opacity-55 hover:opacity-100',
+                                                                                            'flex h-5 w-5 items-center justify-center rounded-[5px] border transition-colors focus-visible:outline-2 focus-visible:outline-main-1',
+                                                                                            isPreceptor
+                                                                                                ? 'border-main-1 bg-main-1 text-white hover:bg-main-1-hover'
+                                                                                                : 'border-sub-4 bg-white text-transparent hover:border-main-1 hover:bg-main-light',
                                                                                         )}
-                                                                                        onClick={() => {
-                                                                                            const nextPossibleShiftTypeIds = selected
-                                                                                                ? nurse.possibleShiftTypeIds.filter(
-                                                                                                      (value) => value !== shiftType.id,
-                                                                                                  )
-                                                                                                : [
-                                                                                                      ...nurse.possibleShiftTypeIds,
-                                                                                                      shiftType.id,
-                                                                                                  ];
-
+                                                                                        onClick={() =>
                                                                                             onNurseChange(nurse.id, {
-                                                                                                possibleShiftTypeIds:
-                                                                                                    nextPossibleShiftTypeIds,
-                                                                                            });
-                                                                                        }}
+                                                                                                isPreceptor: !isPreceptor,
+                                                                                                isPreceptee: isPreceptor
+                                                                                                    ? nurse.isPreceptee
+                                                                                                    : false,
+                                                                                            })
+                                                                                        }
                                                                                     >
-                                                                                        <ShiftBadge
-                                                                                            shiftType={shiftType}
-                                                                                            selected={selected}
-                                                                                        />
+                                                                                        <Check className="h-3.5 w-3.5 stroke-[3]" />
                                                                                     </button>
-                                                                                );
-                                                                            })}
-                                                                        </div>
+                                                                                </div>
 
-                                                                        <div className={cn('flex items-center justify-center', fadedClass)}>
-                                                                            <button
-                                                                                type="button"
-                                                                                role="checkbox"
-                                                                                aria-checked={isPreceptor}
-                                                                                aria-label={t('page.member.row.preceptorAria', {
-                                                                                    nurseName: nurseNameForAria,
-                                                                                })}
-                                                                                className={cn(
-                                                                                    'flex h-5 w-5 items-center justify-center rounded-[5px] border transition-colors focus-visible:outline-2 focus-visible:outline-main-1',
-                                                                                    isPreceptor
-                                                                                        ? 'border-main-1 bg-main-1 text-white hover:bg-main-1-hover'
-                                                                                        : 'border-sub-4 bg-white text-transparent hover:border-main-1 hover:bg-main-light',
-                                                                                )}
-                                                                                onClick={() =>
-                                                                                    onNurseChange(nurse.id, {
-                                                                                        isPreceptor: !isPreceptor,
-                                                                                        isPreceptee: isPreceptor
-                                                                                            ? nurse.isPreceptee
-                                                                                            : false,
-                                                                                    })
-                                                                                }
-                                                                            >
-                                                                                <Check className="h-3.5 w-3.5 stroke-[3]" />
-                                                                            </button>
-                                                                        </div>
+                                                                                <div
+                                                                                    className={cn(
+                                                                                        'flex items-center justify-center',
+                                                                                        fadedClass,
+                                                                                    )}
+                                                                                >
+                                                                                    <button
+                                                                                        type="button"
+                                                                                        role="checkbox"
+                                                                                        aria-checked={isPreceptee}
+                                                                                        aria-label={t('page.member.row.precepteeAria', {
+                                                                                            nurseName: nurseNameForAria,
+                                                                                        })}
+                                                                                        className={cn(
+                                                                                            'flex h-5 w-5 items-center justify-center rounded-[5px] border transition-colors focus-visible:outline-2 focus-visible:outline-main-1',
+                                                                                            isPreceptee
+                                                                                                ? 'border-main-1 bg-main-1 text-white hover:bg-main-1-hover'
+                                                                                                : 'border-sub-4 bg-white text-transparent hover:border-main-1 hover:bg-main-light',
+                                                                                        )}
+                                                                                        onClick={() =>
+                                                                                            onNurseChange(nurse.id, {
+                                                                                                isPreceptor: isPreceptee
+                                                                                                    ? nurse.isPreceptor
+                                                                                                    : false,
+                                                                                                isPreceptee: !isPreceptee,
+                                                                                            })
+                                                                                        }
+                                                                                    >
+                                                                                        <Check className="h-3.5 w-3.5 stroke-[3]" />
+                                                                                    </button>
+                                                                                </div>
 
-                                                                        <div className={cn('flex items-center justify-center', fadedClass)}>
-                                                                            <button
-                                                                                type="button"
-                                                                                role="checkbox"
-                                                                                aria-checked={isPreceptee}
-                                                                                aria-label={t('page.member.row.precepteeAria', {
-                                                                                    nurseName: nurseNameForAria,
-                                                                                })}
-                                                                                className={cn(
-                                                                                    'flex h-5 w-5 items-center justify-center rounded-[5px] border transition-colors focus-visible:outline-2 focus-visible:outline-main-1',
-                                                                                    isPreceptee
-                                                                                        ? 'border-main-1 bg-main-1 text-white hover:bg-main-1-hover'
-                                                                                        : 'border-sub-4 bg-white text-transparent hover:border-main-1 hover:bg-main-light',
-                                                                                )}
-                                                                                onClick={() =>
-                                                                                    onNurseChange(nurse.id, {
-                                                                                        isPreceptor: isPreceptee
-                                                                                            ? nurse.isPreceptor
-                                                                                            : false,
-                                                                                        isPreceptee: !isPreceptee,
-                                                                                    })
-                                                                                }
-                                                                            >
-                                                                                <Check className="h-3.5 w-3.5 stroke-[3]" />
-                                                                            </button>
-                                                                        </div>
+                                                                                <div
+                                                                                    className={cn(
+                                                                                        'flex items-center justify-center',
+                                                                                        fadedClass,
+                                                                                    )}
+                                                                                >
+                                                                                    <Switch
+                                                                                        checked={nurse.isWorker}
+                                                                                        aria-label={t('page.member.row.workerAria', {
+                                                                                            nurseName: nurseNameForAria,
+                                                                                        })}
+                                                                                        className="relative h-5 w-9 justify-start border-0 bg-sub-4 p-0 shadow-none data-[state=checked]:bg-main-1 data-[state=unchecked]:bg-sub-4"
+                                                                                        thumbClassName="absolute top-0.5 left-0.5 h-4 w-4 translate-x-0 bg-white shadow-sm data-[state=checked]:translate-x-4"
+                                                                                        onCheckedChange={(checked) =>
+                                                                                            onNurseChange(nurse.id, {isWorker: checked})
+                                                                                        }
+                                                                                    />
+                                                                                </div>
 
-                                                                        <div className={cn('flex items-center justify-center', fadedClass)}>
-                                                                            <Switch
-                                                                                checked={nurse.isWorker}
-                                                                                aria-label={t('page.member.row.workerAria', {
-                                                                                    nurseName: nurseNameForAria,
-                                                                                })}
-                                                                                className="relative h-5 w-9 justify-start border-0 bg-sub-4 p-0 shadow-none data-[state=checked]:bg-main-1 data-[state=unchecked]:bg-sub-4"
-                                                                                thumbClassName="absolute top-0.5 left-0.5 h-4 w-4 translate-x-0 bg-white shadow-sm data-[state=checked]:translate-x-4"
-                                                                                onCheckedChange={(checked) =>
-                                                                                    onNurseChange(nurse.id, {isWorker: checked})
-                                                                                }
-                                                                            />
-                                                                        </div>
-
-                                                                        <button
-                                                                            type="button"
-                                                                            aria-label={t(
-                                                                                'page.onboardingWardCreate.nurse.deleteNurseAria',
-                                                                                {
-                                                                                    nurseName: nurseNameForAria,
-                                                                                },
-                                                                            )}
-                                                                            className={cn(
-                                                                                'flex h-7 w-7 items-center justify-center rounded-[7px] text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-1',
-                                                                                fadedClass,
-                                                                            )}
-                                                                            onClick={() => onDeleteNurse(nurse.id)}
-                                                                        >
-                                                                            <X className="h-3.5 w-3.5" />
-                                                                        </button>
-                                                                    </div>
-                                                                )}
-                                                            </Draggable>
-                                                            {index < group.items.length - 1 ? (
-                                                                <OnboardingAddDivisionButton
-                                                                    onClick={() => onAddDivisionAfterNurse(nurse.id, renderedNurseIds)}
-                                                                />
-                                                            ) : null}
-                                                        </div>
-                                                    );
-                                                })}
-                                                {provided.placeholder}
-                                            </div>
-                                        )}
-                                    </Droppable>
-                                </div>
-                            );
-                        })}
+                                                                                <button
+                                                                                    type="button"
+                                                                                    aria-label={t(
+                                                                                        'page.onboardingWardCreate.nurse.deleteNurseAria',
+                                                                                        {
+                                                                                            nurseName: nurseNameForAria,
+                                                                                        },
+                                                                                    )}
+                                                                                    className={cn(
+                                                                                        'flex h-7 w-7 items-center justify-center rounded-[7px] text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-1',
+                                                                                        fadedClass,
+                                                                                    )}
+                                                                                    onClick={() => onDeleteNurse(nurse.id)}
+                                                                                >
+                                                                                    <X className="h-3.5 w-3.5" />
+                                                                                </button>
+                                                                            </div>
+                                                                        )}
+                                                                    </Draggable>
+                                                                    {index < group.items.length - 1 ? (
+                                                                        <OnboardingAddDivisionButton
+                                                                            onClick={() =>
+                                                                                onAddDivisionAfterNurse(nurse.id, renderedNurseIds)
+                                                                            }
+                                                                        />
+                                                                    ) : null}
+                                                                </div>
+                                                            );
+                                                        })}
+                                                        {provided.placeholder}
+                                                    </div>
+                                                )}
+                                            </Droppable>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </DragDropContext>
                     </div>
-                </DragDropContext>
+                </div>
             ) : null}
 
             {!hasTeams ? (
