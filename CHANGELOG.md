@@ -6,6 +6,10 @@ This repository uses one shared version across all workspaces, so release notes 
 
 Entries are generated from pending `.changeset/*.md` files when `pnpm run changeset:version` or `pnpm run release:version` is executed.
 
+## 1.3.55 - 2026-11-21
+
+- `@dutying/app` (patch): Keep onboarding validation aligned with request serialization when legacy inactive shift codes are duplicated.
+
 ## 1.3.54 - 2026-11-21
 
 - `@dutying/app` (patch): Repair saved overlong onboarding shift defaults, validate retained inactive shifts, and show localized field-specific ward creation errors without duplicate notifications.

@@ -1,5 +1,14 @@
 # @dutying/app
 
+## 1.3.55
+
+### Patch Changes
+
+- 4128ce4: Keep onboarding validation aligned with request serialization when legacy inactive shift codes are duplicated.
+    - @dutying/api@1.3.55
+    - @dutying/domain@1.3.55
+    - @dutying/utils@1.3.55
+
 ## 1.3.54
 
 ### Patch Changes
