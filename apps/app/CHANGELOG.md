@@ -1,5 +1,14 @@
 # @dutying/app
 
+## 1.3.54
+
+### Patch Changes
+
+- 3302ba3: Repair saved overlong onboarding shift defaults, validate retained inactive shifts, and show localized field-specific ward creation errors without duplicate notifications.
+    - @dutying/api@1.3.54
+    - @dutying/domain@1.3.54
+    - @dutying/utils@1.3.54
+
 ## 1.3.53
 
 ### Patch Changes
