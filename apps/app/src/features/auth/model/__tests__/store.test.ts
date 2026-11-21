@@ -1,6 +1,19 @@
 import {afterEach, describe, expect, it, vi} from 'vitest';
 
 describe('useAuthStore', () => {
+    it('binds the authenticated admin before outcomes and clears identity on logout', async () => {
+        const setAnalyticsAccount = vi.fn();
+
+        vi.doMock('@/shared/util/growth-analytics', () => ({setAnalyticsAccount}));
+        const {default: useAuthStore} = await import('../store');
+        const token = `header.${btoa(JSON.stringify({principalType: 'WARD_ADMIN', wardAdminAccountId: 42}))}.signature`;
+
+        useAuthStore.getState().beginLogin(token);
+        expect(setAnalyticsAccount).toHaveBeenLastCalledWith('web', 42);
+        useAuthStore.getState().resetState();
+        expect(setAnalyticsAccount).toHaveBeenLastCalledWith('app', null);
+        vi.doUnmock('@/shared/util/growth-analytics');
+    });
     afterEach(() => {
         localStorage.clear();
         vi.resetModules();

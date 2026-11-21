@@ -632,9 +632,8 @@ function LoginPage() {
                 password: loginPassword,
             });
 
-            if (!isQaLogin) trackProductOutcome('login', 'password');
-
             handleLogin(response.accessToken, isQaLogin ? ROUTE.HOME : nextPath);
+            if (!isQaLogin) trackProductOutcome('login', 'password');
         } catch (error) {
             setLoginError(error instanceof Error ? error.message : t('page.login.feedback.loginFailed'));
         } finally {
@@ -699,8 +698,8 @@ function LoginPage() {
                 legalAgreements,
             });
 
-            trackProductOutcome('sign_up', 'password');
             handleLogin(response.accessToken, ROUTE.REGISTER);
+            trackProductOutcome('sign_up', 'password');
         } catch (error) {
             setSignupError(error instanceof Error ? error.message : t('page.login.feedback.signupFailed'));
         } finally {
