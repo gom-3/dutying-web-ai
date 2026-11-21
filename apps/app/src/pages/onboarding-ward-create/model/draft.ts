@@ -2808,6 +2808,7 @@ const validateShiftTypes = (draft: TOnboardingWardDraft): TOnboardingValidationI
     const step: TOnboardingStep = 4;
     const activeShiftTypes = draft.shiftTypes.filter(isOnboardingShiftTypeActive);
     const mappedShiftTypes = activeShiftTypes.filter((shiftType) => isOnboardingShiftMappingResolved(shiftType.mappingStatus));
+    const retainedInactiveShortNames = new Set<string>();
     const getSelectedRotationSystem = (shiftType: TOnboardingWardShiftType) =>
         shiftType.classification === 'OFF' ||
         shiftType.classification === 'OTHER_WORK' ||
@@ -2851,15 +2852,17 @@ const validateShiftTypes = (draft: TOnboardingWardDraft): TOnboardingValidationI
 
     draft.shiftTypes.forEach((shiftType) => {
         const isActive = isOnboardingShiftTypeActive(shiftType);
+        const requestShortName = normalizeOnboardingShiftCode(shiftType.shortName);
 
         if (
             !isActive &&
             (!isOnboardingShiftMappingResolved(shiftType.mappingStatus) ||
-                mappedShiftTypes.some(
-                    (active) => normalizeOnboardingShiftCode(active.shortName) === normalizeOnboardingShiftCode(shiftType.shortName),
-                ))
+                retainedInactiveShortNames.has(requestShortName) ||
+                mappedShiftTypes.some((active) => normalizeOnboardingShiftCode(active.shortName) === requestShortName))
         )
             return;
+
+        if (!isActive) retainedInactiveShortNames.add(requestShortName);
 
         const normalizedName = shiftType.name.trim();
         const normalizedShortName = shiftType.shortName.trim().toLocaleUpperCase();
