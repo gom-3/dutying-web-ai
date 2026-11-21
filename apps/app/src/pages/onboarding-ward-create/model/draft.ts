@@ -2849,14 +2849,25 @@ const validateShiftTypes = (draft: TOnboardingWardDraft): TOnboardingValidationI
         }
     });
 
-    activeShiftTypes.forEach((shiftType) => {
+    draft.shiftTypes.forEach((shiftType) => {
+        const isActive = isOnboardingShiftTypeActive(shiftType);
+
+        if (
+            !isActive &&
+            (!isOnboardingShiftMappingResolved(shiftType.mappingStatus) ||
+                mappedShiftTypes.some(
+                    (active) => normalizeOnboardingShiftCode(active.shortName) === normalizeOnboardingShiftCode(shiftType.shortName),
+                ))
+        )
+            return;
+
         const normalizedName = shiftType.name.trim();
         const normalizedShortName = shiftType.shortName.trim().toLocaleUpperCase();
         const normalizedShortNameDuplicateKey = getShiftShortNameEntryKey(shiftType.shortName);
 
-        if (!isOnboardingShiftMappingResolved(shiftType.mappingStatus)) {
+        if (isActive && !isOnboardingShiftMappingResolved(shiftType.mappingStatus)) {
             issues.push({code: 'unmapped-shift-type', step, targetId: shiftType.id});
-        } else {
+        } else if (isActive) {
             const rotationSystem = getSelectedRotationSystem(shiftType);
 
             if (!getSelectableRotationSystemsForClassification(draft.rotationMode, shiftType.classification).includes(rotationSystem)) {
@@ -2874,11 +2885,12 @@ const validateShiftTypes = (draft: TOnboardingWardDraft): TOnboardingValidationI
             issues.push({code: 'missing-shift-short-name', step, targetId: shiftType.id});
         } else if (hasInvalidShiftShortNameLengthInput(shiftType.shortName) || hasInvalidShiftShortNameEntryKey(normalizedShortName)) {
             issues.push({code: 'invalid-shift-short-name', step, targetId: shiftType.id});
-        } else if ((shiftShortNameCountByEntryKey.get(normalizedShortNameDuplicateKey) ?? 0) > 1) {
+        } else if (isActive && (shiftShortNameCountByEntryKey.get(normalizedShortNameDuplicateKey) ?? 0) > 1) {
             issues.push({code: 'duplicate-shift-short-name', step, targetId: shiftType.id});
         }
 
         if (
+            !isActive ||
             !isOnboardingShiftMappingResolved(shiftType.mappingStatus) ||
             shiftType.isOff ||
             shiftType.classification === 'OFF' ||
