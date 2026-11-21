@@ -70,6 +70,11 @@ export function isIncompleteRevision(text: string): boolean {
     );
 }
 
+/** The entire command must authorize only filling empty cells. */
+export function isEmptyOnlyFillCommand(text: string): boolean {
+    return /^(?:(?:수락(?:된|한)\s*)?(?:원티드|신청\s*근무|신청\s*휴무)(?:\s*한\s*(?:거|것))?(?:는|은|을|를)?\s*(?:그대로\s*두고|유지하고|보존하고)\s*[,，]?\s*)?빈\s*칸(?:만|을)?\s*채워\s*(?:줘요?|주세요)[.!。]?$/u.test(text.trim());
+}
+
 /** Only standalone generation commands; extra conditions and negation require interpretation. */
 export function isPlainAutofillCommand(text: string): boolean {
     return /^(?:다시\s*)?(?:AI\s*채우기|채우기|자동완성|자동채우기|자동\s*채우기)\s*(?:해\s*줘|해주세요|해\s*주세요|해줘요)?[.!。]?$/iu.test(

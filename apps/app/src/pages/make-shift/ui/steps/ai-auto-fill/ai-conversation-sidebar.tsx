@@ -12,7 +12,7 @@ import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import ConfirmActionDialog, {ConfirmationSpotlight} from '@/shared/ui/ConfirmActionDialog';
 import {trackScheduleSignal} from '@/shared/util/growth-analytics';
-import {describeAdjustChanges, isPlainAutofillCommand} from '../../../model/ai-adjust-conversation';
+import {describeAdjustChanges, isEmptyOnlyFillCommand, isPlainAutofillCommand} from '../../../model/ai-adjust-conversation';
 import {isScheduleFullyProtected} from '../../../model/ai-autofill-state';
 import {
     AiConversationInputError,
@@ -800,6 +800,7 @@ export default function AiConversationSidebar({
         selection?: {op: TConversationOperation; suggestion: TFailureSuggestion},
         conflict?: TConversationOperation,
         refreshBeforeExecution = false,
+        submittedText?: string,
     ) => {
         await run(async () => {
             if (isScheduleFullyProtected(useShiftEditorStore.getState().doc)) throw new Error(t('aiAdjust.allFixed'));
@@ -835,6 +836,7 @@ export default function AiConversationSidebar({
                     surfaceVersion: 'conversation-minimal-v1',
                     entryChoice: operationType === 'GENERATE' ? 'regenerate' : 'modify',
                     inputMode: 'request',
+                    ...(submittedText ? {typedText: submittedText} : {}),
                 },
                 ...(intentFirstEnabled ? {authoringContractVersion: INTENT_FIRST_CONTRACT} : {}),
                 monthlyRestRequirement: await loadMonthlyRestRequirement(wardId, teamId, shift, year, month),
@@ -943,6 +945,7 @@ export default function AiConversationSidebar({
             if (selection) setSelectedSuggestion(undefined);
 
             await applyCompleted(operation, uiRevision, request.candidateDigest);
+            if (submittedText) setText((value) => (value.trim() === submittedText ? '' : value));
             window.dispatchEvent(new Event('dutying:commercial-usage-changed'));
         }, true);
     };
@@ -1345,6 +1348,7 @@ export default function AiConversationSidebar({
             return;
         }
 
+        const emptyOnly = isEmptyOnlyFillCommand(message);
         const hasPendingInterpretation =
             currentDetail?.conversation.latestInterpretationId &&
             !currentDetail.operations.some((operation) => operation.interpretationId === currentDetail.conversation.latestInterpretationId);
@@ -1354,13 +1358,19 @@ export default function AiConversationSidebar({
             !editingRequest &&
             !currentDetail?.conversationState?.pendingQuestion &&
             !hasPendingInterpretation &&
-            isPlainAutofillCommand(message) &&
+            (isPlainAutofillCommand(message) || (emptyOnly && !currentDetail?.conversationState?.conditions?.length)) &&
             currentDetail &&
             !busy &&
             !running &&
             !awaitingAdjustment &&
             !preparing
         ) {
+            if (emptyOnly) {
+                if (isGenerationReady && !isGenerationReady()) return;
+                await execute('GENERATE', 'EMPTY_ONLY', undefined, undefined, undefined, false, message);
+                return;
+            }
+
             setText('');
             chooseNextAction('regenerate');
 
