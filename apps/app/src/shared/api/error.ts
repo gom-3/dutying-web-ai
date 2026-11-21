@@ -10,6 +10,7 @@ export type TApiClientError = Error & {
     displayPolicy?: TApiErrorDisplayPolicy;
     requestId?: string;
     traceId?: string;
+    toastId?: string;
     responseBody?: TApiErrorResponse;
     originalError: unknown;
 };

@@ -1,6 +1,7 @@
 import {resources} from '@/shared/i18n/resources.generated';
 import {
     DEFAULT_ONBOARDING_DRAFT_LABELS,
+    ONBOARDING_SHIFT_NAME_MAX_LENGTH,
     type TOnboardingDraftLabels,
     type TOnboardingWardDraft,
     type TOnboardingWardShiftType,
@@ -36,7 +37,7 @@ const legacyNames: Partial<Record<TShiftName, readonly string[]>> = {
 
 export const localizeOnboardingShiftNames = (draft: TOnboardingWardDraft, labels: TOnboardingDraftLabels): TOnboardingWardDraft => {
     const localize = (shiftType: TOnboardingWardShiftType): TOnboardingWardShiftType => {
-        if (shiftType.autoSeeded === false || shiftType.source || shiftType.importedCode) return shiftType;
+        if (shiftType.source || shiftType.importedCode) return shiftType;
 
         const classification = shiftType.classification;
         const key: TShiftName | undefined =
@@ -61,7 +62,20 @@ export const localizeOnboardingShiftNames = (draft: TOnboardingWardDraft, labels
         if (!key || shiftType.name === labels.shiftNames[key]) return shiftType;
 
         const name = shiftType.name.trim();
+        const legacyKey =
+            shiftType.rotationSystem === 'TWO' && classification === 'DAY'
+                ? 'twoDay'
+                : shiftType.rotationSystem === 'TWO' && classification === 'NIGHT'
+                  ? 'twoNight'
+                  : key;
+        // Editing a time/color also cleared autoSeeded in older saved drafts.
+        // Repair only the known invalid generated labels; retain custom names.
+        const invalidLegacyDefault = name.length > ONBOARDING_SHIFT_NAME_MAX_LENGTH && legacyNames[legacyKey]?.includes(name);
+
+        if (shiftType.autoSeeded === false && !invalidLegacyDefault) return shiftType;
+
         const isDefaultName =
+            invalidLegacyDefault ||
             name === DEFAULT_ONBOARDING_DRAFT_LABELS.shiftNames[key] ||
             defaultNames.some((names) => names[key] === name) ||
             legacyNames[key]?.includes(name);
