@@ -179,6 +179,7 @@ const applyResponseInterceptor = (instance: ReturnType<typeof createAxiosInstanc
             const status: number | undefined = error?.response?.status;
             const responseBody = normalizeApiErrorResponse(error?.response?.data);
             const message = resolveApiErrorMessage(responseBody, i18n.t('shared.api.requestFailed'));
+            let errorToastId: string | undefined;
 
             // 명단이 변경된 사이 저장/검증을 시도한 경우 작성 화면이 최신 workspace를 다시 읽게 한다.
             // 자동 재저장이나 재확정은 이 계층에서 하지 않는다.
@@ -196,7 +197,7 @@ const applyResponseInterceptor = (instance: ReturnType<typeof createAxiosInstanc
                     }
                 })
                 .with(400, 404, () => {
-                    if (!error?.config?.suppressErrorToast) toast.error(message);
+                    if (!error?.config?.suppressErrorToast) errorToastId = toast.error(message);
                 })
                 .otherwise(() => {
                     // no-op
@@ -210,6 +211,7 @@ const applyResponseInterceptor = (instance: ReturnType<typeof createAxiosInstanc
             apiError.displayPolicy = responseBody?.displayPolicy;
             apiError.requestId = responseBody?.requestId;
             apiError.traceId = responseBody?.traceId;
+            apiError.toastId = errorToastId;
             apiError.responseBody = responseBody;
             apiError.originalError = error;
 

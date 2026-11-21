@@ -48,6 +48,64 @@ const localizedLabels: TOnboardingDraftLabels = {
 };
 
 describe('OnboardingWardCreatePage model', () => {
+    it('blocks an inactive shift name that the server would reject during ward creation', () => {
+        const initial = createInitialDraft();
+        const draft = {
+            ...initial,
+            currentStep: 5 as const,
+            hospitalName: '病院',
+            teams: initial.teams.slice(0, 1),
+            nurses: initial.nurses.filter((nurse) => nurse.teamId === initial.teams[0]!.id),
+            shiftTypes: [
+                ...initial.shiftTypes,
+                {...initial.shiftTypes[0]!, id: 'saved-inactive', name: 'Two-shift night', shortName: 'X', isActive: false},
+            ],
+        };
+
+        expect(getStepValidation(draft, 4).issues).toContainEqual({
+            code: 'invalid-shift-name',
+            step: 4,
+            targetId: 'saved-inactive',
+        });
+        expect(canComplete(draft)).toBe(false);
+    });
+
+    it('ignores an invalid inactive duplicate that is replaced by its active shift in the request', () => {
+        const initial = createInitialDraft();
+        const draft = {
+            ...initial,
+            currentStep: 5 as const,
+            hospitalName: '病院',
+            teams: initial.teams.slice(0, 1),
+            nurses: initial.nurses.filter((nurse) => nurse.teamId === initial.teams[0]!.id),
+            shiftTypes: [...initial.shiftTypes, {...initial.shiftTypes[0]!, id: 'old-day', name: 'Two-shift night', isActive: false}],
+        };
+
+        expect(getStepValidation(draft, 4).issues).toEqual([]);
+        expect(canComplete(draft)).toBe(true);
+    });
+
+    it('allows an inactive retained shift without requiring working hours', () => {
+        const initial = createInitialDraft();
+        const draft = {
+            ...initial,
+            hospitalName: '病院',
+            shiftTypes: [
+                ...initial.shiftTypes,
+                {
+                    ...initial.shiftTypes[0]!,
+                    id: 'inactive',
+                    name: '過去の日勤',
+                    shortName: 'X',
+                    isActive: false,
+                    startTime: '',
+                    endTime: '',
+                },
+            ],
+        };
+        expect(getStepValidation(draft, 4).issues).toEqual([]);
+    });
+
     it('requires hospital name and keeps ward name optional on the first step', () => {
         const initialDraft = createInitialDraft();
 

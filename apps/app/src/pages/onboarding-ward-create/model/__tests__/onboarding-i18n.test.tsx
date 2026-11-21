@@ -173,4 +173,36 @@ describe('onboarding internationalization', () => {
         expect(localizeOnboardingShiftNames(localized, japanese)).toBe(localized);
         expect(localizeOnboardingShiftNames(localized, english).shiftTypes[0]!.name).toBe('Day');
     });
+
+    it('repairs overlong legacy defaults after time and color edits without discarding those edits', () => {
+        const english = labelsFor('en');
+        const japanese = labelsFor('ja');
+        const mixed = updateRotationModeDraft(createInitialDraft(english), 'MIXED', english);
+        const legacy = {
+            ...mixed,
+            shiftTypes: mixed.shiftTypes.map((shift) =>
+                shift.id === 'shift-two-day'
+                    ? {...shift, name: 'Two-shift day'}
+                    : shift.id === 'shift-two-night'
+                      ? {...shift, name: 'Two-shift night'}
+                      : shift,
+            ),
+        };
+        const edited = updateShiftTypeDraft(updateShiftTypeDraft(legacy, 'shift-two-day', {startTime: '09:15'}), 'shift-two-night', {
+            color: '#123456',
+        });
+
+        const restored = localizeOnboardingShiftNames(edited, japanese);
+
+        expect(restored.shiftTypes.find((shift) => shift.id === 'shift-two-day')).toMatchObject({
+            name: japanese.shiftNames.twoDay,
+            startTime: '09:15',
+            autoSeeded: false,
+        });
+        expect(restored.shiftTypes.find((shift) => shift.id === 'shift-two-night')).toMatchObject({
+            name: japanese.shiftNames.twoNight,
+            color: '#123456',
+            autoSeeded: false,
+        });
+    });
 });

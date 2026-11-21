@@ -1,7 +1,7 @@
 import type {DropResult} from '@hello-pangea/dnd';
 import {act} from 'react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
-import '@/i18n';
+import i18n from '@/i18n';
 import type * as SharedApiModule from '@/shared/api';
 import {renderHook, waitFor} from '@/shared/util/test-utils';
 import {createInitialDraft, DEFAULT_SHIFT_TYPE_COLORS, getScheduleInputDraft, getScheduleMonthKey} from '../draft';
@@ -696,6 +696,39 @@ describe('useOnboardingWardWizard upload flow', () => {
             {date: '2026-05-01', shiftShortName: 'D'},
             {date: '2026-06-01', shiftShortName: 'E'},
         ]);
+    });
+
+    it('returns to the rejected shift step, retains entered nurses, and replaces the existing API toast', async () => {
+        await i18n.changeLanguage('ja');
+        try {
+            const saved = {...createInitialDraft(), currentStep: 5 as const, hospitalName: '病院', wardName: '第１病棟'};
+            mockGetOnboardingWardDraft.mockResolvedValueOnce({
+                ward: draftWardResponse,
+                draftPayload: {flowVersion: 2, draft: saved, selectedTeamId: saved.teams[0]!.id, sortMode: 'manual'},
+            });
+            mockCompleteOnboardingWardDraft.mockRejectedValueOnce({
+                toastId: 'original-api-toast',
+                responseBody: {code: 'INVALID_TYPE_VALUE', errors: [{field: 'wardShiftTypes[0].name', messageKey: 'Size'}]},
+            });
+            const {result} = renderHook(() => useOnboardingWardWizard());
+            await waitFor(() => expect(result.current.draftRestoreStatus).toBe('ready'));
+            const nurses = result.current.draft.nurses;
+
+            await act(async () => {
+                await result.current.complete();
+            });
+
+            expect(mockCompleteOnboardingWardDraft).toHaveBeenCalledOnce();
+            expect(result.current.submissionStatus).toBe('error');
+            expect(result.current.draft.currentStep).toBe(4);
+            expect(result.current.draft.nurses).toEqual(nurses);
+            expect(toastError).toHaveBeenCalledWith(expect.stringContaining('12'), {id: 'original-api-toast'});
+            expect(toastSuccess).not.toHaveBeenCalled();
+        } finally {
+            await act(async () => {
+                await i18n.changeLanguage('ko');
+            });
+        }
     });
 
     it('retains partial measurement coverage when an old draft is restored, edited and submitted', async () => {

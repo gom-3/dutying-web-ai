@@ -82,6 +82,7 @@ import {normalizeOnboardingScheduleFile, parseOnboardingScheduleTemplate} from '
 import {localizeOnboardingShiftNames} from './shift-type-labels';
 import {sortNursesByMode} from './sort';
 import {createOnboardingWardCreateExecutor, type TOnboardingWardCreateSubmission} from './submission';
+import {getOnboardingSubmissionError} from './submission-error';
 import type {TSortMode} from './types';
 import {buildOnboardingWardIdentityPayload} from './ward-identity';
 
@@ -1784,7 +1785,15 @@ function useOnboardingWardWizard(options: TOnboardingWardWizardOptions = {}) {
                 extra: {step: draft.currentStep},
             });
             setSubmissionStatus('error');
-            toast.error(t('page.onboardingWardCreate.toast.completeError'));
+            const submissionError = getOnboardingSubmissionError(error, nextDraft, t);
+
+            if (submissionError.step) {
+                setDraft((current) => ({...current, currentStep: submissionError.step!}));
+            }
+            if (submissionError.teamId) setSelectedTeamId(submissionError.teamId);
+
+            if (submissionError.toastId) toast.error(submissionError.message, {id: submissionError.toastId});
+            else toast.error(submissionError.message);
         }
     };
     const skipOrComplete = async () => {
