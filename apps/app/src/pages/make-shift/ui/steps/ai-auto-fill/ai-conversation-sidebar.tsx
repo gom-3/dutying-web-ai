@@ -3086,6 +3086,31 @@ export default function AiConversationSidebar({
                                                                 )
                                                                     ? () => {
                                                                           if (event.operation.operationType === 'GENERATE') {
+                                                                              if (event.operation.interpretationId) {
+                                                                                  const turn = detail.turns.find(
+                                                                                      (item) =>
+                                                                                          item.semanticPlan &&
+                                                                                          item.interpretationId ===
+                                                                                              event.operation.interpretationId,
+                                                                                  );
+                                                                                  if (!turn?.semanticPlan) return;
+                                                                                  if (
+                                                                                      hasCurrentIntentFirstExecutionWindow(
+                                                                                          turn.semanticPlan,
+                                                                                      )
+                                                                                  )
+                                                                                      void confirmAndAdjust(turn);
+                                                                                  else {
+                                                                                      const original = requestTextForTurn(detail, turn);
+                                                                                      if (original)
+                                                                                          void interpret(
+                                                                                              original,
+                                                                                              turn.interpretationId ?? undefined,
+                                                                                          );
+                                                                                      else editRequest(turn);
+                                                                                  }
+                                                                                  return;
+                                                                              }
                                                                               if (onPrepareGeneration) onPrepareGeneration();
                                                                               else setRebuild(true);
                                                                           } else {

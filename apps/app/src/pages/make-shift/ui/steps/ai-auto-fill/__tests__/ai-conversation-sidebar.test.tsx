@@ -3652,6 +3652,16 @@ describe('persistent schedule sidebar', () => {
         expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
     });
 
+    it('does not retry a scoped generation as a whole-ward generation', async () => {
+        const {executed} = executedSemanticRequest('FAILED');
+        current = {...current, operations: [{...executed, operationType: 'GENERATE'}]};
+        const onPrepareGeneration = vi.fn();
+        renderSidebar({onPrepareGeneration});
+        await userEvent.click(await screen.findByRole('button', {name: '다시 계산하기'}));
+        expect(onPrepareGeneration).not.toHaveBeenCalled();
+        expect(mocks.execute.mock.calls.some(([, req]) => req.operationType === 'GENERATE' && !req.interpretationId)).toBe(false);
+    });
+
     it('retries a failed adjustment from its recovery action without restoring old plan buttons', async () => {
         const {confirmed, executed} = executedSemanticRequest('FAILED');
         const prepare = vi.fn().mockResolvedValue(undefined);
