@@ -1,5 +1,14 @@
 # @dutying/app
 
+## 1.3.56
+
+### Patch Changes
+
+- 근무표 편집기에서 저장한 스냅샷을 모두 표시합니다. 빈 칸만 채우는 요청에 지정한 근무를 보존하고, 생성 재시도에는 이전에 해석한 적용 범위를 유지합니다.
+    - @dutying/api@1.3.56
+    - @dutying/domain@1.3.56
+    - @dutying/utils@1.3.56
+
 ## 1.3.55
 
 ### Patch Changes
