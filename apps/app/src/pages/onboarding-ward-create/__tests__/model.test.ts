@@ -5,6 +5,7 @@ import {
     addTeamDraft,
     applyScheduleInputDraft,
     applyUploadedScheduleTemplateDraft,
+    buildCreateWardPayload,
     canComplete,
     canGoNext,
     createInitialDraft,
@@ -104,6 +105,28 @@ describe('OnboardingWardCreatePage model', () => {
             ],
         };
         expect(getStepValidation(draft, 4).issues).toEqual([]);
+    });
+
+    it('validates only the first retained inactive row when saved codes are duplicated', () => {
+        const initial = createInitialDraft();
+        const draft = {
+            ...initial,
+            currentStep: 5 as const,
+            hospitalName: '病院',
+            teams: initial.teams.slice(0, 1),
+            nurses: initial.nurses.filter((nurse) => nurse.teamId === initial.teams[0]!.id),
+            shiftTypes: [
+                ...initial.shiftTypes,
+                {...initial.shiftTypes[0]!, id: 'retained', shortName: 'X', name: '過去の日勤', isActive: false},
+                {...initial.shiftTypes[0]!, id: 'discarded-duplicate', shortName: 'X', name: 'Two-shift night', isActive: false},
+            ],
+        };
+
+        expect(buildCreateWardPayload(draft).wardShiftTypes.filter((shift) => shift.shortName === 'X')).toEqual([
+            expect.objectContaining({name: '過去の日勤'}),
+        ]);
+        expect(getStepValidation(draft, 4).issues).toEqual([]);
+        expect(canComplete(draft)).toBe(true);
     });
 
     it('requires hospital name and keeps ward name optional on the first step', () => {
