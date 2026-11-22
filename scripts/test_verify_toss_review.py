@@ -13,7 +13,7 @@ class OfferChecks(unittest.TestCase):
         return dict(plan='PLUS', baseGross=19900, includedStaff=50,
                     extraStaffGross=990, generate=30, adjust=10, adminSeats=10,
                     maxChargeGross=1000000, currency='KRW',
-                    termsVersion='plus-monthly-2026-10-11', priceVersion='published-v1',
+                    termsVersion='plus-ai-fill-monthly-2026-11-12', priceVersion='published-v1',
                     ready=True, **changes)
 
     def test_operator_price_and_allowance_changes_are_valid(self):
@@ -21,6 +21,20 @@ class OfferChecks(unittest.TestCase):
         offer.update(baseGross=29900, includedStaff=80, extraStaffGross=1200,
                      generate=60, adjust=0, adminSeats=20)
         self.assertEqual(verifier.offer_errors(offer, True), [])
+
+    def test_current_terms_are_accepted(self):
+        self.assertEqual(verifier.offer_errors(self.offer(), True), [])
+
+    def test_historical_terms_require_an_explicit_override(self):
+        offer = self.offer()
+        offer['termsVersion'] = 'plus-monthly-2026-10-11'
+        self.assertIn('termsVersion', ';'.join(verifier.offer_errors(offer, True)))
+        self.assertEqual(verifier.offer_errors(offer, True, 'plus-monthly-2026-10-11'), [])
+
+    def test_a_different_future_terms_version_is_not_silently_accepted(self):
+        offer = self.offer()
+        offer['termsVersion'] = 'unreviewed-future-terms'
+        self.assertIn('termsVersion', ';'.join(verifier.offer_errors(offer, True)))
 
     def test_unknown_or_missing_policy_reports_one_setup_reason(self):
         for code in ('COMMERCIAL_NOT_ENABLED', 'POLICY_NOT_CONFIGURED'):

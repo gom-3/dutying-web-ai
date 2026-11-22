@@ -45,6 +45,8 @@ jobs:
         env:
           VITE_APP_PUBLIC_URL: ${{ github.ref == 'refs/heads/develop' && 'https://dev.dutying.ai' || 'https://www.dutying.ai' }}
           VITE_SERVER_URL: ${{ github.ref == 'refs/heads/develop' && 'https://dev.api.dutying.ai' || 'https://api.dutying.ai' }}
+      - name: Verify billing entry and provider return routes
+        run: node scripts/release/verify-billing-build.mjs apps/app/dist
       - name: Retain verified web deployment artifact
         if: github.event_name != 'pull_request'
         uses: actions/upload-artifact@v4
