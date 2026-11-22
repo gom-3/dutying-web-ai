@@ -14,7 +14,7 @@ permissions:
 
 concurrency:
   group: web-ci-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' || github.ref == 'refs/heads/develop' }}
 
 jobs:
   test:
@@ -67,15 +67,16 @@ jobs:
   deploy:
     name: Deploy or verify Cloudflare Pages
     needs: test
-    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    # Development publishes only via the on-demand Pages procedure in docs/DEV-DEPLOYMENT.md.
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
       contents: read
       deployments: write
     env:
-      PAGES_PROJECT: ${{ github.ref == 'refs/heads/develop' && 'dutying-web-ai-dev' || 'dutying-web-ai' }}
-      PUBLIC_URL: ${{ github.ref == 'refs/heads/develop' && 'https://dev.dutying.ai' || 'https://www.dutying.ai' }}
+      PAGES_PROJECT: dutying-web-ai
+      PUBLIC_URL: https://www.dutying.ai
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -129,4 +130,3 @@ jobs:
           done
           echo '::error::No matching public deployment. Enable Cloudflare Git deployments or set CLOUDFLARE_API_TOKEN and re-run this job.'
           exit 1
-          retention-days: 7
