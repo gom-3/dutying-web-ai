@@ -38,10 +38,9 @@ vi.mock('@/features/auth', () => ({
     default: () => ({state: {accountMe: {name: '검증용 관리자', wardId: 11}}, actions: {handleGetAccountMe: vi.fn()}}),
 }));
 vi.mock('@/features/auth/model/store', () => ({default: (selector: (state: object) => unknown) => selector({accountId: 7, wardId: 11})}));
-vi.mock('@/pages/subscription-info', () => ({
+vi.mock('@/pages/subscription-info', async (original) => ({
+    ...(await original<typeof SubscriptionInfo>()),
     fetchPublicOffer: mocks.offer,
-    RefundConditions: () => null,
-    SubscriptionConditions: () => null,
 }));
 vi.mock('./reauthentication', () => ({
     Reauthenticate: ({onVerified}: {onVerified: (proof: string) => void}) => (
@@ -223,8 +222,8 @@ function quoteForCapacity(
 }
 
 const financialCalls = () => mocks.post.mock.calls.filter(([path]) => !path.endsWith('/quotes'));
-const proceed = () => screen.getByRole('button', {name: '동의하고 진행하기'});
-const agreement = () => screen.getByRole('checkbox', {name: /금액·대상·기간/});
+const proceed = () => screen.getByRole('button', {name: '동의하고 카드 등록하기'});
+const agreement = () => screen.getByRole('checkbox', {name: /정기결제 약관 및 환불정책 동의/});
 
 async function readyQuote() {
     const amount = await screen.findByText('이번 결제금액', {exact: true});
@@ -265,12 +264,85 @@ describe('combined Plus amount review and card registration', () => {
         expect(within(review).queryByText('변경 후 월 구독료')).not.toBeInTheDocument();
         expect(document.activeElement).not.toBe(review.querySelector('h3'));
 
-        const detail = within(review).getByText('세금·결제 상세').closest('details')!;
+        const detailButton = within(review).getByRole('button', {name: '세금·결제 상세'});
 
-        expect(detail).not.toHaveAttribute('open');
-        await userEvent.click(within(detail).getByText('세금·결제 상세'));
-        expect(detail).toHaveAttribute('open');
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+        await userEvent.click(detailButton);
+
+        const detail = screen.getByRole('dialog', {name: '세금·결제 상세'});
+
         expect(within(detail).getByText('₩18,090')).toBeInTheDocument();
+        expect(within(detail).getByText('₩1,810')).toBeInTheDocument();
+        await userEvent.keyboard('{Escape}');
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+        expect(detailButton).toHaveFocus();
+        expect(agreement()).not.toBeChecked();
+        expect(financialCalls()).toEqual([]);
+    });
+
+    it('shows each policy once in a dialog and preserves unchecked consent, focus and the unsubmitted checkout', async () => {
+        mount();
+        await readyQuote();
+        expect(screen.queryByRole('button', {name: '환불정책'})).not.toBeInTheDocument();
+        await userEvent.click(screen.getByRole('button', {name: '동의 항목 펼치기'}));
+        expect(screen.getAllByRole('button', {name: '환불정책'})).toHaveLength(1);
+        expect(screen.queryByRole('link', {name: /정기결제 약관|환불 조건/})).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: '환불 조건'})).not.toBeInTheDocument();
+
+        const refund = screen.getByRole('button', {name: '환불정책'});
+
+        await userEvent.click(refund);
+
+        const refundDialog = screen.getByRole('dialog', {name: '환불정책'});
+
+        expect(within(refundDialog).getByText(/결제 후 7일 이내/)).toBeInTheDocument();
+        expect(within(refundDialog).getByText(/원 결제수단/)).toBeInTheDocument();
+        expect(within(refundDialog).getByRole('button', {name: '팝업 닫기'})).toHaveFocus();
+        await userEvent.keyboard('{Shift>}{Tab}{/Shift}');
+        expect(within(refundDialog).getByRole('button', {name: '닫기'})).toHaveFocus();
+        await userEvent.keyboard('{Tab}');
+        expect(within(refundDialog).getByRole('button', {name: '팝업 닫기'})).toHaveFocus();
+        await userEvent.click(within(refundDialog).getByRole('button', {name: '닫기'}));
+        expect(refund).toHaveFocus();
+
+        const subscription = screen.getByRole('button', {name: '정기결제 이용약관'});
+
+        await userEvent.click(subscription);
+        expect(within(screen.getByRole('dialog')).getByText(/별도로 동의/)).toBeInTheDocument();
+        await userEvent.keyboard('{Escape}');
+        expect(subscription).toHaveFocus();
+        expect(agreement()).not.toBeChecked();
+        expect(proceed()).toBeDisabled();
+        expect(financialCalls()).toEqual([]);
+        expect(mocks.open).not.toHaveBeenCalled();
+    });
+
+    it('keeps expanding the policy list separate from agreement and preserves consent when the list is collapsed', async () => {
+        mount();
+        await readyQuote();
+
+        const toggle = screen.getByRole('button', {name: '동의 항목 펼치기'});
+
+        expect(toggle).toHaveAttribute('aria-expanded', 'false');
+        expect(agreement()).not.toBeChecked();
+        expect(agreement()).toHaveAccessibleDescription(/매월 자동결제/);
+        await userEvent.click(toggle);
+        expect(toggle).toHaveAttribute('aria-expanded', 'true');
+        expect(screen.getByRole('button', {name: '정기결제 이용약관'})).toBeInTheDocument();
+        expect(agreement()).not.toBeChecked();
+        expect(proceed()).toBeDisabled();
+        await userEvent.click(agreement());
+        expect(agreement()).toBeChecked();
+        expect(proceed()).toBeEnabled();
+        await userEvent.click(toggle);
+        expect(toggle).toHaveAttribute('aria-expanded', 'false');
+        expect(agreement()).toBeChecked();
+        expect(proceed()).toBeEnabled();
+        expect(screen.queryByRole('button', {name: '환불정책'})).not.toBeInTheDocument();
+        await userEvent.click(agreement());
+        expect(proceed()).toBeDisabled();
+        expect(financialCalls()).toEqual([]);
+        expect(mocks.open).not.toHaveBeenCalled();
     });
 
     it('shows a different recurring amount when the first charge differs from the monthly renewal', async () => {
@@ -1314,7 +1386,7 @@ describe('embedded active Plus subscription', () => {
         expect(screen.queryByText('인원 줄이기')).not.toBeInTheDocument();
         expect(screen.queryByRole('textbox', {name: '다음 갱신 때 줄일 총 인원'})).not.toBeInTheDocument();
         expect(screen.getByText('추가 이용 문의').closest('details')).not.toHaveAttribute('open');
-        expect(screen.queryByRole('button', {name: '동의하고 진행하기'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: '동의하고 카드 등록하기'})).not.toBeInTheDocument();
         expect(screen.getByRole('link', {name: /상세 보기/})).toHaveAttribute('href', '/billing/payment-return?orderId=order-fixture');
         expect(mocks.post).not.toHaveBeenCalled();
         expect(mocks.delete).not.toHaveBeenCalled();
@@ -1486,11 +1558,17 @@ describe('card authorization callback and first charge', () => {
     it('shows the original service period and amount, scrubs authorization and only charges on explicit confirmation', async () => {
         mount(callback);
 
-        const confirm = await screen.findByRole('button', {name: /결제하고 Plus 시작/});
+        const confirm = await screen.findByRole('button', {name: '결제 완료하기'});
 
+        expect(screen.getByRole('heading', {name: 'Plus 구독하기'})).toBeInTheDocument();
+        expect(confirm).not.toHaveTextContent(/19,900|₩/);
         expect(screen.getByText('검증용 병동 · Plus')).toBeInTheDocument();
         expect(screen.getByText('월 자동결제 금액 · 부가세 포함')).toBeInTheDocument();
-        expect(screen.getByText('이용기간')).toBeInTheDocument();
+        expect(screen.getByText('이용기간').closest('div')).toHaveTextContent('2026. 10. 23. ~ 2026. 11. 23.');
+        expect(screen.getByText('다음 결제일').closest('div')).toHaveTextContent('2026. 11. 23.');
+        expect(screen.queryByText(/KST|카드 인증만으로/)).not.toBeInTheDocument();
+        expect(screen.queryByRole('link', {name: /결제 상태|미결제 주문/})).not.toBeInTheDocument();
+        expect(screen.getByRole('link', {name: '돌아가기'})).toHaveAttribute('href', '/workspace');
         expect(window.location.search).toBe('?orderId=order-fixture');
         expect(mocks.post).not.toHaveBeenCalled();
         await userEvent.click(confirm);
@@ -1502,7 +1580,7 @@ describe('card authorization callback and first charge', () => {
             }),
         );
         expect(await screen.findByText('결제와 Plus 적용이 완료되었습니다. 등록한 카드로 매월 자동 갱신합니다.')).toBeInTheDocument();
-        expect(screen.queryByRole('button', {name: /결제하고 Plus 시작/})).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: '결제 완료하기'})).not.toBeInTheDocument();
     });
 
     it.each(['PROCESSING', 'UNKNOWN', 'PAID_PENDING_APPLICATION', 'FAILED', 'APPLIED'])(
@@ -1511,10 +1589,58 @@ describe('card authorization callback and first charge', () => {
             mocks.get.mockResolvedValue({...order, status, provider: 'TOSS'});
             mount(callback);
             await screen.findByText(/이번 결제금액/);
-            expect(screen.queryByRole('button', {name: /결제하고 Plus 시작/})).not.toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: '결제 완료하기'})).not.toBeInTheDocument();
+            expect(mocks.post).not.toHaveBeenCalled();
+
+            if (['PROCESSING', 'UNKNOWN', 'PAID_PENDING_APPLICATION'].includes(status)) {
+                expect(screen.getByRole('link', {name: '결제 상태 확인'})).toHaveAttribute(
+                    'href',
+                    '/workspace/payment-return?orderId=order-fixture',
+                );
+            } else {
+                expect(screen.queryByRole('link', {name: '결제 상태 확인'})).not.toBeInTheDocument();
+            }
+        },
+    );
+
+    it.each([{providerReference: 'existing-payment'}, {verifiedAt: '2026-10-23T03:01:00Z'}])(
+        'retains recovery and prevents a new charge for an awaiting order with existing payment evidence %j',
+        async (evidence) => {
+            mocks.get.mockResolvedValue({...order, ...evidence});
+            mount(callback);
+            expect(await screen.findByRole('link', {name: '결제 상태 확인'})).toHaveAttribute(
+                'href',
+                '/workspace/payment-return?orderId=order-fixture',
+            );
+            expect(screen.queryByRole('button', {name: '결제 완료하기'})).not.toBeInTheDocument();
             expect(mocks.post).not.toHaveBeenCalled();
         },
     );
+
+    it('offers a restart only after the server confirms a failed payment', async () => {
+        mocks.get.mockResolvedValue({...order, status: 'FAILED', provider: 'TOSS'});
+        mount(callback);
+        expect(await screen.findByRole('link', {name: '다시 시도하기'})).toHaveAttribute('href', '/workspace');
+        expect(screen.queryByRole('button', {name: '결제 완료하기'})).not.toBeInTheDocument();
+        expect(mocks.post).not.toHaveBeenCalled();
+    });
+
+    it('displays date-only service periods in Korea time without changing the stored period', async () => {
+        mocks.get.mockResolvedValue({
+            ...order,
+            subscriptionSummary: {
+                ...order.subscriptionSummary,
+                periodStart: '2026-10-23T16:30:00',
+                periodEnd: '2026-11-23T16:30:00Z',
+            },
+        });
+        mount(callback);
+        await screen.findByRole('button', {name: '결제 완료하기'});
+        expect(screen.getByText('이용기간').closest('div')).toHaveTextContent('2026. 10. 24. ~ 2026. 11. 24.');
+        expect(screen.getByText('다음 결제일').closest('div')).toHaveTextContent('2026. 11. 24.');
+        expect(screen.queryByText(/KST|16:30/)).not.toBeInTheDocument();
+        expect(mocks.post).not.toHaveBeenCalled();
+    });
 
     it('submits a first-charge confirmation only once while a double click is pending', async () => {
         let finish!: (value: Order) => void;
@@ -1525,7 +1651,8 @@ describe('card authorization callback and first charge', () => {
             }),
         );
         mount(callback);
-        await userEvent.dblClick(await screen.findByRole('button', {name: /결제하고 Plus 시작/}));
+        await userEvent.dblClick(await screen.findByRole('button', {name: '결제 완료하기'}));
+        expect(screen.getByRole('button', {name: '결제 중…'})).toBeDisabled();
         expect(mocks.post).toHaveBeenCalledTimes(1);
         finish({...order, status: 'APPLIED'});
         expect(await screen.findByText('결제와 Plus 적용이 완료되었습니다. 등록한 카드로 매월 자동 갱신합니다.')).toBeInTheDocument();
@@ -1534,15 +1661,16 @@ describe('card authorization callback and first charge', () => {
     it('does not charge with an incomplete authorization payload', async () => {
         mount(callback.replace('&customerKey=customer-fixture', ''));
         await screen.findByText(/이번 결제금액/);
-        expect(screen.queryByRole('button', {name: /결제하고 Plus 시작/})).not.toBeInTheDocument();
-        expect(screen.getByText(/인증 정보가 없으면 새로 청구하지 않습니다/)).toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: '결제 완료하기'})).not.toBeInTheDocument();
+        expect(screen.getByText('카드 등록 정보를 확인하지 못했습니다. 다시 등록해 주세요.')).toBeInTheDocument();
+        expect(screen.getByRole('link', {name: '결제 상태 확인'})).toBeInTheDocument();
     });
 
     it('blocks the first charge and offers recovery for a malformed original service period', async () => {
         mocks.get.mockResolvedValue({...order, subscriptionSummary: {...order.subscriptionSummary, periodEnd: 'invalid'}});
         mount(callback);
         expect(await screen.findByRole('alert')).toHaveTextContent('구독 이용 조건을 확인하지 못했습니다');
-        expect(screen.getByRole('button', {name: /결제하고 Plus 시작/})).toBeDisabled();
+        expect(screen.getByRole('button', {name: '결제 완료하기'})).toBeDisabled();
         expect(screen.getByRole('button', {name: '결제 상태 다시 확인'})).toBeInTheDocument();
         expect(screen.queryByText(/Invalid Date|NaN/)).not.toBeInTheDocument();
         expect(mocks.post).not.toHaveBeenCalled();
@@ -1551,19 +1679,19 @@ describe('card authorization callback and first charge', () => {
     it('remains compatible with an existing order response without the additive summary', async () => {
         mocks.get.mockResolvedValue({...order, subscriptionSummary: undefined});
         mount(callback);
-        expect(await screen.findByRole('button', {name: /결제하고 Plus 시작/})).toBeEnabled();
+        expect(await screen.findByRole('button', {name: '결제 완료하기'})).toBeEnabled();
         expect(screen.queryByText('구독 이용 조건을 확인하지 못했습니다')).not.toBeInTheDocument();
     });
 
     it('explains invalid card numbers without exposing raw callback details or charging', async () => {
         mount(callback + '&code=INVALID_CARD_NUMBER&message=private-card-data');
         expect(await screen.findByRole('alert')).toHaveTextContent('카드번호가 올바르지 않거나 지원하지 않는 카드');
-        expect(screen.getByRole('link', {name: '결제 결과 재조회·미결제 주문 취소'})).toHaveAttribute(
+        expect(await screen.findByRole('link', {name: '결제 상태 확인'})).toHaveAttribute(
             'href',
             '/workspace/payment-return?orderId=order-fixture',
         );
         expect(screen.queryByText('private-card-data')).not.toBeInTheDocument();
-        expect(screen.queryByRole('button', {name: /결제하고 Plus 시작/})).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: '결제 완료하기'})).not.toBeInTheDocument();
         expect(mocks.post).not.toHaveBeenCalled();
     });
 
@@ -1571,7 +1699,7 @@ describe('card authorization callback and first charge', () => {
         mount(callback + '&code=PAY_PROCESS_CANCELED&message=must-not-display-private-data');
         expect(await screen.findByRole('alert')).toHaveTextContent('카드 등록을 취소했습니다');
         expect(screen.queryByText('must-not-display-private-data')).not.toBeInTheDocument();
-        expect(screen.queryByRole('button', {name: /결제하고 Plus 시작/})).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: '결제 완료하기'})).not.toBeInTheDocument();
         expect(mocks.post).not.toHaveBeenCalled();
     });
 
@@ -1582,9 +1710,9 @@ describe('card authorization callback and first charge', () => {
 
         mocks.get.mockImplementation(() => (++reads === 1 ? Promise.resolve(order) : Promise.reject(new Error('조회 연결 실패'))));
         mount(callback);
-        await userEvent.click(await screen.findByRole('button', {name: /결제하고 Plus 시작/}));
+        await userEvent.click(await screen.findByRole('button', {name: '결제 완료하기'}));
         expect(await screen.findByRole('button', {name: '결제 상태 다시 확인'})).toBeInTheDocument();
-        expect(screen.queryByRole('button', {name: /결제하고 Plus 시작/})).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: '결제 완료하기'})).not.toBeInTheDocument();
         expect(mocks.post).toHaveBeenCalledTimes(1);
     });
 });
@@ -1758,8 +1886,8 @@ describe('published Plus offer when the full catalogue is unavailable', () => {
         expect(screen.getByRole('note', {name: '추가 인원 요금'})).toHaveTextContent(/기본 인원 초과 시 1명당 월.*1,200/);
         await readyQuote();
         expect(mocks.post).toHaveBeenCalledWith('/billing-scopes/ward-scope/quotes', expect.objectContaining({capacity: 80}));
-        expect(await screen.findByRole('button', {name: '동의하고 진행하기'})).toBeDisabled();
-        expect(screen.getByRole('checkbox', {name: /금액·대상·기간/})).not.toBeChecked();
+        expect(await screen.findByRole('button', {name: '동의하고 카드 등록하기'})).toBeDisabled();
+        expect(screen.getByRole('checkbox', {name: /정기결제 약관 및 환불정책 동의/})).not.toBeChecked();
         expect(mocks.open).not.toHaveBeenCalled();
     });
 
@@ -1789,8 +1917,8 @@ describe('published Plus offer when the full catalogue is unavailable', () => {
         await screen.findByText('₩35,000');
         await readyQuote();
         expect(mocks.post).toHaveBeenCalledWith('/billing-scopes/ward-scope/quotes', expect.objectContaining({capacity: 80}));
-        await userEvent.click(await screen.findByRole('checkbox', {name: /금액·대상·기간/}));
-        expect(screen.getByRole('button', {name: '동의하고 진행하기'})).toBeDisabled();
+        await userEvent.click(await screen.findByRole('checkbox', {name: /정기결제 약관 및 환불정책 동의/}));
+        expect(screen.getByRole('button', {name: '동의하고 카드 등록하기'})).toBeDisabled();
         expect(screen.getByText('상품 안내 준비 상태 또는 1회 최대 100만 원의 결제 한도를 확인해 주세요.')).toBeInTheDocument();
         expect(mocks.post.mock.calls.filter(([path]) => path.endsWith('/subscription-checkout'))).toHaveLength(0);
         expect(mocks.open).not.toHaveBeenCalled();

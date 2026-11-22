@@ -1,6 +1,8 @@
-import {Link} from 'react-router';
+import {useId, useState} from 'react';
 import type {Policy, QuoteTerms} from '@/features/commercial/api';
 import {quoteTimestamp} from '@/features/commercial/quote-terms';
+import {RefundConditions, SubscriptionConditions} from '@/pages/subscription-info';
+import {PlusCheckoutInfoDialog} from './plus-checkout-dialog';
 import {useCopy} from './workspace-ui';
 import './plus-checkout.css';
 
@@ -15,36 +17,29 @@ const benefitIcons = {
     admins: 'M12 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10zM3 22v-2a9 9 0 0 1 18 0v2H3z',
 };
 
-export function PlusCheckoutPolicyChevron() {
-    return (
-        <svg className="plus-checkout-policy-chevron" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <path d="m8.6 4-1.4 1.4 6.6 6.6-6.6 6.6L8.6 20l8-8-8-8Z" />
-        </svg>
-    );
-}
-
-export function PlusCheckoutTermsLinks() {
+function PlusCheckoutPolicies() {
     const t = useCopy();
 
     return (
-        <>
-            {[
-                {to: '/subscription-terms', label: t('정기결제 약관', 'Subscription terms')},
-                {to: '/refund', label: t('환불 조건', 'Refund policy')},
-            ].map(({to, label}) => (
-                <Link
-                    key={to}
-                    className="plus-checkout-policy-row"
-                    to={to}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={`${label} (${t('새 창', 'new window')})`}
-                >
-                    <span>{label}</span>
-                    <PlusCheckoutPolicyChevron />
-                </Link>
-            ))}
-        </>
+        <div className="plus-checkout-policies">
+            <PlusCheckoutInfoDialog
+                consentItem
+                label={t('정기결제 이용약관', 'Subscription terms')}
+                description={t('Plus 월 구독의 결제 주기와 해지 방법입니다.', 'Billing cycle and cancellation for your monthly Plus plan.')}
+            >
+                <SubscriptionConditions />
+            </PlusCheckoutInfoDialog>
+            <PlusCheckoutInfoDialog
+                consentItem
+                label={t('환불정책', 'Refund policy')}
+                description={t(
+                    'Plus 월 구독의 환불 기준과 신청 방법입니다.',
+                    'Refund eligibility and requests for your monthly Plus plan.',
+                )}
+            >
+                <RefundConditions />
+            </PlusCheckoutInfoDialog>
+        </div>
     );
 }
 
@@ -58,19 +53,50 @@ export function PlusCheckoutConsent({
     disabled?: boolean;
 }) {
     const t = useCopy();
+    const [expanded, setExpanded] = useState(false);
+    const detailsId = useId();
+    const descriptionId = useId();
 
     return (
-        <div className="plus-checkout-consent">
-            <label className="plus-checkout-consent__choice">
-                <input type="checkbox" checked={checked} disabled={disabled} onChange={(event) => onChange(event.target.checked)} />
-                <span className="plus-checkout-consent__copy">
+        <div className="plus-checkout-consent" data-checked={checked}>
+            <div className="plus-checkout-consent__header">
+                <label className="plus-checkout-consent__choice">
+                    <input
+                        type="checkbox"
+                        checked={checked}
+                        disabled={disabled}
+                        aria-describedby={descriptionId}
+                        onChange={(event) => onChange(event.target.checked)}
+                    />
+                    <span className="plus-checkout-consent__copy">
+                        <span className="plus-checkout-consent__required">[{t('필수', 'Required')}]</span>{' '}
+                        {t('정기결제 약관 및 환불정책 동의', 'Agreement to subscription terms and refund policy')}
+                    </span>
+                </label>
+                <button
+                    type="button"
+                    className="plus-checkout-consent__toggle"
+                    aria-label={
+                        expanded ? t('동의 항목 접기', 'Collapse agreement details') : t('동의 항목 펼치기', 'Expand agreement details')
+                    }
+                    aria-expanded={expanded}
+                    aria-controls={detailsId}
+                    onClick={() => setExpanded(!expanded)}
+                >
+                    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <path d="m5.4 8 6.6 6.6L18.6 8l1.4 1.4-8 8-8-8L5.4 8Z" />
+                    </svg>
+                </button>
+            </div>
+            <div id={detailsId} className="plus-checkout-consent__details" hidden={!expanded}>
+                <PlusCheckoutPolicies />
+                <p id={descriptionId} className="plus-checkout-consent__description">
                     {t(
-                        '결제금액·대상·기간 및 약관·환불 조건에 동의하며, 매월 자동결제를 신청합니다.',
-                        'I agree to the payment amount, scope, period, subscription terms and refund policy, and authorize monthly automatic payments.',
-                    )}{' '}
-                    <span className="plus-checkout-consent__required">({t('필수', 'Required')})</span>
-                </span>
-            </label>
+                        '결제금액·대상·기간을 확인했으며, 위 약관과 환불정책에 동의하고 매월 자동결제를 신청합니다.',
+                        'I have reviewed the payment amount, scope and period, agree to the terms and refund policy, and authorize monthly automatic payments.',
+                    )}
+                </p>
+            </div>
         </div>
     );
 }
@@ -231,29 +257,37 @@ export function PlusCheckoutReviewSummary({terms, expiresAt}: {terms: QuoteTerms
                     </strong>
                 </span>
             </div>
-            <details className="plus-checkout-detail">
-                <summary>{t('세금·결제 상세', 'Tax and payment details')}</summary>
-                <dl>
-                    <div>
-                        <dt>{t('공급가액', 'Net amount')}</dt>
-                        <dd>{money(terms.supplyAmount)}</dd>
-                    </div>
-                    <div>
-                        <dt>{t('부가세', 'VAT')}</dt>
-                        <dd>{money(terms.taxAmount)}</dd>
-                    </div>
-                    <div>
-                        <dt>{t('정확한 이용기간', 'Exact service period')}</dt>
-                        <dd>
-                            {formatDate(terms.periodStart, true)} ~ {formatDate(terms.periodEnd, true)} (KST)
-                        </dd>
-                    </div>
-                    <div>
-                        <dt>{t('금액 확인 유효시간', 'Amount valid until')}</dt>
-                        <dd>{formatDate(expiresAt, true)} (KST)</dd>
-                    </div>
-                </dl>
-            </details>
+            <div className="plus-checkout-detail">
+                <PlusCheckoutInfoDialog
+                    label={t('세금·결제 상세', 'Tax and payment details')}
+                    description={t('이번 결제에 적용되는 금액과 이용기간입니다.', 'Amounts and service period for this payment.')}
+                >
+                    <dl className="plus-checkout-tax-facts">
+                        <div>
+                            <dt>{t('결제금액', 'Total amount')}</dt>
+                            <dd>{money(terms.totalAmount)}</dd>
+                        </div>
+                        <div>
+                            <dt>{t('공급가액', 'Net amount')}</dt>
+                            <dd>{money(terms.supplyAmount)}</dd>
+                        </div>
+                        <div>
+                            <dt>{t('부가세', 'VAT')}</dt>
+                            <dd>{money(terms.taxAmount)}</dd>
+                        </div>
+                        <div>
+                            <dt>{t('정확한 이용기간', 'Exact service period')}</dt>
+                            <dd>
+                                {formatDate(terms.periodStart, true)} ~ {formatDate(terms.periodEnd, true)} (KST)
+                            </dd>
+                        </div>
+                        <div>
+                            <dt>{t('금액 확인 유효시간', 'Amount valid until')}</dt>
+                            <dd>{formatDate(expiresAt, true)} (KST)</dd>
+                        </div>
+                    </dl>
+                </PlusCheckoutInfoDialog>
+            </div>
         </div>
     );
 }
