@@ -3,14 +3,15 @@
 ## Web CI/CD
 
 `.github/workflows/vitest.yml` runs on pull requests, pushes to `develop` and
-`main`, and manual dispatches. Tests and the production build must pass before
-the exact `web-release-<commit>` artifact can be deployed. Pull requests do not
-run deployment steps or receive Cloudflare credentials.
+`main`, and manual dispatches. Develop and pull-request runs validate the source. Develop publishes separately
+on request through the [development deployment runbook](DEV-DEPLOYMENT.md).
+Production runs retain the exact tested `web-release-<commit>` artifact for
+the deployment job. Pull requests do not receive Cloudflare credentials.
 
 - `develop`: `dutying-web-ai-dev`, `https://dev.dutying.ai`, and `https://dev.api.dutying.ai`.
 - `main`: `dutying-web-ai`, `https://www.dutying.ai`, and `https://api.dutying.ai`.
 
-Set the repository Actions secret `CLOUDFLARE_API_TOKEN` to a token with Pages
+For `main`, set the repository Actions secret `CLOUDFLARE_API_TOKEN` to a token with Pages
 deployment access to the existing Cloudflare account. Never add the value to
 source, workflow logs, or chat. Without this secret, the job verifies the existing
 Cloudflare Git integration instead. It succeeds only when the public domain and
@@ -24,11 +25,11 @@ and publishes independently; this job verifies its result after CI passes.
 Both modes verify `/release.json` on the unique Pages deployment URL and public
 domain. A successful build alone is not a successful deployment. Direct uploads
 retain GitHub build provenance; Pages action output supplies provider evidence.
-Git-integrated builds retain Cloudflare metadata. Workflow runs for a branch are
-serialized, while outdated pull-request checks may be cancelled.
+Git-integrated builds retain Cloudflare metadata. Production runs are serialized. Outdated develop and pull-request validation
+runs may be cancelled.
 
 After adding or rotating the secret, re-run a failed deploy job, or dispatch
-Web CI on the intended `develop` or `main` branch.
+Web CI on the intended production `main` branch.
 
 `dutying-web` release automation is intentionally minimal and follows the current branch strategy:
 
@@ -52,10 +53,10 @@ Pair this evidence with public app/browser checks; a source merge alone does not
 prove that the provider published the build. CI tests the metadata boundary and
 the normal production build includes the generated file.
 
-Manual Web CI runs on `main` or `develop` also retain the verified app bundle as
+Web CI runs on `main` and `develop` retain the verified app bundle as
 `web-release-<commit>`. The bundle includes `.well-known` for existing mobile links,
 the edge worker/routes and the build metadata. The branch selects the public site
-origin. This artifact is a deployment input, not proof of provider publication.
+origin. The production job can upload this artifact. The development runbook uses the Pages Git build.
 
 ### 1. Release PR (`.github/workflows/release-pr.yml`)
 

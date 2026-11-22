@@ -120,6 +120,7 @@ describe('LoginPage', () => {
         expect(screen.queryByRole('button', {name: '비밀번호 찾기'})).not.toBeInTheDocument();
         expect(screen.getByText('아직 계정이 없나요?')).toBeInTheDocument();
         expect(screen.getByRole('link', {name: '회원가입'})).toHaveAttribute('href', ROUTE.SIGN_UP);
+        expect(document.querySelector(`a[href="${ROUTE.LEGACY_ROSTER}"]`)).not.toBeInTheDocument();
         expect(screen.getByRole('link', {name: '카카오로 계속하기'})).toHaveAttribute(
             'href',
             'https://api.dutying.ai/oauth2/authorization/admin/kakao?nextPageUrl=https%3A%2F%2Fapp.dutying.ai%2Fhome',

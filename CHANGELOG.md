@@ -8,7 +8,7 @@ Entries are generated from pending `.changeset/*.md` files when `pnpm run change
 
 ## 1.3.57 - 2026-11-22
 
-- `@dutying/app` (patch): 근무표 조절에서 추가 정보가 필요한 경우 후속 답변을 계속 입력할 수 있도록 수정합니다.
+- `@dutying/app` (patch): 근무표 조절에서 추가 정보가 필요한 경우 후속 답변을 계속 입력할 수 있도록 수정합니다. 로그인 화면에서는 이전 근무표로 연결되는 링크를 제거합니다.
 - `@dutying/app` (patch): 요금제·결제 직접 접속과 카드 인증·결제 결과 복귀 주소가 404가 되지 않도록 정적 경로와 앱 셸 연결을 추가합니다.
 
 ## 1.3.56 - 2026-11-21

@@ -1,6 +1,6 @@
 ---
 name: dutying-web-release-verify
-description: Safely prepare, verify, or diagnose a Dutying web release. Use for web production deployment requests, provider deployment failures, main-not-reflected reports, public web outages, release branch verification, or confirmation that a frontend change is actually live.
+description: Safely prepare, verify, or diagnose a Dutying web release. Use for web development and production deployment requests, provider deployment failures, main-not-reflected reports, public web outages, release branch verification, or confirmation that a frontend change is actually live.
 ---
 
 # Dutying Web Release Verify
@@ -15,7 +15,11 @@ Treat a GitHub Release, a provider deployment, and a live browser experience as 
 - Require explicit user approval before an external-provider deploy, rollback, DNS change, or environment-variable change. Read-only GitHub, provider, browser, and public-URL checks are allowed.
 - Do not treat the repository's GitHub Release workflow as proof that Cloudflare Pages or another external web provider has published the build.
 
-## Release flow
+## Development deployment
+
+For a request to run development CI/CD, follow [docs/DEV-DEPLOYMENT.md](../../../docs/DEV-DEPLOYMENT.md). GitHub Web CI on develop validates the source. The on-demand Pages deployment uses the development project and its existing build settings.
+
+## Production release flow
 
 1. Follow the repository release path: feature work enters `develop`, the release PR updates version/changelog, QA uses `release/<version>`, then the release branch enters `main`.
 2. Before the release, run the relevant checks: `pnpm run release:verify`, `pnpm run type-check`, and targeted tests or `pnpm run test:run` for changed behavior. Build the affected app with `pnpm run build:app` when a release artifact needs inspection.
