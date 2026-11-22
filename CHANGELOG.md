@@ -6,6 +6,11 @@ This repository uses one shared version across all workspaces, so release notes 
 
 Entries are generated from pending `.changeset/*.md` files when `pnpm run changeset:version` or `pnpm run release:version` is executed.
 
+## 1.3.57 - 2026-11-22
+
+- `@dutying/app` (patch): 근무표 조절에서 추가 정보가 필요한 경우 후속 답변을 계속 입력할 수 있도록 수정합니다.
+- `@dutying/app` (patch): 요금제·결제 직접 접속과 카드 인증·결제 결과 복귀 주소가 404가 되지 않도록 정적 경로와 앱 셸 연결을 추가합니다.
+
 ## 1.3.56 - 2026-11-21
 
 - `@dutying/app` (patch): 근무표 편집기에서 저장한 스냅샷을 모두 표시합니다. 빈 칸만 채우는 요청에 지정한 근무를 보존하고, 생성 재시도에는 이전에 해석한 적용 범위를 유지합니다.

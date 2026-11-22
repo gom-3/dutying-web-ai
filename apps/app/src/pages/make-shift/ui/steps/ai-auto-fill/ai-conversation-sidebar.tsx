@@ -1875,7 +1875,13 @@ export default function AiConversationSidebar({
     const currentOperations = detail?.operations.filter((operation) => operation.sequence > segmentStart) ?? [];
     const latestOperation = currentOperations[currentOperations.length - 1];
     const recheckingOperationId = operationBusy && activity === 'recovering' ? latestOperation?.operationId : undefined;
-    const executionSucceeded = !error && latestOperation?.executionStatus === 'SUCCEEDED' && !operationFailure(latestOperation);
+    const latestOutcome = latestOperation?.result?.authoringOutcome;
+    const awaitingScheduleInput =
+        latestOperation?.applyStatus === 'NOT_APPLIED_REVIEW' &&
+        latestOutcome?.solveState === 'NOT_RUN' &&
+        latestOutcome.reasonCodes?.includes('REQUEST_INPUT_INSUFFICIENT');
+    const executionSucceeded =
+        !error && !awaitingScheduleInput && latestOperation?.executionStatus === 'SUCCEEDED' && !operationFailure(latestOperation);
     const cancelOperation = (operationId: string) =>
         void run(async () => {
             setCancellingOperationId(operationId);

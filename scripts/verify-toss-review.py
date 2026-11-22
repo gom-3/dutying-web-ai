@@ -9,18 +9,20 @@ import urllib.request
 
 EXPECTED = {
     'plan': 'PLUS', 'maxChargeGross': 1000000, 'currency': 'KRW',
-    'termsVersion': 'plus-monthly-2026-10-11',
 }
+DEFAULT_TERMS_VERSION = 'plus-ai-fill-monthly-2026-11-12'
 UNAVAILABLE = {'COMMERCIAL_NOT_ENABLED', 'POLICY_NOT_CONFIGURED'}
 
 
-def offer_errors(body, require_ready=False):
+def offer_errors(body, require_ready=False, terms_version=DEFAULT_TERMS_VERSION):
     if not isinstance(body, dict):
         return ['JSON object required']
     if body.get('code') in UNAVAILABLE and body.get('ready') is False:
         return [f'{body["code"]}: server reachable; published Plus product unavailable']
     errors = [f'{key}: expected {value!r}' for key, value in EXPECTED.items()
               if type(body.get(key)) is not type(value) or body.get(key) != value]
+    if body.get('termsVersion') != terms_version:
+        errors.append(f'termsVersion: expected {terms_version!r}')
     # Prices and allowances are operator-published policy, not fixed product constants.
     # Reject malformed/unsafe numbers while accepting legitimate policy changes.
     for field in ('baseGross', 'includedStaff', 'adminSeats', 'extraStaffGross', 'generate', 'adjust'):
@@ -45,13 +47,18 @@ def main():
     parser.add_argument('--web', default='https://dev.dutying.ai')
     parser.add_argument('--api', default='https://dev.api.dutying.ai')
     parser.add_argument('--require-ready', action='store_true')
+    parser.add_argument('--terms-version', default=DEFAULT_TERMS_VERSION,
+                        help='Exact terms version required; override only to audit a historical release')
     args = parser.parse_args()
+    if not args.terms_version or args.terms_version.strip() != args.terms_version:
+        parser.error('Use a nonempty terms version without surrounding whitespace')
     for base in (args.web, args.api):
         parsed = urllib.parse.urlsplit(base)
         if parsed.scheme != 'https' or not parsed.netloc or parsed.username or parsed.password or parsed.query or parsed.fragment:
             parser.error('Use HTTPS base URLs without credentials, queries or fragments')
     checks = [(args.web.rstrip('/') + route, False) for route in
-              ('/pricing', '/refund', '/subscription-terms')]
+              ('/pricing', '/refund', '/subscription-terms', '/login', '/billing',
+               '/billing/billing-return', '/billing/payment-return')]
     checks.append((args.api.rstrip('/') + '/commercial/offer', True))
     failed = False
     for url, is_offer in checks:
@@ -76,12 +83,12 @@ def main():
                     if content_type != 'application/json':
                         raise ValueError('offer must return JSON, not an SPA/login page')
                     body = json.loads(raw)
-                    errors = offer_errors(body, args.require_ready)
+                    errors = offer_errors(body, args.require_ready, args.terms_version)
                     if errors:
                         raise ValueError('; '.join(errors))
                     detail = (f'published Plus policy valid: base={body["baseGross"]} KRW, '
                               f'includedStaff={body["includedStaff"]}, extra={body["extraStaffGross"]} KRW; '
-                              f'ready={body["ready"]}')
+                              f'ready={body["ready"]}; terms={body["termsVersion"]}')
                 else:
                     if content_type != 'text/html' or not raw.strip():
                         raise ValueError('expected nonempty HTML')
