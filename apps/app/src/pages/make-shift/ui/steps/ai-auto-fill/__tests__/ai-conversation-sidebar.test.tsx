@@ -6046,4 +6046,26 @@ describe('intent-first sidebar integration', () => {
         expect(mocks.execute).not.toHaveBeenCalled();
         expect(sessionStorage.getItem('dutying.conversation:account:4:1:2:2026:11')).toBeNull();
     });
+    it('shows the missing schedule input question and leaves the reply composer open', async () => {
+        const result = intentResponse({
+            operationType: 'ADJUST',
+            changedCells: [],
+            applicable: false,
+            authoringOutcome: intentOutcome({
+                solveState: 'NOT_RUN',
+                requestState: 'NEEDS_REVIEW',
+                draftState: 'NONE',
+                reasonCodes: ['REQUEST_INPUT_INSUFFICIENT', 'PYTHON_CONTRACT_UNVERIFIED'],
+                requestPriority: {version: 'request-first-v2', userSummary: '기존 배정을 유지하고 빈 칸을 먼저 채울까요?'},
+            }),
+        });
+        current.operations = [
+            {...operation, operationType: 'ADJUST', resultVersionId: null, applyStatus: 'NOT_APPLIED_REVIEW', result},
+        ];
+        renderSidebar();
+        expect(await screen.findByText('기존 배정을 유지하고 빈 칸을 먼저 채울까요?')).toBeVisible();
+        expect(screen.getByPlaceholderText(i18n.t('aiConversationSidebar.describeChanges'))).toBeEnabled();
+        expect(mocks.execute).not.toHaveBeenCalled();
+    });
+
 });
