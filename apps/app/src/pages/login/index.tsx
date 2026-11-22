@@ -6,7 +6,6 @@ import {Link, useLocation} from 'react-router';
 import useAuth from '@/features/auth';
 import {getIsDemoSignupLoginReason} from '@/features/auth/model/demo-session';
 import {buildSocialSignupRegisterPath} from '@/features/auth/model/social-signup';
-import {LegacyRosterEntryLink} from '@/features/legacy-roster/LegacyRosterEntryLink';
 import i18n from '@/i18n';
 import {AuthAPI} from '@/shared/api';
 import {AppleIcon, KakaoIcon, LineIcon} from '@/shared/assets/svg';
@@ -1208,7 +1207,6 @@ function LoginPage() {
                             </div>
                         </div>
                     ) : null}
-                    <LegacyRosterEntryLink />
                 </div>
             </div>
         </div>

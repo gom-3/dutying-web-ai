@@ -1,5 +1,4 @@
 const ko = {
-    entry: '앱 개인 근무표 가져오기',
     title: '기존 근무표 가져오기',
     description: '개인 근무표와 근무 유형을 가져와요. 이미 기록된 날짜는 그대로 유지해요. 일정·알람·모임은 포함되지 않아요.',
     linked: '병동 연동 계정에는 가져올 수 없어요. 고객센터로 문의해 주세요.',
@@ -22,7 +21,6 @@ const ko = {
     types: (created: number, reused: number) => `새 근무 유형 ${created}개 · 기존 유형 재사용 ${reused}개`,
 };
 const en: typeof ko = {
-    entry: 'Import personal app roster',
     title: 'Import previous roster',
     description: 'Import personal shifts and shift types. Existing dates are kept. Events, alarms and groups are not included.',
     linked: 'Ward-linked accounts cannot import personal shifts. Contact support.',
@@ -45,7 +43,6 @@ const en: typeof ko = {
     types: (created, reused) => `${created} new shift types · ${reused} existing types reused`,
 };
 const ja: typeof ko = {
-    entry: 'アプリの個人勤務表を取り込む',
     title: '以前の勤務表を取り込む',
     description: '個人の勤務と勤務種別を取り込みます。登録済みの日付は保持します。予定・アラーム・グループは含まれません。',
     linked: '病棟連携中のアカウントには取り込めません。サポートへお問い合わせください。',
