@@ -2,7 +2,7 @@ import {useQuery} from '@tanstack/react-query';
 import {useState} from 'react';
 import {Link, useLocation} from 'react-router';
 import logoWordmarkPurple from '@/shared/assets/images/logo-wordmark-purple.png';
-import {SellerDetails, sellerReady, SUBSCRIPTION_TERMS_VERSION} from '@/shared/business/profile';
+import {SELLER, SellerDetails, sellerReady, SUBSCRIPTION_TERMS_VERSION} from '@/shared/business/profile';
 import {RUNTIME_CONFIG} from '@/shared/config/runtime';
 import ROUTE from '@/shared/constant/path';
 import {CHANNEL_TALK_URL} from '@/shared/lib/channel-talk';
@@ -74,17 +74,21 @@ export function SubscriptionConditions() {
                 이용할 수 있습니다. 설치와 실물 배송은 없습니다.
             </p>
             <p>
-                가입할 때 확인한 결제일을 기준으로 매월 등록한 카드로 결제합니다. 해당 날짜가 없는 달은 말일에 결제합니다. 정확한
-                이용기간·이번 결제금액·다음 결제일은 결제 확인 화면과 구독 관리에서 확인할 수 있습니다.
+                결제 확인 화면에 안내된 결제일을 기준으로 매월 등록한 카드로 자동결제합니다. 해당 날짜가 없는 달은 말일에 결제합니다. 정확한
+                이용기간·이번 결제금액·다음 결제일은 결제 확인 화면과 구독·결제에서 확인할 수 있습니다.
             </p>
             <p>
                 월 기본료와 승인한 추가 편성 인원 요금이 합산됩니다. 사용량이 늘었다는 이유만으로 동의 없이 추가 청구하지 않습니다. 기본 AI
                 횟수는 각 구독 주기 종료 시 만료되며 다음 주기로 이월되지 않습니다. 채우기와 수정 요청은 같은 AI 채우기 횟수를 사용합니다.
             </p>
+            <p>
+                정기결제 금액이 인상되거나 무료 이용에서 유료 정기결제로 전환되는 경우에는 관련 법령에 따라 사전에 안내하고 별도로 동의를
+                받습니다. 최초 구독 동의만으로 변경된 금액을 자동 청구하지 않습니다.
+            </p>
             <h2>해지와 결제 실패</h2>
             <p>
-                로그인 후 사이트의 ‘요금제·결제 → 구독 관리’에서 다음 결제를 해지할 수 있습니다. 해지 접수가 완료되면 다음 주기의 자동결제를
-                중단하고 이미 결제한 기간까지 이용할 수 있습니다. 해지는 환불 신청과 별개입니다.
+                ‘요금제·결제 → 구독·결제’에서 ‘구독 해지’를 선택하면 다음 자동결제가 중단됩니다. 이미 결제한 이용기간까지 서비스를 사용할 수
+                있습니다. 남은 기간에 대한 환불을 원하면 별도로 환불을 신청해 주세요.
             </p>
             <p>
                 결제 실패나 확인 지연은 결제내역에서 안내합니다. 결제 확인 전에는 새 유료 이용기간을 부여하지 않습니다. 카드 등록만
@@ -112,14 +116,18 @@ export function RefundConditions() {
                     포함하고 기간 종료일은 제외하며, 원 미만은 올림합니다. 이미 환불한 금액을 중복 지급하지 않습니다.
                 </li>
             </ul>
-            <h2>신청 방법과 처리</h2>
+            <h2>환불 신청</h2>
             <p>
-                ‘요금제·결제 → 구독·결제 → 환불·정산 문의’에서 청구서를 선택해 접수하거나 하단 고객센터로 연락해 주세요. 접수 시각을 환불
+                ‘요금제·결제 → 구독·결제 → 환불·정산 문의’에서 청구서를 선택해 접수하거나 고객센터로 연락해 주세요. 접수 시각을 환불
                 기준으로 기록합니다. 환불 확정 시 해당 유료 이용기간이 종료됩니다. 처리 지연 때문에 공제 기간이 늘어나지 않습니다.
             </p>
             <p>
-                신청일로부터 3영업일 이내에 환불 또는 카드 승인취소에 필요한 조치를 진행합니다. 실제 카드 명세서 반영일은 카드사에 따라 다를
-                수 있으며, 확인이 필요한 경우 사유와 진행 상황을 안내합니다.
+                고객센터: {SELLER.email} · {SELLER.phone}
+            </p>
+            <h2>환불 처리</h2>
+            <p>
+                환불 대상 금액은 신청일로부터 3영업일 이내에 원 결제수단으로 환급하며, 카드결제는 지체 없이 승인취소를 요청합니다. 실제 카드
+                명세서 반영 시점은 카드사에 따라 다를 수 있습니다. 환급이 지연되는 경우에는 관계 법령에 따른 지연배상금을 지급합니다.
             </p>
             <h2>별도 상품과 법정 권리</h2>
             <p>
