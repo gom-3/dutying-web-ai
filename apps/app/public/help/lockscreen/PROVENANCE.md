@@ -134,3 +134,28 @@ starting-step preview now uses the current native-rendered sample rather than
 the older full iPhone capture with the timestamp. Applying the native change
 on a user's iPhone requires a new app build and a subsequent wallpaper refresh;
 publishing the static web guide alone does not update the installed renderer.
+
+## 2026-11-23 simpler app-close and daily setup
+
+New setup starts with the existing refresh shortcut, an App closed automation,
+and a daily 00:03 local-time automation. Ten screens replace the fifteen-screen
+notification default. Notifications and the configure shortcut remain available
+only through explicit existing routes and optional help. Neither a notification
+permission nor an English title filter is required for the default setup.
+The quick-add flow remains separate and uses the same chosen photo wallpaper.
+
+AnySchedule's published guide shows two prepackaged automation switches. Our
+current shared shortcut does not preserve embedded triggers when exported by
+this Mac. Both embedded flags remain false; this guide explicitly asks users to
+create two personal automations. Do not advertise the same one-install setup.
+The new App/Time settings are semantic value lists, not fabricated iOS captures.
+Existing screenshots retain their original provenance.
+
+The corresponding native change permits only the wallpaper refresh intent to
+run while locked. Its first foreground run prepares a device-only Keychain copy
+accessible after first unlock. A task-local rendering context uses that copy and
+blocks non-GET requests. Interactive credentials, quick-add authentication,
+logout invalidation and environment checks remain separate. This requires a new
+app build. iPhone scheduled wallpaper application and cross-device shared-trigger
+import still require physical-device verification; simulator and DOM tests do
+not establish those outcomes. No deployment is included in this revision.

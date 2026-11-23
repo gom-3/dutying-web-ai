@@ -25,7 +25,7 @@
         ['shortcut', 'auto-shortcut'],
     ]);
     function canonicalRoute(flow, step) {
-        if (step === 'refresh-method') return {flow: 'wallpaper', step: 'notification-configure'};
+        if (step === 'refresh-method') return {flow: 'wallpaper', step: 'auto-trigger'};
         if (step === 'notification-test') return {flow: 'wallpaper', step: 'verify-auto'};
         if (flow === 'quickadd' && step === 'verify-auto') return {flow: 'wallpaper', step};
         if (flow === 'quickadd' && step === 'ready') return {flow, step: 'install'};
@@ -35,7 +35,7 @@
         if (flow === 'quickadd' && (step === 'refresh-method' || step?.startsWith('notification-') || legacyAutoSteps.has(step))) {
             return {flow: 'wallpaper', step: legacyAutoSteps.get(step) || step};
         }
-        return flow === 'auto' ? {flow: 'wallpaper', step: legacyAutoSteps.get(step) || step || 'notification-configure'} : {flow, step};
+        return flow === 'auto' ? {flow: 'wallpaper', step: legacyAutoSteps.get(step) || step || 'auto-trigger'} : {flow, step};
     }
     let decisions = {};
     try {
@@ -487,7 +487,7 @@
             actionHTML(run) +
             '<div class="done-next"><a href="#">다른 기능 설정하기</a>' +
             (flow.id === 'wallpaper' && (decision('refresh-method') || choiceDefinitions.get('refresh-method')?.fallback) !== 'notifications'
-                ? '<a href="#wallpaper/notification-configure">영상의 알림 방식으로 설정하기</a>'
+                ? '<a href="#wallpaper/notification-configure">알림 방식 안내 보기</a>'
                 : '') +
             '</div><details class="step-help"><summary>도움이 필요해요</summary><div>화면이 그대로라면 듀팅에서 이번 달 근무표를 확인하고 다시 갱신해 주세요.</div></details></div></section>';
         $('show-contents').onclick = () => showContents(flow, flow.steps.length - 1);
@@ -569,10 +569,9 @@
             parts = [route.flow, route.step];
             history.replaceState(history.state, '', '#' + parts.map(encodeURIComponent).join('/'));
         }
-        // Starting from the beginning follows the supplied iPhone video.
-        // Explicit app-close steps and saved progress still open the fallback.
+        // New setups use app-close plus a daily trigger. Old notification routes remain available.
         if (parts[0] === 'wallpaper' && parts[1] === 'ready') {
-            decisions['refresh-method'] = 'notifications';
+            decisions['refresh-method'] = 'manual';
             try {
                 localStorage.setItem(CHOICE_KEY, JSON.stringify(decisions));
             } catch (e) {}
