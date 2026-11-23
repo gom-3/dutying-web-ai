@@ -59,12 +59,11 @@
         >
         <script type="application/json" id="tutorial-data">
             {
-                "version": 3,
+                "version": 6,
                 "installer": {
                     "refresh": "https://www.icloud.com/shortcuts/b3f0fc4fe6e445218e4216028aa3ac4e",
                     "add": "https://www.icloud.com/shortcuts/03d73d8004c54646ad697d7d70e0aa35",
-                    "configure": "https://www.icloud.com/shortcuts/cc56ea6ca6e9446097b9fe3d59e47658",
-                    "test": "https://www.icloud.com/shortcuts/faae53a293cf4f5fbbb0a017030f373b"
+                    "configure": "https://www.icloud.com/shortcuts/cc56ea6ca6e9446097b9fe3d59e47658"
                 },
                 "embeddedAutomations": false,
                 "embeddedDailyAutomation": false,
@@ -76,24 +75,55 @@
                         "steps": [
                             {
                                 "id": "ready",
-                                "title": "이번 달 근무표를 열어주세요",
-                                "body": "듀팅에 로그인한 뒤 홈에서 확인해 주세요.",
+                                "title": "아래 ‘듀팅 앱 열기’를 누르세요",
+                                "body": "듀팅 홈에서 <strong>이번 달 근무표<\/strong>를 확인하세요.",
                                 "note": "잠금화면 기능이 포함된 듀팅 버전과 iOS 18 이상이 필요해요. 앱 전체의 설치 가능 버전과는 별개예요.",
-                                "settings": [
-                                    ["듀팅", "로그인 상태"],
-                                    ["홈", "이번 달 근무표 확인"]
-                                ],
                                 "action": {
-                                    "label": "듀팅 홈 열기",
+                                    "label": "듀팅 앱 열기",
                                     "href": "dutying://home"
                                 }
                             },
                             {
+                                "id": "install",
+                                "title": "아래 ‘배경 단축어 받기’를 누르세요",
+                                "body": "단축어 앱으로 이동하면 <strong>단축어 추가<\/strong>를 누르세요.",
+                                "action": {
+                                    "label": "배경 단축어 받기",
+                                    "href": "https://www.icloud.com/shortcuts/b3f0fc4fe6e445218e4216028aa3ac4e"
+                                }
+                            },
+                            {
+                                "id": "target",
+                                "title": "‘배경화면’을 눌러 사진을 고르세요",
+                                "body": "<strong>듀팅 배경 갱신 ⋯ → 파란색 배경화면 → 사진 아래 ○ → ✓<\/strong>",
+                                "noteTitle": "선택 가능한 사진이 없을 때",
+                                "note": "<strong>잠금화면 길게 → ＋ → 사진<\/strong>으로 배경을 만든 뒤 다시 선택해 주세요.",
+                                "shots": [
+                                    "wallpaper-target",
+                                    "wallpaper-picker"
+                                ],
+                                "noteStyle": "warning"
+                            },
+                            {
+                                "id": "run",
+                                "title": "단축어 앱을 열고 ▶를 누르세요",
+                                "body": "<strong>듀팅 배경 갱신 ⋯ → 오른쪽 아래 ▶ → 허용<\/strong>",
+                                "action": {
+                                    "label": "단축어 앱 열기",
+                                    "href": "shortcuts://"
+                                },
+                                "note": "실행 후 아이폰을 잠가 근무표가 보이는지 확인하세요. 배경이 바뀌었다면 다음으로 가세요.",
+                                "shots": [
+                                    "wallpaper-run",
+                                    "wallpaper-permission"
+                                ]
+                            },
+                            {
                                 "id": "refresh-method",
-                                "title": "‘알림’ 항목이 보이나요?",
-                                "body": "단축어 앱에서 <strong>자동화 → ＋</strong>를 눌러 확인해 주세요.",
+                                "title": "‘자동화 → ＋’에서 ‘알림’을 찾으세요",
+                                "body": "아래 버튼으로 <strong>단축어 앱<\/strong>을 열어 확인하세요.",
                                 "choiceKey": "refresh-method",
-                                "defaultChoice": "manual",
+                                "defaultChoice": "notifications",
                                 "choices": [
                                     {
                                         "label": "보여요",
@@ -104,54 +134,16 @@
                                         "value": "manual"
                                     }
                                 ],
-                                "note": "알림 자동화는 iOS 27 이상에서 지원해요. 목록에 없으면 앱이 닫힐 때 갱신하는 방법으로 안내합니다."
-                            },
-                            {
-                                "id": "install",
-                                "title": "배경 갱신 단축어를 추가해요",
-                                "body": "열린 화면에서 <strong>단축어 추가</strong>를 눌러주세요.",
-                                "action": {
-                                    "label": "단축어 추가",
-                                    "href": "https://www.icloud.com/shortcuts/b3f0fc4fe6e445218e4216028aa3ac4e"
-                                },
-                                "note": "추가한 단축어의 ⋯를 눌러 편집 화면을 열고 다음 단계를 따라주세요."
-                            },
-                            {
-                                "id": "target",
-                                "title": "지금 쓰는 배경을 선택해요",
-                                "body": "단축어의 <strong>⋯</strong>를 누른 뒤, 파란색 <strong>배경화면</strong>을 눌러 <strong>지금 쓰고 있는 배경화면</strong>을 선택해 주세요.",
-                                "shot": "wallpaper-target",
-                                "note": "비워두면 새 배경이 만들어질 수 있어요. 왼쪽 버튼도 유지하려면 갱신할 배경을 꼭 지정하세요. 캡처의 ‘배경화면 3’은 예시 기기의 이름이에요.",
-                                "tip": "지금 쓰는 배경 선택하기"
-                            },
-                            {
-                                "id": "run",
-                                "title": "배경이 바뀌는지 확인해요",
-                                "body": "아래 버튼으로 <strong>듀팅 배경 갱신</strong>을 한 번 실행해 주세요.",
-                                "action": {
-                                    "label": "이 단축어 실행하기",
-                                    "href": "shortcuts://run-shortcut?name=%EB%93%80%ED%8C%85%20%EB%B0%B0%EA%B2%BD%20%EA%B0%B1%EC%8B%A0"
-                                },
-                                "note": "이 버튼은 앞에서 저장한 단축어를 실행해요. 단축어 앱의 ▶ 버튼으로 실행해도 됩니다."
+                                "note": "알림 항목이 없으면 앱을 닫을 때 갱신하도록 연결해요."
                             },
                             {
                                 "id": "notification-configure",
-                                "title": "자동 갱신 설정을 켜주세요",
-                                "body": "설정 단축어를 추가해 실행한 뒤 <strong>알림 허용</strong>을 눌러주세요.",
-                                "settings": [
-                                    ["자동 갱신", "켬"],
-                                    ["갱신 주기", "앱을 닫을 때와 자정"]
-                                ],
-                                "note": "알림을 거절했다면 iPhone 설정 → 알림 → 듀팅에서 허용한 뒤 다시 실행하세요. 갱신 주기를 바꾸려면 이 단축어의 ⋯에서 ‘갱신 주기’를 누르세요. ‘매시간’ 또는 ‘선택한 시각’을 선택할 수 있어요. 선택한 시각은 08:00 / 18:00처럼 최대 10개 입력합니다.",
-                                "noteTitle": "알림·갱신 주기 도움말",
+                                "title": "아래 ‘자동 갱신 설정 받기’를 누르세요",
+                                "body": "단축어 앱으로 이동하면 <strong>단축어 추가<\/strong>를 누르세요.",
                                 "action": {
-                                    "label": "설정 단축어 추가",
+                                    "label": "자동 갱신 설정 받기",
                                     "href": "https://www.icloud.com/shortcuts/cc56ea6ca6e9446097b9fe3d59e47658",
                                     "kind": "install"
-                                },
-                                "secondaryAction": {
-                                    "label": "추가했어요 · 실행하기",
-                                    "href": "shortcuts://run-shortcut?name=%EB%93%80%ED%8C%85%20%EC%9E%90%EB%8F%99%20%EA%B0%B1%EC%8B%A0%20%EC%84%A4%EC%A0%95"
                                 },
                                 "branch": {
                                     "key": "refresh-method",
@@ -159,9 +151,11 @@
                                 }
                             },
                             {
-                                "id": "notification-trigger",
-                                "title": "알림 자동화를 만들어주세요",
-                                "body": "<strong>단축어 → 자동화 → ＋ → 알림</strong>을 눌러주세요.",
+                                "id": "notification-configure-run",
+                                "title": "오른쪽 아래 ▶로 설정을 실행하세요",
+                                "body": "<strong>듀팅 자동 갱신 설정<\/strong>을 열어 아래처럼 맞춘 뒤 <strong>▶<\/strong>를 누르세요.",
+                                "note": "iPhone 설정 → 알림 → 듀팅에서 알림을 허용한 뒤 다시 실행하세요.",
+                                "noteTitle": "알림을 거절했다면",
                                 "action": {
                                     "label": "단축어 앱 열기",
                                     "href": "shortcuts://"
@@ -169,20 +163,86 @@
                                 "branch": {
                                     "key": "refresh-method",
                                     "value": "notifications"
+                                },
+                                "shots": [
+                                    "auto-configure",
+                                    "configure-run-button"
+                                ]
+                            },
+                            {
+                                "id": "notification-create",
+                                "title": "화면 아래 ＋ → 자동화를 누르세요",
+                                "body": "<strong>단축어 앱 → 아래 가운데 ＋ → 검색창 아래 자동화<\/strong>",
+                                "action": {
+                                    "label": "단축어 앱 열기",
+                                    "href": "shortcuts://"
+                                },
+                                "shots": [
+                                    "automation-new",
+                                    "automation-category"
+                                ],
+                                "branch": {
+                                    "key": "refresh-method",
+                                    "value": "notifications"
+                                }
+                            },
+                            {
+                                "id": "notification-trigger",
+                                "title": "아래로 내려 ‘알림’을 누르세요",
+                                "body": "자동화 목록의 <strong>앱<\/strong> 항목 아래에 있어요.",
+                                "branch": {
+                                    "key": "refresh-method",
+                                    "value": "notifications"
+                                },
+                                "shot": "notification-picker",
+                                "noteTitle": "알림 항목이 없을 때",
+                                "note": "<a href=\"#wallpaper/auto-trigger\">앱을 닫을 때 갱신하는 방법 보기<\/a>"
+                            },
+                            {
+                                "id": "notification-app",
+                                "title": "파란 ‘앱’을 눌러 듀팅을 고르세요",
+                                "body": "<strong>앱에서 알림을 수신할 때<\/strong>의 파란 <strong>앱<\/strong>을 누르세요.",
+                                "shots": [
+                                    "notification-app-empty",
+                                    "notification-app-choice"
+                                ],
+                                "branch": {
+                                    "key": "refresh-method",
+                                    "value": "notifications"
                                 }
                             },
                             {
                                 "id": "notification-condition",
-                                "title": "알림 조건을 설정해요",
-                                "body": "",
-                                "settings": [
-                                    ["앱", "듀팅"],
-                                    ["제목", "Update Dutying LockScreen"],
-                                    ["실행 방식", "즉시 실행"]
-                                ],
+                                "title": "‘필터 추가’에 제목을 넣으세요",
+                                "body": "<strong>필터 추가 → 제목 → 다음을 포함<\/strong>을 고르고, 아래 문구를 복사해 붙여 넣으세요.",
                                 "copy": "Update Dutying LockScreen",
                                 "copyLabel": "제목 복사",
-                                "note": "제목은 대소문자와 띄어쓰기를 그대로 입력하세요. 본문이 아니라 제목 조건에 넣습니다.",
+                                "branch": {
+                                    "key": "refresh-method",
+                                    "value": "notifications"
+                                },
+                                "shots": [
+                                    "notification-filter-add",
+                                    "notification-filter-title"
+                                ],
+                                "noteTitle": "맨 위 단축어 이름은 바꾸지 않아도 돼요",
+                                "note": "영어 문구는 <strong>필터 추가<\/strong>에 넣으세요."
+                            },
+                            {
+                                "id": "notification-options",
+                                "title": "‘자동화’ 스위치를 켜세요",
+                                "body": "알림 동작의 <strong>⌄<\/strong>를 누르고, <strong>자동화<\/strong>를 초록색으로 켜세요.",
+                                "shot": "notification-enabled",
+                                "branch": {
+                                    "key": "refresh-method",
+                                    "value": "notifications"
+                                }
+                            },
+                            {
+                                "id": "notification-action",
+                                "title": "‘단축어 실행’을 검색해 누르세요",
+                                "body": "화면 아래 <strong>검색<\/strong>에 <strong>단축어 실행<\/strong>을 입력하세요.",
+                                "shot": "notification-action-search",
                                 "branch": {
                                     "key": "refresh-method",
                                     "value": "notifications"
@@ -190,29 +250,22 @@
                             },
                             {
                                 "id": "notification-shortcut",
-                                "title": "‘듀팅 배경 갱신’을 선택해요",
-                                "body": "선택한 뒤 <strong>완료</strong>를 눌러주세요.",
-                                "settings": [["실행할 단축어", "듀팅 배경 갱신"]],
-                                "note": "단축어 목록이 없으면 새 단축어 생성 → 단축어 실행 동작을 추가하고 ‘듀팅 배경 갱신’을 선택하세요. ‘듀팅 할 일 추가’는 선택하지 않습니다.",
+                                "title": "‘듀팅 배경 갱신’을 고르세요",
+                                "body": "실행할 단축어 목록에서 <strong>듀팅 배경 갱신<\/strong>을 누르세요.",
                                 "branch": {
                                     "key": "refresh-method",
                                     "value": "notifications"
-                                }
+                                },
+                                "shot": "notification-select-refresh"
                             },
                             {
-                                "id": "notification-test",
-                                "title": "홈으로 나와 갱신을 확인해요",
-                                "body": "테스트 단축어를 추가해 실행한 뒤 <strong>아이폰 홈 화면</strong>으로 나와주세요.",
-                                "note": "테스트가 통과한 뒤 기존 ‘듀팅이 닫힐 때’·시간 자동화는 꺼도 됩니다. iOS의 실행·인증 조건에 따라 잠금 해제가 필요할 수 있어요. 알림이 오지 않으면 듀팅 알림 허용과 자동화의 제목 조건을 확인하세요.",
-                                "action": {
-                                    "label": "테스트 단축어 추가",
-                                    "href": "https://www.icloud.com/shortcuts/faae53a293cf4f5fbbb0a017030f373b",
-                                    "kind": "install"
-                                },
-                                "secondaryAction": {
-                                    "label": "추가했어요 · 테스트하기",
-                                    "href": "shortcuts://run-shortcut?name=%EB%93%80%ED%8C%85%20%EC%9E%90%EB%8F%99%20%EA%B0%B1%EC%8B%A0%20%ED%85%8C%EC%8A%A4%ED%8A%B8"
-                                },
+                                "id": "notification-save",
+                                "title": "왼쪽 위 〈를 눌러 나오세요",
+                                "body": "아래에 <strong>듀팅 배경 갱신 실행<\/strong>이 붙었는지 확인하세요.",
+                                "shots": [
+                                    "notification-run-action",
+                                    "notification-save-back"
+                                ],
                                 "branch": {
                                     "key": "refresh-method",
                                     "value": "notifications"
@@ -220,52 +273,51 @@
                             },
                             {
                                 "id": "auto-trigger",
-                                "title": "앱 자동화를 만들어주세요",
-                                "body": "<strong>단축어 → 자동화 → ＋ → 앱</strong>을 눌러주세요.",
-                                "settings": [["자동화 조건", "앱"]],
+                                "title": "‘자동화 → ＋ → 앱’을 누르세요",
+                                "body": "아래 버튼으로 <strong>단축어 앱<\/strong>을 열어 이동하세요.",
                                 "branch": {
                                     "key": "refresh-method",
                                     "value": "manual"
+                                },
+                                "action": {
+                                    "label": "단축어 앱 열기",
+                                    "href": "shortcuts://"
                                 }
                             },
                             {
                                 "id": "auto-condition",
-                                "title": "앱을 닫을 때 갱신하게 해요",
-                                "body": "",
-                                "settings": [
-                                    ["앱", "듀팅"],
-                                    ["조건", "닫힐 때"],
-                                    ["실행 방식", "즉시 실행"]
-                                ],
+                                "title": "‘듀팅’과 ‘닫힐 때’를 고르세요",
+                                "body": "실행 방식은 <strong>즉시 실행<\/strong>을 선택하세요.",
                                 "branch": {
                                     "key": "refresh-method",
                                     "value": "manual"
-                                }
+                                },
+                                "note": "자동화 스위치가 보이는 편집 화면에서는 스위치를 켜세요."
                             },
                             {
                                 "id": "auto-shortcut",
-                                "title": "‘듀팅 배경 갱신’을 선택해요",
-                                "body": "선택한 뒤 <strong>완료</strong>를 눌러주세요.",
-                                "settings": [["실행할 단축어", "듀팅 배경 갱신"]],
-                                "note": "매일 정한 시각에도 갱신하려면 자동화를 하나 더 만들고 특정 시간 → 매일 → 즉시 실행 → 듀팅 배경 갱신을 선택하세요. iOS의 인증·실행 조건에 따라 확인이 필요할 수 있습니다.",
+                                "title": "‘듀팅 배경 갱신’을 선택하세요",
+                                "body": "<strong>단축어 실행 → 듀팅 배경 갱신 → 완료<\/strong>",
+                                "note": "아침에도 갱신하려면 특정 시간 자동화를 하나 더 만들고 같은 단축어를 연결하세요.",
                                 "branch": {
                                     "key": "refresh-method",
                                     "value": "manual"
-                                }
+                                },
+                                "shot": "notification-select-refresh"
                             },
                             {
                                 "id": "verify-auto",
-                                "title": "잠금화면에 반영됐는지 봐요",
-                                "body": "듀팅에서 내용을 바꾸고 저장한 뒤 <strong>홈 화면</strong>으로 나와주세요.",
+                                "title": "듀팅에서 수정하고 홈으로 나오세요",
+                                "body": "<strong>수정·저장 → 홈 화면 → 잠금화면 확인<\/strong>",
                                 "action": {
-                                    "label": "듀팅 홈 열기",
+                                    "label": "듀팅 앱 열기",
                                     "href": "dutying://home"
                                 },
-                                "note": "앱 전환기에서 강제로 종료할 필요는 없어요. 갱신되지 않으면 자동화가 켜져 있는지와 갱신 대상 사진 배경을 확인해 주세요."
+                                "note": "그대로라면 단축어 앱에서 듀팅 배경 갱신의 ▶를 눌러보세요. 직접 실행이 되면 자동화가 켜져 있고 같은 단축어가 연결됐는지 확인하세요."
                             }
                         ],
                         "completionAction": {
-                            "label": "듀팅 홈 열기",
+                            "label": "듀팅 앱 열기",
                             "href": "dutying://home"
                         }
                     },
@@ -276,67 +328,76 @@
                         "steps": [
                             {
                                 "id": "install",
-                                "title": "할 일 단축어를 추가해요",
-                                "body": "열린 화면에서 <strong>단축어 추가</strong>를 눌러주세요.",
+                                "title": "아래 ‘할 일 단축어 받기’를 누르세요",
+                                "body": "단축어 앱으로 이동하면 <strong>단축어 추가<\/strong>를 누르세요.",
                                 "action": {
-                                    "label": "단축어 추가",
+                                    "label": "할 일 단축어 받기",
                                     "href": "https://www.icloud.com/shortcuts/03d73d8004c54646ad697d7d70e0aa35"
-                                }
+                                },
+                                "note": "처음이라면 <a href=\"#wallpaper/ready\">근무표부터 설정하기<\/a>",
+                                "noteTitle": "근무표를 아직 설정하지 않았다면"
                             },
                             {
                                 "id": "target",
-                                "title": "지금 쓰는 배경을 선택해요",
-                                "body": "단축어의 <strong>⋯</strong>를 누른 뒤, 파란색 <strong>배경화면</strong>을 눌러 <strong>지금 쓰고 있는 배경화면</strong>을 선택해 주세요.",
-                                "shot": "wallpaper-target",
-                                "note": "비워두면 새 배경이 만들어질 수 있어요. 왼쪽 버튼도 유지하려면 갱신할 배경을 꼭 지정하세요. 캡처의 ‘배경화면 3’은 예시 기기의 이름이에요.",
-                                "tip": "지금 쓰는 배경 선택하기"
+                                "title": "‘배경화면’을 눌러 사진을 고르세요",
+                                "body": "<strong>듀팅 할 일 추가 ⋯ → 파란색 배경화면 → 사진 아래 ○ → ✓<\/strong>",
+                                "noteTitle": "선택 가능한 사진이 없을 때",
+                                "note": "<strong>잠금화면 길게 → ＋ → 사진<\/strong>으로 배경을 만든 뒤 다시 선택해 주세요.",
+                                "shots": [
+                                    "wallpaper-target",
+                                    "wallpaper-picker"
+                                ],
+                                "noteStyle": "warning"
                             },
                             {
                                 "id": "customize",
-                                "title": "잠금화면 편집을 열어주세요",
-                                "body": "잠금화면을 길게 누른 뒤 <strong>사용자화 → 잠금 화면</strong>을 눌러주세요.",
-                                "shot": "customize",
-                                "tip": "잠금화면 길게 → 사용자화"
+                                "title": "잠금화면을 길게 누르세요",
+                                "body": "<strong>사용자화 → 잠금 화면<\/strong>을 누르세요.",
+                                "shot": "customize"
                             },
                             {
                                 "id": "left",
-                                "title": "왼쪽 버튼을 바꿔주세요",
-                                "body": "손전등 자리의 <strong>−</strong>를 누르고 <strong>＋</strong>를 눌러주세요.",
-                                "shots": ["left-control", "left-plus"],
-                                "tip": "왼쪽 아래 − → ＋ 누르기"
+                                "title": "왼쪽 아래 − → ＋를 누르세요",
+                                "body": "",
+                                "shots": [
+                                    "left-control",
+                                    "left-plus"
+                                ]
                             },
                             {
                                 "id": "control",
-                                "title": "‘단축어 실행’을 골라주세요",
+                                "title": "‘단축어 실행’을 누르세요",
                                 "body": "",
-                                "shot": "shortcut-control",
-                                "tip": "단축어 실행 선택하기"
+                                "shot": "shortcut-control"
                             },
                             {
                                 "id": "choose",
-                                "title": "‘듀팅 할 일 추가’를 연결해요",
-                                "body": "배치한 버튼을 누른 뒤 <strong>선택 → 듀팅 할 일 추가</strong>를 눌러주세요.",
-                                "shots": ["select-shortcut", "choose-shortcut"],
-                                "note": "목록에 이름이 없다면 단축어 앱에서 저장을 마쳤는지 확인해 주세요.",
-                                "tip": "선택 → 듀팅 할 일 추가"
+                                "title": "버튼을 눌러 ‘듀팅 할 일 추가’를 고르세요",
+                                "body": "<strong>선택 → 듀팅 할 일 추가<\/strong>",
+                                "shots": [
+                                    "select-shortcut",
+                                    "choose-shortcut"
+                                ],
+                                "note": "목록에 이름이 없다면 단축어 앱에서 저장을 마쳤는지 확인해 주세요."
                             },
                             {
                                 "id": "save",
-                                "title": "오른쪽 위 완료를 눌러주세요",
+                                "title": "오른쪽 위 ‘완료’를 누르세요",
                                 "body": "설정창 밖을 누르면 완료 버튼이 보여요.",
-                                "shot": "connected",
-                                "tip": "오른쪽 위 완료 누르기"
+                                "shot": "connected"
                             },
                             {
                                 "id": "input",
-                                "title": "버튼을 길게 눌러 할 일을 적어요",
-                                "body": "<strong>밥먹기 / 놀기</strong>처럼 나눠 적고 <strong>완료</strong>를 눌러주세요.",
+                                "title": "왼쪽 아래 버튼을 꾹 누르세요",
+                                "body": "<strong>밥먹기 / 놀기<\/strong>처럼 적고 <strong>완료<\/strong>를 누르세요.",
                                 "shot": "input",
-                                "note": "아이폰에서 실제 실행하면 /로 나눈 할 일이 각각 저장된 뒤 배경이 갱신돼요. 아래 체험은 실제로 저장하지 않습니다.",
-                                "example": true,
-                                "tip": "왼쪽 아래 꾹 → 입력 → 완료"
+                                "example": true
                             }
-                        ]
+                        ],
+                        "completionAction": {
+                            "label": "듀팅 앱 열기",
+                            "href": "dutying://home"
+                        }
                     },
                     {
                         "id": "auto",
@@ -345,10 +406,10 @@
                         "steps": [
                             {
                                 "id": "refresh-method",
-                                "title": "‘알림’ 항목이 보이나요?",
-                                "body": "단축어 앱에서 <strong>자동화 → ＋</strong>를 눌러 확인해 주세요.",
+                                "title": "‘자동화 → ＋’에서 ‘알림’을 찾으세요",
+                                "body": "아래 버튼으로 <strong>단축어 앱<\/strong>을 열어 확인하세요.",
                                 "choiceKey": "refresh-method",
-                                "defaultChoice": "manual",
+                                "defaultChoice": "notifications",
                                 "choices": [
                                     {
                                         "label": "보여요",
@@ -359,26 +420,16 @@
                                         "value": "manual"
                                     }
                                 ],
-                                "note": "알림 자동화는 iOS 27 이상에서 지원해요. 목록에 없으면 앱이 닫힐 때 갱신하는 방법으로 안내합니다."
+                                "note": "알림 항목이 없으면 앱을 닫을 때 갱신하도록 연결해요."
                             },
                             {
                                 "id": "notification-configure",
-                                "title": "자동 갱신 설정을 켜주세요",
-                                "body": "설정 단축어를 추가해 실행한 뒤 <strong>알림 허용</strong>을 눌러주세요.",
-                                "settings": [
-                                    ["자동 갱신", "켬"],
-                                    ["갱신 주기", "앱을 닫을 때와 자정"]
-                                ],
-                                "note": "알림을 거절했다면 iPhone 설정 → 알림 → 듀팅에서 허용한 뒤 다시 실행하세요. 갱신 주기를 바꾸려면 이 단축어의 ⋯에서 ‘갱신 주기’를 누르세요. ‘매시간’ 또는 ‘선택한 시각’을 선택할 수 있어요. 선택한 시각은 08:00 / 18:00처럼 최대 10개 입력합니다.",
-                                "noteTitle": "알림·갱신 주기 도움말",
+                                "title": "아래 ‘자동 갱신 설정 받기’를 누르세요",
+                                "body": "단축어 앱으로 이동하면 <strong>단축어 추가<\/strong>를 누르세요.",
                                 "action": {
-                                    "label": "설정 단축어 추가",
+                                    "label": "자동 갱신 설정 받기",
                                     "href": "https://www.icloud.com/shortcuts/cc56ea6ca6e9446097b9fe3d59e47658",
                                     "kind": "install"
-                                },
-                                "secondaryAction": {
-                                    "label": "추가했어요 · 실행하기",
-                                    "href": "shortcuts://run-shortcut?name=%EB%93%80%ED%8C%85%20%EC%9E%90%EB%8F%99%20%EA%B0%B1%EC%8B%A0%20%EC%84%A4%EC%A0%95"
                                 },
                                 "branch": {
                                     "key": "refresh-method",
@@ -386,9 +437,11 @@
                                 }
                             },
                             {
-                                "id": "notification-trigger",
-                                "title": "알림 자동화를 만들어주세요",
-                                "body": "<strong>단축어 → 자동화 → ＋ → 알림</strong>을 눌러주세요.",
+                                "id": "notification-configure-run",
+                                "title": "오른쪽 아래 ▶로 설정을 실행하세요",
+                                "body": "<strong>듀팅 자동 갱신 설정<\/strong>을 열어 아래처럼 맞춘 뒤 <strong>▶<\/strong>를 누르세요.",
+                                "note": "iPhone 설정 → 알림 → 듀팅에서 알림을 허용한 뒤 다시 실행하세요.",
+                                "noteTitle": "알림을 거절했다면",
                                 "action": {
                                     "label": "단축어 앱 열기",
                                     "href": "shortcuts://"
@@ -396,20 +449,86 @@
                                 "branch": {
                                     "key": "refresh-method",
                                     "value": "notifications"
+                                },
+                                "shots": [
+                                    "auto-configure",
+                                    "configure-run-button"
+                                ]
+                            },
+                            {
+                                "id": "notification-create",
+                                "title": "화면 아래 ＋ → 자동화를 누르세요",
+                                "body": "<strong>단축어 앱 → 아래 가운데 ＋ → 검색창 아래 자동화<\/strong>",
+                                "action": {
+                                    "label": "단축어 앱 열기",
+                                    "href": "shortcuts://"
+                                },
+                                "shots": [
+                                    "automation-new",
+                                    "automation-category"
+                                ],
+                                "branch": {
+                                    "key": "refresh-method",
+                                    "value": "notifications"
+                                }
+                            },
+                            {
+                                "id": "notification-trigger",
+                                "title": "아래로 내려 ‘알림’을 누르세요",
+                                "body": "자동화 목록의 <strong>앱<\/strong> 항목 아래에 있어요.",
+                                "branch": {
+                                    "key": "refresh-method",
+                                    "value": "notifications"
+                                },
+                                "shot": "notification-picker",
+                                "noteTitle": "알림 항목이 없을 때",
+                                "note": "<a href=\"#wallpaper/auto-trigger\">앱을 닫을 때 갱신하는 방법 보기<\/a>"
+                            },
+                            {
+                                "id": "notification-app",
+                                "title": "파란 ‘앱’을 눌러 듀팅을 고르세요",
+                                "body": "<strong>앱에서 알림을 수신할 때<\/strong>의 파란 <strong>앱<\/strong>을 누르세요.",
+                                "shots": [
+                                    "notification-app-empty",
+                                    "notification-app-choice"
+                                ],
+                                "branch": {
+                                    "key": "refresh-method",
+                                    "value": "notifications"
                                 }
                             },
                             {
                                 "id": "notification-condition",
-                                "title": "알림 조건을 설정해요",
-                                "body": "",
-                                "settings": [
-                                    ["앱", "듀팅"],
-                                    ["제목", "Update Dutying LockScreen"],
-                                    ["실행 방식", "즉시 실행"]
-                                ],
+                                "title": "‘필터 추가’에 제목을 넣으세요",
+                                "body": "<strong>필터 추가 → 제목 → 다음을 포함<\/strong>을 고르고, 아래 문구를 복사해 붙여 넣으세요.",
                                 "copy": "Update Dutying LockScreen",
                                 "copyLabel": "제목 복사",
-                                "note": "제목은 대소문자와 띄어쓰기를 그대로 입력하세요. 본문이 아니라 제목 조건에 넣습니다.",
+                                "branch": {
+                                    "key": "refresh-method",
+                                    "value": "notifications"
+                                },
+                                "shots": [
+                                    "notification-filter-add",
+                                    "notification-filter-title"
+                                ],
+                                "noteTitle": "맨 위 단축어 이름은 바꾸지 않아도 돼요",
+                                "note": "영어 문구는 <strong>필터 추가<\/strong>에 넣으세요."
+                            },
+                            {
+                                "id": "notification-options",
+                                "title": "‘자동화’ 스위치를 켜세요",
+                                "body": "알림 동작의 <strong>⌄<\/strong>를 누르고, <strong>자동화<\/strong>를 초록색으로 켜세요.",
+                                "shot": "notification-enabled",
+                                "branch": {
+                                    "key": "refresh-method",
+                                    "value": "notifications"
+                                }
+                            },
+                            {
+                                "id": "notification-action",
+                                "title": "‘단축어 실행’을 검색해 누르세요",
+                                "body": "화면 아래 <strong>검색<\/strong>에 <strong>단축어 실행<\/strong>을 입력하세요.",
+                                "shot": "notification-action-search",
                                 "branch": {
                                     "key": "refresh-method",
                                     "value": "notifications"
@@ -417,29 +536,22 @@
                             },
                             {
                                 "id": "notification-shortcut",
-                                "title": "‘듀팅 배경 갱신’을 선택해요",
-                                "body": "선택한 뒤 <strong>완료</strong>를 눌러주세요.",
-                                "settings": [["실행할 단축어", "듀팅 배경 갱신"]],
-                                "note": "단축어 목록이 없으면 새 단축어 생성 → 단축어 실행 동작을 추가하고 ‘듀팅 배경 갱신’을 선택하세요. ‘듀팅 할 일 추가’는 선택하지 않습니다.",
+                                "title": "‘듀팅 배경 갱신’을 고르세요",
+                                "body": "실행할 단축어 목록에서 <strong>듀팅 배경 갱신<\/strong>을 누르세요.",
                                 "branch": {
                                     "key": "refresh-method",
                                     "value": "notifications"
-                                }
+                                },
+                                "shot": "notification-select-refresh"
                             },
                             {
-                                "id": "notification-test",
-                                "title": "홈으로 나와 갱신을 확인해요",
-                                "body": "테스트 단축어를 추가해 실행한 뒤 <strong>아이폰 홈 화면</strong>으로 나와주세요.",
-                                "note": "테스트가 통과한 뒤 기존 ‘듀팅이 닫힐 때’·시간 자동화는 꺼도 됩니다. iOS의 실행·인증 조건에 따라 잠금 해제가 필요할 수 있어요. 알림이 오지 않으면 듀팅 알림 허용과 자동화의 제목 조건을 확인하세요.",
-                                "action": {
-                                    "label": "테스트 단축어 추가",
-                                    "href": "https://www.icloud.com/shortcuts/faae53a293cf4f5fbbb0a017030f373b",
-                                    "kind": "install"
-                                },
-                                "secondaryAction": {
-                                    "label": "추가했어요 · 테스트하기",
-                                    "href": "shortcuts://run-shortcut?name=%EB%93%80%ED%8C%85%20%EC%9E%90%EB%8F%99%20%EA%B0%B1%EC%8B%A0%20%ED%85%8C%EC%8A%A4%ED%8A%B8"
-                                },
+                                "id": "notification-save",
+                                "title": "왼쪽 위 〈를 눌러 나오세요",
+                                "body": "아래에 <strong>듀팅 배경 갱신 실행<\/strong>이 붙었는지 확인하세요.",
+                                "shots": [
+                                    "notification-run-action",
+                                    "notification-save-back"
+                                ],
                                 "branch": {
                                     "key": "refresh-method",
                                     "value": "notifications"
@@ -447,52 +559,51 @@
                             },
                             {
                                 "id": "trigger",
-                                "title": "앱 자동화를 만들어주세요",
-                                "body": "<strong>단축어 → 자동화 → ＋ → 앱</strong>을 눌러주세요.",
-                                "settings": [["자동화 조건", "앱"]],
+                                "title": "‘자동화 → ＋ → 앱’을 누르세요",
+                                "body": "아래 버튼으로 <strong>단축어 앱<\/strong>을 열어 이동하세요.",
                                 "branch": {
                                     "key": "refresh-method",
                                     "value": "manual"
+                                },
+                                "action": {
+                                    "label": "단축어 앱 열기",
+                                    "href": "shortcuts://"
                                 }
                             },
                             {
                                 "id": "condition",
-                                "title": "앱을 닫을 때 갱신하게 해요",
-                                "body": "",
-                                "settings": [
-                                    ["앱", "듀팅"],
-                                    ["조건", "닫힐 때"],
-                                    ["실행 방식", "즉시 실행"]
-                                ],
+                                "title": "‘듀팅’과 ‘닫힐 때’를 고르세요",
+                                "body": "실행 방식은 <strong>즉시 실행<\/strong>을 선택하세요.",
                                 "branch": {
                                     "key": "refresh-method",
                                     "value": "manual"
-                                }
+                                },
+                                "note": "자동화 스위치가 보이는 편집 화면에서는 스위치를 켜세요."
                             },
                             {
                                 "id": "shortcut",
-                                "title": "‘듀팅 배경 갱신’을 선택해요",
-                                "body": "선택한 뒤 <strong>완료</strong>를 눌러주세요.",
-                                "settings": [["실행할 단축어", "듀팅 배경 갱신"]],
-                                "note": "매일 정한 시각에도 갱신하려면 자동화를 하나 더 만들고 특정 시간 → 매일 → 즉시 실행 → 듀팅 배경 갱신을 선택하세요. iOS의 인증·실행 조건에 따라 확인이 필요할 수 있습니다.",
+                                "title": "‘듀팅 배경 갱신’을 선택하세요",
+                                "body": "<strong>단축어 실행 → 듀팅 배경 갱신 → 완료<\/strong>",
+                                "note": "아침에도 갱신하려면 특정 시간 자동화를 하나 더 만들고 같은 단축어를 연결하세요.",
                                 "branch": {
                                     "key": "refresh-method",
                                     "value": "manual"
-                                }
+                                },
+                                "shot": "notification-select-refresh"
                             },
                             {
                                 "id": "verify-auto",
-                                "title": "잠금화면에 반영됐는지 봐요",
-                                "body": "듀팅에서 내용을 바꾸고 저장한 뒤 <strong>홈 화면</strong>으로 나와주세요.",
+                                "title": "듀팅에서 수정하고 홈으로 나오세요",
+                                "body": "<strong>수정·저장 → 홈 화면 → 잠금화면 확인<\/strong>",
                                 "action": {
-                                    "label": "듀팅 홈 열기",
+                                    "label": "듀팅 앱 열기",
                                     "href": "dutying://home"
                                 },
-                                "note": "앱 전환기에서 강제로 종료할 필요는 없어요. 갱신되지 않으면 자동화가 켜져 있는지와 갱신 대상 사진 배경을 확인해 주세요."
+                                "note": "그대로라면 단축어 앱에서 듀팅 배경 갱신의 ▶를 눌러보세요. 직접 실행이 되면 자동화가 켜져 있고 같은 단축어가 연결됐는지 확인하세요."
                             }
                         ],
                         "completionAction": {
-                            "label": "듀팅 홈 열기",
+                            "label": "듀팅 앱 열기",
                             "href": "dutying://home"
                         }
                     }
@@ -642,26 +753,361 @@
                     },
                     "wallpaper-target": {
                         "id": "wallpaper-target",
-                        "width": 3456,
-                        "height": 1920,
+                        "width": 680,
+                        "height": 305,
                         "crop": {
-                            "x": 1380,
-                            "y": 570,
-                            "width": 635,
-                            "height": 155
+                            "x": 0,
+                            "y": 0,
+                            "width": 680,
+                            "height": 305
                         },
+                        "caption": "파란색 ‘배경화면’을 누르세요.",
+                        "alt": "파란색 ‘배경화면’을 누르세요.",
+                        "src": "/help/lockscreen/assets/capture-wallpaper-target.jpg",
                         "target": {
-                            "x": 350,
-                            "y": 30,
-                            "label": "여기"
+                            "x": 450,
+                            "y": 177,
+                            "label": "배경화면"
+                        }
+                    },
+                    "wallpaper-picker": {
+                        "id": "wallpaper-picker",
+                        "width": 680,
+                        "height": 672,
+                        "crop": {
+                            "x": 0,
+                            "y": 0,
+                            "width": 680,
+                            "height": 672
                         },
-                        "caption": "파란 ‘배경화면’을 눌러 현재 쓰는 사진 배경을 선택하세요. ‘배경화면 3’은 예시 기기의 이름이에요.",
-                        "alt": "파란 ‘배경화면’을 눌러 현재 쓰는 사진 배경을 선택하세요. ‘배경화면 3’은 예시 기기의 이름이에요.",
-                        "src": "/help/lockscreen/assets/capture-wallpaper-target.jpg"
+                        "caption": "사진 아래 ○ → 오른쪽 위 ✓",
+                        "alt": "사진 아래 ○ → 오른쪽 위 ✓",
+                        "src": "/help/lockscreen/assets/capture-wallpaper-picker.jpg",
+                        "target": {
+                            "x": 126,
+                            "y": 620,
+                            "label": "사진 선택"
+                        }
+                    },
+                    "wallpaper-run": {
+                        "id": "wallpaper-run",
+                        "width": 645,
+                        "height": 233,
+                        "crop": {
+                            "x": 0,
+                            "y": 0,
+                            "width": 645,
+                            "height": 233
+                        },
+                        "caption": "오른쪽 아래 ▶를 누르세요.",
+                        "alt": "오른쪽 아래 ▶를 누르세요.",
+                        "src": "/help/lockscreen/assets/capture-wallpaper-run.jpg",
+                        "target": {
+                            "x": 563,
+                            "y": 172,
+                            "label": "실행"
+                        }
+                    },
+                    "wallpaper-permission": {
+                        "id": "wallpaper-permission",
+                        "width": 689,
+                        "height": 508,
+                        "crop": {
+                            "x": 0,
+                            "y": 0,
+                            "width": 689,
+                            "height": 508
+                        },
+                        "caption": "배경화면 변경을 ‘허용’하세요.",
+                        "alt": "배경화면 변경을 ‘허용’하세요.",
+                        "src": "/help/lockscreen/assets/capture-wallpaper-permission.jpg",
+                        "target": {
+                            "x": 535,
+                            "y": 220,
+                            "label": "허용"
+                        }
+                    },
+                    "auto-configure": {
+                        "id": "auto-configure",
+                        "width": 680,
+                        "height": 467,
+                        "crop": {
+                            "x": 0,
+                            "y": 0,
+                            "width": 680,
+                            "height": 467
+                        },
+                        "caption": "자동 갱신 켬 · 앱을 닫을 때와 자정",
+                        "alt": "자동 갱신 켬 · 앱을 닫을 때와 자정",
+                        "src": "/help/lockscreen/assets/capture-auto-configure.jpg"
+                    },
+                    "notification-filter-add": {
+                        "id": "notification-filter-add",
+                        "width": 680,
+                        "height": 253,
+                        "crop": {
+                            "x": 0,
+                            "y": 0,
+                            "width": 680,
+                            "height": 253
+                        },
+                        "caption": "‘필터 추가’를 누르세요.",
+                        "alt": "‘필터 추가’를 누르세요.",
+                        "src": "/help/lockscreen/assets/capture-notification-filter-add.jpg",
+                        "target": {
+                            "x": 270,
+                            "y": 211,
+                            "label": "필터 추가"
+                        }
+                    },
+                    "notification-filter-title": {
+                        "id": "notification-filter-title",
+                        "width": 546,
+                        "height": 257,
+                        "crop": {
+                            "x": 0,
+                            "y": 0,
+                            "width": 546,
+                            "height": 257
+                        },
+                        "caption": "제목 · 다음을 포함 · Update Dutying LockScreen",
+                        "alt": "제목 · 다음을 포함 · Update Dutying LockScreen",
+                        "src": "/help/lockscreen/assets/capture-notification-filter-title.jpg"
+                    },
+                    "notification-enabled": {
+                        "id": "notification-enabled",
+                        "width": 680,
+                        "height": 178,
+                        "crop": {
+                            "x": 0,
+                            "y": 0,
+                            "width": 680,
+                            "height": 178
+                        },
+                        "caption": "자동화 스위치를 켜세요.",
+                        "alt": "자동화 스위치를 켜세요.",
+                        "src": "/help/lockscreen/assets/capture-notification-enabled.jpg",
+                        "target": {
+                            "x": 586,
+                            "y": 39,
+                            "label": "켬"
+                        }
+                    },
+                    "notification-select-refresh": {
+                        "id": "notification-select-refresh",
+                        "width": 680,
+                        "height": 100,
+                        "crop": {
+                            "x": 0,
+                            "y": 0,
+                            "width": 680,
+                            "height": 100
+                        },
+                        "caption": "목록에서 ‘듀팅 배경 갱신’을 선택하세요.",
+                        "alt": "목록에서 ‘듀팅 배경 갱신’을 선택하세요.",
+                        "src": "/help/lockscreen/assets/capture-notification-select-refresh.jpg",
+                        "target": {
+                            "x": 366,
+                            "y": 52,
+                            "label": "듀팅 배경 갱신"
+                        }
+                    },
+                    "notification-run-action": {
+                        "id": "notification-run-action",
+                        "width": 680,
+                        "height": 122,
+                        "crop": {
+                            "x": 0,
+                            "y": 0,
+                            "width": 680,
+                            "height": 122
+                        },
+                        "caption": "아래에 ‘듀팅 배경 갱신 실행’이 붙었으면 완료",
+                        "alt": "아래에 ‘듀팅 배경 갱신 실행’이 붙었으면 완료",
+                        "src": "/help/lockscreen/assets/capture-notification-run-action.jpg"
+                    },
+                    "automation-new": {
+                        "src": "/help/lockscreen/assets/capture-automation-new.jpg",
+                        "width": 360,
+                        "height": 260,
+                        "crop": {
+                            "x": 0,
+                            "y": 0,
+                            "width": 360,
+                            "height": 260
+                        },
+                        "caption": "① 화면 아래 가운데 ＋",
+                        "alt": "① 화면 아래 가운데 ＋",
+                        "target": {
+                            "x": 180,
+                            "y": 160,
+                            "label": "새 단축어"
+                        }
+                    },
+                    "automation-category": {
+                        "src": "/help/lockscreen/assets/capture-automation-category.jpg",
+                        "width": 680,
+                        "height": 220,
+                        "crop": {
+                            "x": 0,
+                            "y": 0,
+                            "width": 680,
+                            "height": 220
+                        },
+                        "caption": "② 검색창 아래 ‘자동화’",
+                        "alt": "② 검색창 아래 ‘자동화’",
+                        "target": {
+                            "x": 130,
+                            "y": 148,
+                            "label": "자동화"
+                        }
+                    },
+                    "notification-picker": {
+                        "src": "/help/lockscreen/assets/capture-notification-picker.jpg",
+                        "width": 680,
+                        "height": 755,
+                        "crop": {
+                            "x": 0,
+                            "y": 0,
+                            "width": 680,
+                            "height": 755
+                        },
+                        "caption": "앱 항목 아래쪽의 빨간 종 ‘알림’",
+                        "alt": "앱 항목 아래쪽의 빨간 종 ‘알림’",
+                        "target": {
+                            "x": 315,
+                            "y": 660,
+                            "label": "알림"
+                        }
+                    },
+                    "notification-app-empty": {
+                        "src": "/help/lockscreen/assets/capture-notification-app-empty.jpg",
+                        "width": 680,
+                        "height": 375,
+                        "crop": {
+                            "x": 0,
+                            "y": 0,
+                            "width": 680,
+                            "height": 375
+                        },
+                        "caption": "① 파란색 ‘앱’",
+                        "alt": "① 파란색 ‘앱’",
+                        "target": {
+                            "x": 127,
+                            "y": 145,
+                            "label": "앱 선택"
+                        }
+                    },
+                    "notification-app-choice": {
+                        "src": "/help/lockscreen/assets/capture-notification-app-choice.jpg",
+                        "width": 680,
+                        "height": 106,
+                        "crop": {
+                            "x": 0,
+                            "y": 0,
+                            "width": 680,
+                            "height": 106
+                        },
+                        "caption": "② 목록에서 ‘듀팅’",
+                        "alt": "② 목록에서 ‘듀팅’",
+                        "target": {
+                            "x": 285,
+                            "y": 52,
+                            "label": "듀팅"
+                        }
+                    },
+                    "notification-action-search": {
+                        "src": "/help/lockscreen/assets/capture-notification-action-search.jpg",
+                        "width": 680,
+                        "height": 350,
+                        "crop": {
+                            "x": 0,
+                            "y": 0,
+                            "width": 680,
+                            "height": 350
+                        },
+                        "caption": "검색 결과의 ‘단축어 실행’",
+                        "alt": "검색 결과의 ‘단축어 실행’",
+                        "target": {
+                            "x": 300,
+                            "y": 285,
+                            "label": "단축어 실행"
+                        }
+                    },
+                    "notification-save-back": {
+                        "src": "/help/lockscreen/assets/capture-notification-save-back.jpg",
+                        "width": 680,
+                        "height": 122,
+                        "crop": {
+                            "x": 0,
+                            "y": 0,
+                            "width": 680,
+                            "height": 122
+                        },
+                        "caption": "왼쪽 위 〈로 목록으로 돌아가세요.",
+                        "alt": "왼쪽 위 〈로 목록으로 돌아가세요.",
+                        "target": {
+                            "x": 48,
+                            "y": 55,
+                            "label": "뒤로"
+                        }
+                    },
+                    "configure-run-button": {
+                        "src": "/help/lockscreen/assets/capture-configure-run-button.jpg",
+                        "width": 645,
+                        "height": 233,
+                        "crop": {
+                            "x": 0,
+                            "y": 0,
+                            "width": 645,
+                            "height": 233
+                        },
+                        "caption": "오른쪽 아래 ▶를 눌러 설정을 실행하세요.",
+                        "alt": "오른쪽 아래 ▶를 눌러 설정을 실행하세요.",
+                        "target": {
+                            "x": 563,
+                            "y": 172,
+                            "label": "실행"
+                        }
+                    },
+                    "home-wallpaper": {
+                        "src": "/help/lockscreen/assets/home-wallpaper.webp",
+                        "width": 1110,
+                        "height": 1535,
+                        "crop": {
+                            "x": 0,
+                            "y": 0,
+                            "width": 1110,
+                            "height": 1535
+                        },
+                        "caption": "앱에서 생성한 월간 근무표 배경 예시",
+                        "alt": "앱에서 생성한 월간 근무표 배경 예시"
+                    },
+                    "home-control": {
+                        "src": "/help/lockscreen/assets/home-control.webp",
+                        "width": 180,
+                        "height": 180,
+                        "crop": {
+                            "x": 0,
+                            "y": 0,
+                            "width": 180,
+                            "height": 180
+                        },
+                        "caption": "잠금화면 왼쪽 아래 듀팅 버튼",
+                        "alt": "잠금화면 왼쪽 아래 듀팅 버튼"
                     }
                 },
                 "previewLight": "/help/lockscreen/assets/preview-light.png",
-                "previewDark": "/help/lockscreen/assets/preview-dark.png"
+                "previewDark": "/help/lockscreen/assets/preview-dark.png",
+                "homeSamples": {
+                    "wallpaper": [
+                        "home-wallpaper"
+                    ],
+                    "quickadd": [
+                        "home-control",
+                        "input"
+                    ]
+                }
             }
         </script>
         <script src="/help/lockscreen/guide.js"></script>
