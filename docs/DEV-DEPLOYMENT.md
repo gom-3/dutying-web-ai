@@ -11,14 +11,22 @@
 | 개발 웹 / API | `https://dev.dutying.ai` / `https://dev.api.dutying.ai` |
 | 권한 | GitHub 저장소 읽기와 조직의 개발용 Cloudflare Pages 배포 권한 |
 
-## develop 푸시 자동 배포 확인 · 2026-11-23
+## 배포 요청을 받으면
 
-사용자는 담당자가 `develop` 푸시의 Cloudflare 자동 배포 연결을 다시 설정했다고 전달했다. 신규 푸시 후 실제 제공자 커밋과 공개 응답으로 동작을 검증한다. GitHub 테스트 성공만으로 배포 완료를 판단하지 않는다.
+개발 프로젝트의 자동 배포는 꺼져 있다. `develop` 푸시와 GitHub Web CI는
+테스트와 빌드 검증까지 수행한다. Cloudflare에 표시되는 `skipped`는 수동으로
+배포할 커밋을 찾는 데 쓰는 상태다. 빈 커밋을 만들거나 Web CI를 다시 돌려도
+개발 사이트 게시가 시작되지 않는다.
 
-- 결제 UI 변경: PR #217, `5b6d5ec4a1ca4364f2a4bc28351766cb8d929994`.
-- 서버 현행 Plus 환불 검증 보완: 서버 PR #423, `be7aec2ff470d718c536caba569074f652afb84d` (서버 배포는 별도 workflow).
-- 확인할 공개 경로: `/billing`, `/billing/billing-return`, `/billing/payment-return` 및 동일 커밋의 `release.json`.
-- 자동 배포가 시작되지 않을 때는 아래 수동 Pages 절차를 대체 경로로 사용한다. 이미 진행 중인 동일 커밋 배포는 중복 실행하지 않는다.
+AI는 팀원의 Cloudflare 세션에서 [개발 프로젝트 대시보드](https://dash.cloudflare.com/53466deaa5db27ed5bbeca1377a9e721/pages/view/dutying-web-ai-dev)를
+먼저 열어 배포 권한이 있는지 확인한다. 접근이나 **Retry deployment** 실행이
+거부되면 Cloudflare 계정에서 필요한 개발 프로젝트 권한과 실제 오류를 알린다.
+
+2026-11-23에는 커밋 `3c2f3d2b`의 푸시와 빈 커밋 재빌드 요청이 모두
+자동 게시 없이 끝났다. 해당 커밋의 `skipped` 기록에서 수동 재시도한 뒤 개발 도메인과
+고유 Pages URL에 같은 SHA가 반영됐다. 결제 관련 검증 경로는
+`/billing`, `/billing/billing-return`, `/billing/payment-return`이다.
+[당시 Cloudflare 배포 기록](https://dash.cloudflare.com/53466deaa5db27ed5bbeca1377a9e721/pages/view/dutying-web-ai-dev/0bef3a6d-4de8-4bd5-b34d-8f301934b21b).
 
 ## 1. 배포할 커밋 검증
 
@@ -30,7 +38,7 @@
 
 - `dutying-web-ai-dev`의 **Deployments**에서 브랜치와 전체 SHA가 일치하는 `skipped` 배포를 연다. 이 프로젝트에서 `develop`은 **Production branch**로 표시되며 연결 도메인은 `dev.dutying.ai`다.
 - **Manage deployment → Retry deployment**로 해당 커밋의 빌드를 한 번 시작한다. Cloudflare Git 빌드가 프로젝트에 저장된 설정으로 동작한다. GitHub Web CI는 개발 배포를 시작하지 않으며, 이 Pages 경로에는 GitHub 업로드 토큰이 필요 없다.
-- 해당 SHA의 기록이 없거나 Pages 권한 또는 수동 실행 옵션이 없다면, 개발 프로젝트 권한이 있는 팀원에게 프로젝트·브랜치·전체 SHA를 전달한다. 실패 시 빌드 로그나 권한 오류를 공유한다. 자동 배포 설정이 다시 비활성화된 경우에도 이 수동 절차로 개발 프로젝트만 배포한다.
+- 해당 SHA의 기록이 없거나 Pages 권한 또는 수동 실행 옵션이 없다면, 개발 프로젝트 권한이 있는 팀원에게 프로젝트·브랜치·전체 SHA를 전달한다. 실패 시 빌드 로그나 권한 오류를 공유한다. 개발 프로젝트의 자동 배포는 꺼둔 상태로 유지한다.
 
 ## 3. 실제 반영 확인
 
