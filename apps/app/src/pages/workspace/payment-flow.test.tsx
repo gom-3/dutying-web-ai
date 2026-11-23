@@ -1579,8 +1579,12 @@ describe('card authorization callback and first charge', () => {
                 customerKey: 'customer-fixture',
             }),
         );
-        expect(await screen.findByText('결제와 Plus 적용이 완료되었습니다. 등록한 카드로 매월 자동 갱신합니다.')).toBeInTheDocument();
+        expect(await screen.findByRole('heading', {name: 'Plus 구독이 시작됐어요'})).toHaveFocus();
+        expect(screen.queryByRole('list', {name: 'Plus 구독 절차'})).not.toBeInTheDocument();
         expect(screen.queryByRole('button', {name: '결제 완료하기'})).not.toBeInTheDocument();
+        await userEvent.tab();
+        expect(screen.getByRole('link', {name: '구독 관리하기'})).toHaveFocus();
+        expect(screen.getByRole('link', {name: '구독 관리하기'})).toHaveAttribute('href', '/workspace');
     });
 
     it.each(['PROCESSING', 'UNKNOWN', 'PAID_PENDING_APPLICATION', 'FAILED', 'APPLIED'])(
@@ -1588,9 +1592,20 @@ describe('card authorization callback and first charge', () => {
         async (status) => {
             mocks.get.mockResolvedValue({...order, status, provider: 'TOSS'});
             mount(callback);
-            await screen.findByText(/이번 결제금액/);
+            await screen.findByText(status === 'APPLIED' ? '결제금액' : '이번 결제금액');
             expect(screen.queryByRole('button', {name: '결제 완료하기'})).not.toBeInTheDocument();
             expect(mocks.post).not.toHaveBeenCalled();
+
+            if (status === 'APPLIED') {
+                expect(screen.getByRole('heading', {name: 'Plus 구독이 시작됐어요'})).toBeInTheDocument();
+                expect(screen.getByText('이용 병동').closest('div')).toHaveTextContent('검증용 병동');
+                expect(screen.getByText('결제금액').closest('div')).toHaveTextContent('19,900원');
+                expect(screen.getByText('다음 결제일').closest('div')).toHaveTextContent('월 19,900원 · 부가세 포함');
+                expect(screen.queryByRole('list', {name: 'Plus 구독 절차'})).not.toBeInTheDocument();
+                expect(screen.getByRole('link', {name: '구독 관리하기'})).toHaveAttribute('href', '/workspace');
+            } else {
+                expect(screen.queryByRole('heading', {name: 'Plus 구독이 시작됐어요'})).not.toBeInTheDocument();
+            }
 
             if (['PROCESSING', 'UNKNOWN', 'PAID_PENDING_APPLICATION'].includes(status)) {
                 expect(screen.getByRole('link', {name: '결제 상태 확인'})).toHaveAttribute(
@@ -1625,9 +1640,10 @@ describe('card authorization callback and first charge', () => {
         expect(mocks.post).not.toHaveBeenCalled();
     });
 
-    it('displays date-only service periods in Korea time without changing the stored period', async () => {
+    it.each(['AWAITING_PAYMENT', 'APPLIED'])('displays date-only Korea time for %s without changing the stored period', async (status) => {
         mocks.get.mockResolvedValue({
             ...order,
+            status,
             subscriptionSummary: {
                 ...order.subscriptionSummary,
                 periodStart: '2026-10-23T16:30:00',
@@ -1635,7 +1651,7 @@ describe('card authorization callback and first charge', () => {
             },
         });
         mount(callback);
-        await screen.findByRole('button', {name: '결제 완료하기'});
+        await screen.findByText(status === 'APPLIED' ? '결제금액' : '이번 결제금액');
         expect(screen.getByText('이용기간').closest('div')).toHaveTextContent('2026. 10. 24. ~ 2026. 11. 24.');
         expect(screen.getByText('다음 결제일').closest('div')).toHaveTextContent('2026. 11. 24.');
         expect(screen.queryByText(/KST|16:30/)).not.toBeInTheDocument();
@@ -1655,7 +1671,44 @@ describe('card authorization callback and first charge', () => {
         expect(screen.getByRole('button', {name: '결제 중…'})).toBeDisabled();
         expect(mocks.post).toHaveBeenCalledTimes(1);
         finish({...order, status: 'APPLIED'});
-        expect(await screen.findByText('결제와 Plus 적용이 완료되었습니다. 등록한 카드로 매월 자동 갱신합니다.')).toBeInTheDocument();
+        expect(await screen.findByRole('heading', {name: 'Plus 구독이 시작됐어요'})).toBeInTheDocument();
+    });
+
+    it.each([undefined, {...order.subscriptionSummary, periodEnd: 'invalid'}])(
+        'keeps confirmed success usable without inventing missing receipt details %j',
+        async (subscriptionSummary) => {
+            mocks.get.mockResolvedValue({...order, status: 'APPLIED', subscriptionSummary});
+            mount(callback);
+            expect(await screen.findByRole('heading', {name: 'Plus 구독이 시작됐어요'})).toBeInTheDocument();
+            expect(screen.getByText('상세 내역은 구독 관리에서 확인해 주세요.')).toBeInTheDocument();
+            expect(screen.getByRole('link', {name: '구독 관리하기'})).toHaveAttribute('href', '/workspace');
+            expect(screen.queryByText('다음 결제일')).not.toBeInTheDocument();
+            expect(screen.queryByText(/Invalid Date|NaN/)).not.toBeInTheDocument();
+            expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+            expect(mocks.post).not.toHaveBeenCalled();
+        },
+    );
+
+    it('uses server-confirmed success instead of a stale card callback error', async () => {
+        mocks.get.mockResolvedValue({...order, status: 'APPLIED'});
+        mount(callback + '&code=INVALID_CARD_NUMBER');
+        expect(await screen.findByRole('heading', {name: 'Plus 구독이 시작됐어요'})).toBeInTheDocument();
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: '결제 완료하기'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('link', {name: '결제 상태 확인'})).not.toBeInTheDocument();
+        expect(mocks.post).not.toHaveBeenCalled();
+        expect(mocks.open).not.toHaveBeenCalled();
+    });
+
+    it.each([NaN, -1])('does not invent a receipt amount for a confirmed order with invalid gross %s', async (gross) => {
+        mocks.get.mockResolvedValue({...order, status: 'APPLIED', gross});
+        mount(callback);
+        expect(await screen.findByRole('heading', {name: 'Plus 구독이 시작됐어요'})).toBeInTheDocument();
+        expect(screen.queryByText('결제금액')).not.toBeInTheDocument();
+        expect(screen.queryByText(/NaN|-1원/)).not.toBeInTheDocument();
+        expect(screen.getByText('상세 내역은 구독 관리에서 확인해 주세요.')).toBeInTheDocument();
+        expect(screen.getByRole('link', {name: '구독 관리하기'})).toBeInTheDocument();
+        expect(mocks.post).not.toHaveBeenCalled();
     });
 
     it('does not charge with an incomplete authorization payload', async () => {

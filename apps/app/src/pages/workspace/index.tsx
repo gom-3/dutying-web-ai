@@ -48,6 +48,7 @@ import {HospitalWorkspaceShell} from './hospital-workspace-shell';
 import {InfoTip} from './info-tip';
 import {PlusAddons} from './plus-addons';
 import {PlusCheckoutConsent, PlusCheckoutPlan, PlusCheckoutProgress, PlusCheckoutReviewSummary} from './plus-checkout';
+import {PlusPaymentComplete} from './plus-payment-complete';
 import {PlusSubscriptionCancellation, PlusSubscriptionOverview} from './plus-subscription';
 import {Reauthenticate} from './reauthentication';
 import {UsageOverview} from './usage-overview';
@@ -2224,15 +2225,11 @@ export function BillingReturn({
         window.history.replaceState(window.history.state, '', location.pathname + (id ? `?orderId=${encodeURIComponent(id)}` : ''));
     }, [location.pathname, id]);
 
+    if (applied && current) return <PlusPaymentComplete order={current} backPath={backPath} />;
+
     return (
         <Section
-            title={
-                id
-                    ? applied
-                        ? t('Plus 구독 완료', 'Plus subscription complete')
-                        : t('Plus 구독하기', 'Subscribe to Plus')
-                    : t('자동결제 등록 확인', 'Confirm renewal registration')
-            }
+            title={id ? t('Plus 구독하기', 'Subscribe to Plus') : t('자동결제 등록 확인', 'Confirm renewal registration')}
             className={id ? 'plus-payment-confirmation' : undefined}
         >
             {id ? <PlusCheckoutProgress payment /> : null}
@@ -2245,13 +2242,6 @@ export function BillingReturn({
                               'The server verifies card authorization before registration.',
                           )}
                 </Notice>
-            ) : applied ? (
-                <p className="plus-payment-confirmation__status" role="status">
-                    {t(
-                        '결제와 Plus 적용이 완료되었습니다. 등록한 카드로 매월 자동 갱신합니다.',
-                        'Payment and Plus activation are complete. Your registered card will be charged monthly.',
-                    )}
-                </p>
             ) : checkingPayment ? (
                 <p className="plus-payment-confirmation__status" role="status">
                     {current.status === 'PAID_PENDING_APPLICATION'
