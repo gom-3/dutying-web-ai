@@ -1,6 +1,19 @@
 import ReactGA from 'react-ga4';
 import {isGoogleAnalyticsEnabled, isMetaPixelEnabled} from '@/shared/config/analytics';
 
+/** Built-in User-ID, never a custom dimension. App and admin IDs are separate namespaces. */
+export function setAnalyticsAccount(kind: 'app' | 'web', accountId: number | null) {
+    try {
+        if (!isGoogleAnalyticsEnabled()) return;
+
+        const userId = accountId !== null && Number.isSafeInteger(accountId) && accountId > 0 ? `${kind}_${accountId}` : null;
+
+        ReactGA.gtag('set', 'user_id', userId);
+    } catch {
+        // Collection must not prevent login or logout.
+    }
+}
+
 /** Send synchronously before document navigation; only controlled values are allowed. */
 export function trackGrowthAction(action: 'web_cta_click' | 'app_store_click', destination: 'web' | 'ios' | 'android') {
     if (!isGoogleAnalyticsEnabled()) return;

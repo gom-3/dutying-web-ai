@@ -1,11 +1,11 @@
 import ReactGA from 'react-ga4';
 import {afterEach, beforeEach, expect, it, vi} from 'vitest';
 import {isGoogleAnalyticsEnabled, isMetaPixelEnabled} from '@/shared/config/analytics';
-import {trackProductOutcome, trackScheduleSignal} from '../growth-analytics';
+import {setAnalyticsAccount, trackProductOutcome, trackScheduleSignal} from '../growth-analytics';
 
 const pixelTrack = vi.fn();
 
-vi.mock('react-ga4', () => ({default: {event: vi.fn()}}));
+vi.mock('react-ga4', () => ({default: {event: vi.fn(), gtag: vi.fn()}}));
 vi.mock('@/shared/config/analytics', () => ({isGoogleAnalyticsEnabled: vi.fn(() => true), isMetaPixelEnabled: vi.fn(() => true)}));
 beforeEach(() => {
     vi.resetAllMocks();
@@ -14,6 +14,26 @@ beforeEach(() => {
     vi.mocked(isGoogleAnalyticsEnabled).mockReturnValue(true);
 });
 afterEach(() => vi.unstubAllGlobals());
+it('keeps app/admin principals distinct and clears invalid or logged-out identities', () => {
+    setAnalyticsAccount('app', 42);
+    setAnalyticsAccount('web', 42);
+    setAnalyticsAccount('web', null);
+    setAnalyticsAccount('app', -1);
+    expect(ReactGA.gtag).toHaveBeenNthCalledWith(1, 'set', 'user_id', 'app_42');
+    expect(ReactGA.gtag).toHaveBeenNthCalledWith(2, 'set', 'user_id', 'web_42');
+    expect(ReactGA.gtag).toHaveBeenNthCalledWith(3, 'set', 'user_id', null);
+    expect(ReactGA.gtag).toHaveBeenNthCalledWith(4, 'set', 'user_id', null);
+});
+it('does not identify users when collection is disabled or break auth on SDK failure', () => {
+    vi.mocked(isGoogleAnalyticsEnabled).mockReturnValue(false);
+    setAnalyticsAccount('web', 42);
+    expect(ReactGA.gtag).not.toHaveBeenCalled();
+    vi.mocked(isGoogleAnalyticsEnabled).mockReturnValue(true);
+    vi.mocked(ReactGA.gtag).mockImplementationOnce(() => {
+        throw new Error('SDK unavailable');
+    });
+    expect(() => setAnalyticsAccount('web', 42)).not.toThrow();
+});
 it('sends only controlled outcome metadata', () => {
     trackProductOutcome('sign_up', 'password');
     expect(ReactGA.event).toHaveBeenCalledWith('sign_up', {schema_version: 1, service: 'dutying_ai', method: 'password'});

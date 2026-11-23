@@ -3,6 +3,7 @@ import {devtools, persist, type PersistStorage, type StorageValue} from 'zustand
 import {type TAccount} from '@/entities/account';
 import {registerAdminSessionRecovery, setAccessToken, setAdminAccessToken} from '@/shared/api/client';
 import {createStoreWriteHelpers} from '@/shared/util/create-store';
+import {setAnalyticsAccount} from '@/shared/util/growth-analytics';
 import {getWardAdminAccountIdFromAccessToken, isWardAdminAccessToken} from './admin-token';
 
 interface IState {
@@ -153,6 +154,22 @@ const useAuthStore = create<IStore>()(
 );
 const adminPrincipalId = (token: string | null | undefined) =>
     isWardAdminAccessToken(token) ? getWardAdminAccountIdFromAccessToken(token) : null;
+
+// Synchronous subscription runs before subsequent login/signup outcome calls.
+// Do not infer that a web administrator and an app nurse with the same ID are one person.
+useAuthStore.subscribe((state, previous) => {
+    if (state.accessToken === previous.accessToken && state.accountMe === previous.accountMe && state.isAuth === previous.isAuth) return;
+
+    const isAdmin = isWardAdminAccessToken(state.accessToken);
+    const accountId =
+        state.isAuth && !state.demoStartDate && state.accountMe?.status !== 'DEMO'
+            ? isAdmin
+                ? adminPrincipalId(state.accessToken)
+                : (state.accountMe?.accountId ?? null)
+            : null;
+
+    setAnalyticsAccount(isAdmin ? 'web' : 'app', accountId);
+});
 
 registerAdminSessionRecovery({
     current: () => {
