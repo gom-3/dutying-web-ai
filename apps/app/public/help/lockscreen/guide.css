@@ -401,10 +401,10 @@ a:active {
     font-size: 0.8125rem;
 }
 .sample-control-row .sample-control {
-    width: 42px;
-    height: 42px;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
-    flex: 0 0 42px;
+    flex: 0 0 44px;
 }
 .sample-control-row svg {
     width: 16px;
