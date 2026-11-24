@@ -11,43 +11,14 @@
     const sourceFlows = Array.isArray(DATA.flows)
         ? DATA.flows.filter((flow) => flow && typeof flow.id === 'string' && Array.isArray(flow.steps) && flow.steps.length)
         : [];
-    const wallpaperSource = sourceFlows.find((flow) => flow.id === 'wallpaper');
-    const refreshSource = sourceFlows.find((flow) => flow.id === 'auto');
-    // Both entry points finish with refresh setup. Reuse the same native steps
-    // so shortcut URLs and iOS-specific branches stay in sync.
+    // Set up refresh with the wallpaper once. Adding the to-do control uses
+    // that same wallpaper and automation.
     const rawFlows = sourceFlows
         .filter((flow) => flow.id !== 'auto')
         .map((flow) => {
-            if (flow.id === 'wallpaper') return {...flow, title: '근무표 설정'};
-            if (flow.id !== 'quickadd' || !wallpaperSource || !refreshSource) return flow;
-            const step = (id) => wallpaperSource.steps.find((item) => item.id === id);
-            const refreshPreparation = [
-                {
-                    ...step('install'),
-                    id: 'refresh-install',
-                    phase: 'refresh',
-                    title: '배경 갱신 단축어도 준비해요',
-                    body: '<strong>듀팅 배경 갱신</strong>이 이미 있으면 다시 추가하지 않아도 돼요.',
-                },
-                {
-                    ...step('target'),
-                    id: 'refresh-target',
-                    phase: 'refresh',
-                    title: '자동 갱신할 배경을 골라요',
-                    body: '<strong>듀팅 배경 갱신</strong>의 <strong>⋯</strong>를 누르세요. 파란색 <strong>배경화면</strong>을 눌러 <strong>지금 쓰고 있는 배경화면</strong>을 선택해 주세요.',
-                },
-                {...step('run'), id: 'refresh-run', phase: 'refresh'},
-            ];
-            return {
-                ...flow,
-                title: '할 일 버튼 설정',
-                steps: [
-                    {...step('ready')},
-                    ...flow.steps,
-                    ...refreshPreparation,
-                    ...refreshSource.steps.map((item) => ({...item, phase: 'refresh'})),
-                ],
-            };
+            if (flow.id === 'wallpaper')
+                return {...flow, title: '근무표 설정', steps: flow.steps.filter((step) => step.id !== 'refresh-method')};
+            return flow.id === 'quickadd' ? {...flow, title: '할 일 버튼 설정'} : flow;
         });
     const legacyAutoSteps = new Map([
         ['trigger', 'auto-trigger'],
@@ -55,7 +26,17 @@
         ['shortcut', 'auto-shortcut'],
     ]);
     function canonicalRoute(flow, step) {
-        return flow === 'auto' ? {flow: 'wallpaper', step: legacyAutoSteps.get(step) || step || 'refresh-method'} : {flow, step};
+        if (step === 'refresh-method') return {flow: 'wallpaper', step: 'auto-trigger'};
+        if (step === 'notification-test') return {flow: 'wallpaper', step: 'verify-auto'};
+        if (flow === 'quickadd' && step === 'verify-auto') return {flow: 'wallpaper', step};
+        if (flow === 'quickadd' && step === 'ready') return {flow, step: 'install'};
+        if (flow === 'quickadd' && step?.startsWith('refresh-') && step !== 'refresh-method') {
+            return {flow: 'wallpaper', step: step.slice('refresh-'.length)};
+        }
+        if (flow === 'quickadd' && (step === 'refresh-method' || step?.startsWith('notification-') || legacyAutoSteps.has(step))) {
+            return {flow: 'wallpaper', step: legacyAutoSteps.get(step) || step};
+        }
+        return flow === 'auto' ? {flow: 'wallpaper', step: legacyAutoSteps.get(step) || step || 'auto-trigger'} : {flow, step};
     }
     let decisions = {};
     try {
@@ -63,7 +44,7 @@
         if (saved && typeof saved === 'object' && !Array.isArray(saved)) decisions = saved;
     } catch (e) {}
     const choiceDefinitions = new Map(
-        rawFlows.flatMap((flow) =>
+        sourceFlows.flatMap((flow) =>
             flow.steps
                 .filter((step) => step.choiceKey && Array.isArray(step.choices))
                 .map((step) => [
@@ -158,12 +139,20 @@
         toastTimer = setTimeout(() => ($('toast').hidden = true), 2600);
     }
     function icon(kind) {
+        const appIcons = {
+            'dutying-app': '/help/lockscreen/assets/dutying-app-icon.png',
+            'shortcuts-app': '/help/lockscreen/assets/shortcuts-app-icon.png',
+        };
+        if (appIcons[kind]) {
+            return '<img class="app-icon" src="' + appIcons[kind] + '" width="28" height="28" alt="">';
+        }
         const paths = {
             calendar: '<path d="M7 2h2v3h6V2h2v3h3v16H4V5h3V2Zm-1 8v9h12v-9H6Zm2 2h3v2H8v-2Zm5 0h3v2h-3v-2Zm-5 4h3v2H8v-2Z"/>',
             add: '<path d="M10.5 4h3v6.5H20v3h-6.5V20h-3v-6.5H4v-3h6.5V4Z"/>',
             refresh: '<path d="M12 4a8 8 0 0 1 6.4 3.2V4H21v8h-8V9.4h3.8A5.4 5.4 0 1 0 17.4 14H20A8 8 0 1 1 12 4Z"/>',
             shortcut: '<path d="m12 2 10 6-10 6L2 8l10-6Zm-9 10 9 5.4 9-5.4 1 2-10 6L2 14l1-2Z"/>',
             check: '<path d="m9.5 17.5-6-6 2-2 4 4 9-9 2 2-11 11Z"/>',
+            notice: '<path fill-rule="evenodd" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm-1 4h2v7h-2V6Zm0 9h2v2h-2v-2Z"/>',
             chevron: '<path d="m9 5-2 2 5 5-5 5 2 2 7-7-7-7Z"/>',
         };
         return (
@@ -180,8 +169,9 @@
         );
     }
     function stepIcon(flow, step) {
-        if (step.choices) return 'shortcut';
-        if (step.action?.href?.includes('icloud.com/shortcuts')) return 'shortcut';
+        const href = step.action?.href || '';
+        if (href.startsWith('dutying:')) return 'dutying-app';
+        if (href.startsWith('shortcuts:') || href.includes('icloud.com/shortcuts') || step.choices) return 'shortcuts-app';
         if (step.phase === 'refresh') return 'refresh';
         return flow.id === 'quickadd'
             ? 'add'
@@ -191,11 +181,12 @@
     }
     function acknowledgement(step, isLast) {
         if (isLast) return '설정 마치기';
-        if (step.id === 'input') return '자동 갱신 연결하기';
-        if (step.id === 'refresh-install') return '준비됐어요';
+        if (['run', 'notification-configure-run'].includes(step.id)) return '실행했어요';
+        if (step.id === 'notification-condition') return '입력했어요';
+        if (step.id === 'notification-options') return '켰어요';
+        if (step.id === 'notification-shortcut') return '저장했어요';
         const href = step.action?.href || '';
         if (href.includes('icloud.com/shortcuts')) return '추가했어요';
-        if (href.startsWith('shortcuts://run')) return '실행했어요';
         if (href.startsWith('dutying:')) return '확인했어요';
         return '다음';
     }
@@ -259,7 +250,9 @@
             escape((shot.alt || '설정 화면') + ' 크게 보기') +
             '">' +
             cropHTML(shot) +
-            '</button><p class="zoom-caption">눌러서 크게 보기</p></div></figure>'
+            '</button><p class="zoom-caption">눌러서 크게 보기</p></div>' +
+            (shot.caption ? '<figcaption class="media-caption">' + escape(shot.caption) + '</figcaption>' : '') +
+            '</figure>'
         );
     }
     function settingsHTML(settings) {
@@ -269,14 +262,30 @@
                   '</dl>'
             : '';
     }
+    function noteHTML(step) {
+        if (!step.note) return '';
+        const title = escape(step.noteTitle || '안 될 때');
+        if (step.noteStyle === 'warning') {
+            return (
+                '<aside class="step-notice" role="note" aria-labelledby="notice-title"><span class="notice-icon">' +
+                icon('notice') +
+                '</span><div><p class="notice-title" id="notice-title">' +
+                title +
+                '</p><p class="notice-body">' +
+                step.note +
+                '</p></div></aside>'
+            );
+        }
+        return '<details class="step-help"><summary>' + title + '</summary><div>' + step.note + '</div></details>';
+    }
     function actionHTML(action, secondary = false) {
         if (!action) return '';
         const href = safeLink(action.href, action.kind);
         if (!href) return '';
         const isInstall = href.includes('icloud.com/shortcuts');
-        const actionIcon = href.startsWith('dutying:')
-            ? '<img src="/help/lockscreen/assets/dutying-logo.png" width="24" height="24" alt="">'
-            : icon(isInstall ? 'add' : 'shortcut');
+        const actionIcon = icon(
+            href.startsWith('dutying:') ? 'dutying-app' : isInstall || href.startsWith('shortcuts:') ? 'shortcuts-app' : 'shortcut',
+        );
         return (
             '<a class="step-action' +
             (secondary ? ' secondary' : '') +
@@ -318,6 +327,51 @@
     function exampleHTML() {
         return '<section class="example" aria-labelledby="example-title"><h3 id="example-title">할 일 입력해 보기</h3><p class="example-caption">연습한 내용은 저장되지 않아요.</p><label for="demo-input">할 일</label><input id="demo-input" type="text" value="밥먹기 / 놀기" autocomplete="off" enterkeyhint="done" maxlength="300"><button class="example-save" id="demo-save" type="button">나눠보기</button><ul class="example-results" id="demo-results" aria-live="polite"></ul><p class="example-feedback" id="demo-feedback"></p></section>';
     }
+    function homeSampleHTML(task) {
+        const keys = DATA.homeSamples?.[task.id] || [];
+        const samples = keys
+            .map((key) => {
+                const shot = DATA.shots?.[key];
+                if (!shot) return '';
+                const title = task.id === 'wallpaper' ? '근무표 예시' : key === 'home-control' ? '왼쪽 아래 버튼' : '할 일 입력창 예시';
+                const button =
+                    '<button class="sample-button' +
+                    (key === 'home-control' ? ' sample-control' : '') +
+                    '" type="button" data-zoom="' +
+                    escape(key) +
+                    '" data-sample-title="' +
+                    title +
+                    '" aria-label="' +
+                    escape(shot.caption + ' 크게 보기') +
+                    '">' +
+                    cropHTML(shot, false) +
+                    '</button>';
+                if (task.id === 'wallpaper') {
+                    return (
+                        '<div class="sample-phone" aria-label="잠금화면 미리보기"><div class="sample-phone-screen"><span class="sample-island" aria-hidden="true"></span>' +
+                        '<span class="sample-clock" aria-hidden="true">9:41</span>' +
+                        button +
+                        '<span class="sample-home-indicator" aria-hidden="true"></span></div></div>'
+                    );
+                }
+                return key === 'home-control'
+                    ? '<div class="sample-control-row">' + button + '<span>왼쪽 버튼을 누르면</span>' + icon('chevron') + '</div>'
+                    : button;
+            })
+            .join('');
+        return (
+            '<div class="task-sample' +
+            (task.id === 'quickadd' ? ' task-sample-input' : '') +
+            '">' +
+            samples +
+            (task.id === 'quickadd'
+                ? '<div class="sample-task-result" aria-hidden="true"><span>밥먹기</span><span>놀기</span></div>'
+                : '') +
+            '</div><p class="task-sample-caption">' +
+            (task.id === 'wallpaper' ? '잠금화면 예시' : '/로 나누면, 할 일이 각각 저장돼요') +
+            '</p>'
+        );
+    }
     function home() {
         current = null;
         DOCK.hidden = true;
@@ -328,33 +382,59 @@
             resumeFlow = progress && flows.find((flow) => flow.id === progress.flow),
             resumeIndex = resumeFlow ? resumeFlow.steps.findIndex((step) => step.id === progress.step) : -1;
         const tasks = [
-            {id: 'wallpaper', title: '근무표 띄우기', helper: '자동 갱신 포함', icon: 'calendar'},
-            {id: 'quickadd', title: '할 일 버튼 추가', helper: '자동 갱신 포함', icon: 'add'},
+            {
+                id: 'wallpaper',
+                title: '근무표 띄우기',
+                helper: '근무·일정·할 일을 한눈에',
+                icon: '/help/lockscreen/assets/calendar-3d.webp',
+                order: '01',
+                lead: '처음 한 번 설정',
+                action: '근무표 설정하기',
+            },
+            {
+                id: 'quickadd',
+                title: '할 일 버튼 추가',
+                helper: '잠금화면에서 바로 입력',
+                icon: '/help/lockscreen/assets/tasks-3d.webp',
+                order: '02',
+                lead: '근무표 설정 후',
+                action: '버튼 추가하기',
+            },
         ];
         const taskLinks = tasks
-            .map((task, index) => {
+            .map((task) => {
                 const flow = flows.find((item) => item.id === task.id);
                 return flow
-                    ? '<a class="home-task' +
-                          (!index ? ' primary' : '') +
-                          '" href="' +
-                          escape(routeHash(flow, flow.steps[0])) +
-                          '"><span class="task-icon">' +
-                          icon(task.icon) +
-                          '</span><span class="task-copy"><strong>' +
+                    ? '<article class="home-task" aria-labelledby="task-' +
+                          task.id +
+                          '"><div class="task-heading"><div class="task-copy"><p class="task-order"><span>' +
+                          task.order +
+                          '</span> ' +
+                          task.lead +
+                          '</p><h2 id="task-' +
+                          task.id +
+                          '">' +
                           task.title +
-                          '</strong>' +
-                          (task.helper ? '<small>' + task.helper + '</small>' : '') +
-                          '</span><span class="task-chevron">' +
+                          '</h2><p class="task-description">' +
+                          task.helper +
+                          '</p></div>' +
+                          '<img class="task-art" src="' +
+                          task.icon +
+                          '" width="96" height="96" alt="" decoding="async"></div>' +
+                          homeSampleHTML(task) +
+                          '<a class="task-start" href="' +
+                          escape(routeHash(flow, flow.steps[0])) +
+                          '" aria-label="' +
+                          escape(task.title + ' 설정하기') +
+                          '">' +
+                          task.action +
                           icon('chevron') +
-                          '</span></a>'
+                          '</a></article>'
                     : '';
             })
             .join('');
         MAIN.innerHTML =
-            '<section class="home"><div class="home-layout"><div class="home-content"><p class="eyebrow">아이폰 잠금화면</p><h1>무엇을<br>설정할까요?</h1><nav class="home-tasks" aria-label="설정할 기능">' +
-            taskLinks +
-            '</nav>' +
+            '<section class="home"><header class="home-intro"><p class="eyebrow">아이폰 · 듀팅 가이드</p><h1>잠금화면,<br>이렇게 설정해요.</h1></header>' +
             (resumeIndex >= 0
                 ? '<button class="resume" type="button" id="resume">이어서 설정하기<span>' +
                   escape(resumeFlow.title) +
@@ -362,10 +442,13 @@
                   (resumeIndex + 1) +
                   '단계</span></button>'
                 : '') +
-            '<details class="home-help"><summary>시작 전 확인</summary><ul><li>iPhone · iOS 18 이상</li><li>듀팅 로그인과 이번 달 근무표가 필요해요.</li><li>사진 배경을 준비하고 Safari에서 진행해 주세요.</li></ul></details></div><figure class="home-preview">' +
-            iphoneHTML('home-device') +
-            '</figure></div></section>';
+            '<nav class="home-tasks" aria-label="설정할 기능">' +
+            taskLinks +
+            '</nav><details class="home-help"><summary>시작 전 확인</summary><ul><li>iPhone · iOS 18 이상</li><li>듀팅 로그인과 이번 달 근무표가 필요해요.</li><li>사진 배경을 준비하고 Safari에서 진행해 주세요.</li></ul></details></section>';
         if (resumeIndex >= 0) $('resume').addEventListener('click', () => go(resumeFlow, resumeIndex));
+        MAIN.querySelectorAll('[data-zoom]').forEach((button) =>
+            button.addEventListener('click', () => showZoom(button.dataset.zoom, button, button.dataset.sampleTitle)),
+        );
     }
     function topHTML(flow, index) {
         const phaseLabel = flow.steps[index]?.phase === 'refresh' ? ' · 자동 갱신' : '';
@@ -398,8 +481,13 @@
         saveProgress(flow, step);
         const keys = step.shots || [step.shot].filter(Boolean);
         let media = keys.map((key) => shotHTML(key)).join('');
-        if (step.preview || step.id === 'ready') media = iphoneHTML() + media;
+        if (step.preview || step.id === 'ready') {
+            const sample = DATA.homeSamples?.wallpaper?.[0];
+            media = (sample ? shotHTML(sample) : iphoneHTML()) + media;
+        }
         const noMedia = !media;
+        const symbol = stepIcon(flow, step);
+        const appSymbol = symbol.endsWith('-app');
         const settings = step.id === 'ready' ? null : step.settings?.filter((row) => row[1] !== step.copy);
         MAIN.innerHTML =
             '<section class="tutorial">' +
@@ -407,7 +495,7 @@
             '<div class="step-layout' +
             (noMedia ? ' no-media' : '') +
             '"><div class="step-copy">' +
-            (noMedia ? '<div class="step-symbol">' + icon(stepIcon(flow, step)) + '</div>' : '') +
+            (noMedia || appSymbol ? '<div class="step-symbol' + (appSymbol ? ' app-symbol' : '') + '">' + icon(symbol) + '</div>' : '') +
             '<h1 class="step-title" id="step-title" tabindex="-1">' +
             escape(step.title) +
             '</h1>' +
@@ -422,13 +510,7 @@
                   escape(step.copy) +
                   '</strong><button class="copy-button" id="copy" type="button">복사</button></div></div>'
                 : '') +
-            (step.note
-                ? '<details class="step-help"><summary>' +
-                  escape(step.noteTitle || '도움이 필요해요') +
-                  '</summary><div>' +
-                  step.note +
-                  '</div></details>'
-                : '') +
+            noteHTML(step) +
             (step.example ? '<details class="step-help"><summary>입력 연습하기</summary>' + exampleHTML() + '</details>' : '') +
             '</div>' +
             (media ? '<div class="step-media">' + media + '</div>' : '') +
@@ -463,21 +545,29 @@
     }
     function finish(flow) {
         current = {flow, index: flow.steps.length, step: null};
+        try {
+            localStorage.removeItem(KEY);
+        } catch (e) {}
         DOCK.hidden = true;
         document.body.dataset.view = 'done';
         document.title = '설정 안내 완료 · 듀팅';
-        const run = flow.completionAction || {
-            label: flow.id === 'quickadd' ? '할 일 입력하기' : '잠금화면 갱신하기',
-            href: 'shortcuts://run-shortcut?name=' + encodeURIComponent(flow.id === 'quickadd' ? '듀팅 할 일 추가' : '듀팅 배경 갱신'),
-        };
+        const run = flow.completionAction || {label: '듀팅 홈 열기', href: 'dutying://home'};
+        const instruction = flow.id === 'quickadd' ? '잠금화면 왼쪽 버튼을 꾹 눌러보세요.' : '아이폰을 잠가 근무표를 확인하세요.';
         MAIN.innerHTML =
             '<section class="tutorial">' +
             topHTML(flow, flow.steps.length - 1) +
             '<div class="done-view"><div class="done-symbol">' +
             icon('check') +
-            '</div><h1 class="step-title" id="step-title" tabindex="-1">설정 안내를 마쳤어요</h1><p class="done-caption">단축어를 실행해 잠금화면을 확인해 보세요.</p>' +
+            '</div><h1 class="step-title" id="step-title" tabindex="-1">설정 안내를 마쳤어요</h1><p class="done-caption">' +
+            instruction +
+            '</p>' +
             actionHTML(run) +
-            '<div class="done-next"><a href="#">다른 기능 설정하기</a></div><details class="step-help"><summary>도움이 필요해요</summary><div>화면이 그대로라면 듀팅에서 이번 달 근무표를 확인하고 다시 갱신해 주세요.</div></details></div></section>';
+            '<div class="done-next"><a href="#">다른 기능 설정하기</a>' +
+            (flow.id === 'wallpaper' &&
+            (decision('refresh-method') || choiceDefinitions.get('refresh-method')?.fallback) !== 'notifications'
+                ? '<a href="#wallpaper/notification-configure">알림 방식 안내 보기</a>'
+                : '') +
+            '</div><details class="step-help"><summary>도움이 필요해요</summary><div>화면이 그대로라면 듀팅에서 이번 달 근무표를 확인하고 다시 갱신해 주세요.</div></details></div></section>';
         $('show-contents').onclick = () => showContents(flow, flow.steps.length - 1);
         $('announcement').textContent = flow.title + ' 설정 안내를 마쳤어요.';
     }
@@ -504,11 +594,11 @@
             .forEach((link) => link.addEventListener('click', () => $('contents').close()));
         $('contents').showModal();
     }
-    function showZoom(key, trigger) {
+    function showZoom(key, trigger, title) {
         const shot = DATA.shots?.[key];
         if (!shot) return;
         zoomTrigger = trigger;
-        $('zoom-title').textContent = current?.step?.title || '설정 화면';
+        $('zoom-title').textContent = title || current?.step?.title || '설정 화면';
         $('zoom-body').innerHTML = cropHTML(shot, false);
         $('zoom').showModal();
     }
@@ -552,10 +642,26 @@
         } catch (e) {
             parts = [];
         }
-        if (parts[0] === 'auto') {
-            const route = canonicalRoute(parts[0], parts[1]);
+        const route = canonicalRoute(parts[0], parts[1]);
+        if (route.flow !== parts[0] || route.step !== parts[1]) {
             parts = [route.flow, route.step];
             history.replaceState(history.state, '', '#' + parts.map(encodeURIComponent).join('/'));
+        }
+        // New setups use app-close plus a daily trigger. Old notification routes remain available.
+        if (parts[0] === 'wallpaper' && parts[1] === 'ready') {
+            decisions['refresh-method'] = 'manual';
+            try {
+                localStorage.setItem(CHOICE_KEY, JSON.stringify(decisions));
+            } catch (e) {}
+            flows = visibleFlows();
+        }
+        const branch = rawFlows.find((item) => item.id === parts[0])?.steps.find((step) => step.id === parts[1])?.branch;
+        if (branch && decision(branch.key) !== branch.value) {
+            decisions[branch.key] = branch.value;
+            try {
+                localStorage.setItem(CHOICE_KEY, JSON.stringify(decisions));
+            } catch (e) {}
+            flows = visibleFlows();
         }
         const flow = flows.find((item) => item.id === parts[0]);
         if (flow && parts[1] === 'done') finish(flow);

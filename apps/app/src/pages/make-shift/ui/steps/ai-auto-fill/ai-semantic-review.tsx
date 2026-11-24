@@ -182,6 +182,7 @@ export function AiSemanticReview({
                     'INVALID_CONDITION_EDIT',
                     'SCHEMA_INVALID',
                     'MODEL_TIMEOUT',
+                    'INTERPRET_TIMEOUT',
                 ].includes(code),
             ));
     const retry = failed && semanticRecovery(plan) === 'retry';
@@ -529,7 +530,7 @@ export function AiSemanticReview({
                                 )}
                             </button>
                         )}
-                        {failed && !retry && onEditSchedule && (
+                        {failed && onEditSchedule && (
                             <button type="button" className={secondary} disabled={disabled} onClick={onEditSchedule}>
                                 {t('aiAutofillUi.conversationEntry.editSchedule')}
                             </button>

@@ -6064,8 +6064,19 @@ describe('intent-first sidebar integration', () => {
         ];
         renderSidebar();
         expect(await screen.findByText('기존 배정을 유지하고 빈 칸을 먼저 채울까요?')).toBeVisible();
-        expect(screen.getByPlaceholderText(i18n.t('aiConversationSidebar.describeChanges'))).toBeEnabled();
+        const reply = screen.getByPlaceholderText(i18n.t('aiConversationSidebar.describeChanges'));
+        expect(reply).toBeEnabled();
         expect(mocks.execute).not.toHaveBeenCalled();
+
+        await userEvent.type(reply, '기존 배정은 유지하고 이번 달 전체의 빈 칸을 채워 줘');
+        await userEvent.click(screen.getByRole('button', {name: i18n.t('aiAdjust.send')}));
+        await waitFor(() => expect(mocks.execute).toHaveBeenCalledOnce());
+        expect(mocks.execute.mock.calls[0]![1]).toMatchObject({
+            operationType: 'GENERATE',
+            fillPolicy: 'EMPTY_ONLY',
+            rebuildConfirmed: false,
+        });
+        expect(mocks.interpret).not.toHaveBeenCalled();
     });
 
 });

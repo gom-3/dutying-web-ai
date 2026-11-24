@@ -72,7 +72,14 @@ export function isIncompleteRevision(text: string): boolean {
 
 /** The entire command must authorize only filling empty cells. */
 export function isEmptyOnlyFillCommand(text: string): boolean {
-    return /^(?:(?:수락(?:된|한)\s*)?(?:원티드|신청\s*근무|신청\s*휴무)(?:\s*한\s*(?:거|것))?(?:는|은|을|를)?\s*(?:그대로\s*두고|유지하고|보존하고)\s*[,，]?\s*)?빈\s*칸(?:만|을)?\s*채워\s*(?:줘요?|주세요)[.!。]?$/u.test(text.trim());
+    const command = text.trim();
+    if (/^fill this month[’']s blanks and keep existing assignments[.!]?$/iu.test(command)) return true;
+    if (/^기존 배정은 유지하고 이번 달 전체의 빈 칸을 채워 줘[.!。]?$/u.test(command)) return true;
+    if (/^既存の割り当てを維持して今月全体の空欄を埋めて[。！!]?$/u.test(command)) return true;
+
+    return /^(?:(?:수락(?:된|한)\s*)?(?:원티드|신청\s*근무|신청\s*휴무)(?:\s*한\s*(?:거|것))?(?:는|은|을|를)?\s*(?:그대로\s*두고|유지하고|보존하고)\s*[,，]?\s*)?빈\s*칸(?:만|을)?\s*채워\s*(?:줘요?|주세요)[.!。]?$/u.test(
+        command,
+    );
 }
 
 /** Only standalone generation commands; extra conditions and negation require interpretation. */

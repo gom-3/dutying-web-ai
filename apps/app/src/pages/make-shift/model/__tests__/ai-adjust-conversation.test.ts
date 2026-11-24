@@ -1,6 +1,12 @@
 import {describe, expect, it} from 'vitest';
 import type {TDutyDoc} from '@/features/shift-editor';
-import {describeAdjustChanges, isPlainAutofillCommand, mergeAdjustPatch, prepareAdjustDoc} from '../ai-adjust-conversation';
+import {
+    describeAdjustChanges,
+    isEmptyOnlyFillCommand,
+    isPlainAutofillCommand,
+    mergeAdjustPatch,
+    prepareAdjustDoc,
+} from '../ai-adjust-conversation';
 
 const doc: TDutyDoc = {
     columns: ['2026-10-01', '2026-10-02'],
@@ -72,4 +78,23 @@ describe('standalone autofill commands', () => {
             expect(isPlainAutofillCommand(text)).toBe(false);
         },
     );
+});
+
+describe('explicit replies to the missing-input question', () => {
+    it.each([
+        '기존 배정은 유지하고 이번 달 전체의 빈 칸을 채워 줘',
+        'Fill this month’s blanks and keep existing assignments',
+        '既存の割り当てを維持して今月全体の空欄を埋めて',
+    ])('recognizes %s as permission to fill blanks only', (reply) => {
+        expect(isEmptyOnlyFillCommand(reply)).toBe(true);
+    });
+
+    it.each([
+        '기존 배정은 유지하고 이번 달 전체의 빈 칸을 채워 줘. 12일 휴무는 빼 줘',
+        'Do not fill this month’s blanks and keep existing assignments',
+        '기존 배정은 유지하고 빈 칸을 채워 줘',
+        '既存の割り当てを維持して今月全体の空欄を埋めて、12日は変更して',
+    ])('keeps %s in interpretation', (reply) => {
+        expect(isEmptyOnlyFillCommand(reply)).toBe(false);
+    });
 });

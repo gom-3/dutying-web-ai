@@ -37,7 +37,7 @@ import {loadToss, openTossBilling} from '@/features/commercial/toss-sdk';
 import {wardBillingPath} from '@/features/commercial/ward-billing-path';
 import {getWardClosurePath, WARD_CLOSURE_HASH} from '@/features/commercial/ward-closure-path';
 import {getOwnedWardLinkScope} from '@/features/commercial/ward-links';
-import {RefundConditions, SubscriptionConditions, fetchPublicOffer} from '@/pages/subscription-info';
+import {fetchPublicOffer} from '@/pages/subscription-info';
 import {WardAPI} from '@/shared/api';
 import {sellerReady, SUBSCRIPTION_TERMS_VERSION} from '@/shared/business/profile';
 import ROUTE from '@/shared/constant/path';
@@ -47,14 +47,8 @@ import {HospitalOverview} from './hospital-overview';
 import {HospitalWorkspaceShell} from './hospital-workspace-shell';
 import {InfoTip} from './info-tip';
 import {PlusAddons} from './plus-addons';
-import {
-    PlusCheckoutConsent,
-    PlusCheckoutPlan,
-    PlusCheckoutPolicyChevron,
-    PlusCheckoutProgress,
-    PlusCheckoutReviewSummary,
-    PlusCheckoutTermsLinks,
-} from './plus-checkout';
+import {PlusCheckoutConsent, PlusCheckoutPlan, PlusCheckoutProgress, PlusCheckoutReviewSummary} from './plus-checkout';
+import {PlusPaymentComplete} from './plus-payment-complete';
 import {PlusSubscriptionCancellation, PlusSubscriptionOverview} from './plus-subscription';
 import {Reauthenticate} from './reauthentication';
 import {UsageOverview} from './usage-overview';
@@ -1070,32 +1064,9 @@ export function BillingPanel({
                                             'Included uses expire at the cycle end. Purchased uses last 365 days and cannot be converted between meters. Cancellation takes effect at period end; existing data is preserved.',
                                         )}
                                     </Notice>
-                                ) : (
-                                    <>
-                                        <div className="plus-checkout-policies">
-                                            <details className="plus-checkout-legal">
-                                                <summary className="plus-checkout-policy-row">
-                                                    <span>{t('정기결제·해지 안내', 'Subscription and cancellation terms')}</span>
-                                                    <PlusCheckoutPolicyChevron />
-                                                </summary>
-                                                <div>
-                                                    <SubscriptionConditions />
-                                                </div>
-                                            </details>
-                                            <details className="plus-checkout-legal">
-                                                <summary className="plus-checkout-policy-row">
-                                                    <span>{t('환불정책', 'Refund policy')}</span>
-                                                    <PlusCheckoutPolicyChevron />
-                                                </summary>
-                                                <div>
-                                                    <RefundConditions />
-                                                </div>
-                                            </details>
-                                            <PlusCheckoutTermsLinks />
-                                        </div>
-                                        {emailVerificationRequired ? <Reauthenticate onVerified={setBillingProof} /> : null}
-                                    </>
-                                )}
+                                ) : emailVerificationRequired ? (
+                                    <Reauthenticate onVerified={setBillingProof} />
+                                ) : null}
                                 {scope.type === 'WARD' ? (
                                     <>
                                         {cardSubscription ? (
@@ -1241,8 +1212,18 @@ export function BillingPanel({
                                                 })
                                             }
                                         >
-                                            {t('동의하고 진행하기', 'Agree & continue')}
+                                            {cardSubscription
+                                                ? t('동의하고 카드 등록하기', 'Agree & register card')
+                                                : t('동의하고 진행하기', 'Agree & continue')}
                                         </button>
+                                        {cardSubscription ? (
+                                            <p className="plus-checkout-next">
+                                                {t(
+                                                    '카드 등록 후 첫 결제 화면에서 금액을 확인해요.',
+                                                    'Review the first payment after registering your card.',
+                                                )}
+                                            </p>
+                                        ) : null}
                                         {cardSubscription && emailVerificationRequired && !billingProof ? (
                                             <p className="plus-checkout-next" role="status">
                                                 {t(
@@ -2217,46 +2198,66 @@ export function BillingReturn({
     // A delayed status read must not downgrade an application confirmed by the server.
     const current = appliedOrder ?? order.data;
     const applied = current?.status === 'APPLIED';
+    const awaitingPayment = !!current && isUnsubmittedPayment(current);
+    const checkingPayment = !!current && isPendingPayment(current) && !awaitingPayment;
+    const failedPayment = current?.status === 'FAILED';
+    const authorizationMissing = !authorization || !customerKey || !registration;
     const summary = parseSubscriptionSummary(current?.subscriptionSummary);
     const invalidSummary = !!current?.subscriptionSummary && !summary;
+    const needsRecovery =
+        !!id &&
+        !!current &&
+        !applied &&
+        !failedPayment &&
+        !order.isError &&
+        !invalidSummary &&
+        (checkingPayment || !awaitingPayment || authorizationMissing || !!callbackError);
+    const billingDay = (value: string) =>
+        new Intl.DateTimeFormat(t('ko-KR', 'en-GB'), {
+            timeZone: 'Asia/Seoul',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+        }).format(quoteTimestamp(value));
 
     useEffect(() => {
         // Keep only the nonsensitive order identifier so a refresh can recover payment status.
         window.history.replaceState(window.history.state, '', location.pathname + (id ? `?orderId=${encodeURIComponent(id)}` : ''));
     }, [location.pathname, id]);
 
+    if (applied && current) return <PlusPaymentComplete order={current} backPath={backPath} />;
+
     return (
         <Section
-            title={id ? t('Plus 첫 결제 확인', 'Confirm first Plus payment') : t('자동결제 등록 확인', 'Confirm renewal registration')}
+            title={id ? t('Plus 구독하기', 'Subscribe to Plus') : t('자동결제 등록 확인', 'Confirm renewal registration')}
+            className={id ? 'plus-payment-confirmation' : undefined}
         >
             {id ? <PlusCheckoutProgress payment /> : null}
-            <Notice>
-                {id
-                    ? applied
-                        ? t(
-                              '결제와 Plus 적용이 완료되었습니다. 등록한 카드로 매월 자동 갱신합니다.',
-                              'Payment and Plus activation are complete. Your registered card will be charged monthly.',
-                          )
-                        : callbackError
-                          ? t(
-                                '카드 등록이 완료되지 않았습니다. 아래 안내를 확인해 주세요.',
-                                'Card registration was not completed. Review the details below.',
-                            )
-                          : ['PROCESSING', 'UNKNOWN', 'PAID_PENDING_APPLICATION'].includes(current?.status ?? '')
-                            ? t('결제 결과를 확인하고 있습니다.', 'Checking the payment result.')
-                            : current?.status === 'FAILED'
-                              ? t('결제가 완료되지 않았습니다.', 'The payment did not complete.')
-                              : t(
-                                    '카드 인증만으로 결제가 완료되지 않습니다. 아래에서 금액을 확인하고 첫 결제를 완료해 주세요.',
-                                    'Card authorization alone does not complete your subscription. Review and confirm the first charge below.',
-                                )
-                    : done
-                      ? t('등록되었습니다. 현재 계약의 다음 갱신일부터 사용합니다.', 'Registered for the next renewal.')
-                      : t('카드 인증 결과를 서버에서 확인한 뒤 등록합니다.', 'The server verifies card authorization before registration.')}
-            </Notice>
+            {!id ? (
+                <Notice>
+                    {done
+                        ? t('등록되었습니다. 현재 계약의 다음 갱신일부터 사용합니다.', 'Registered for the next renewal.')
+                        : t(
+                              '카드 인증 결과를 서버에서 확인한 뒤 등록합니다.',
+                              'The server verifies card authorization before registration.',
+                          )}
+                </Notice>
+            ) : checkingPayment ? (
+                <p className="plus-payment-confirmation__status" role="status">
+                    {current.status === 'PAID_PENDING_APPLICATION'
+                        ? t('결제가 완료되어 Plus를 적용하고 있어요.', 'Payment is complete. Activating Plus.')
+                        : t('결제 결과를 확인하고 있어요.', 'Checking your payment result.')}
+                </p>
+            ) : failedPayment ? (
+                <p className="plus-payment-confirmation__status" role="status">
+                    {t('결제를 완료하지 못했어요. 다시 시도해 주세요.', 'Payment did not complete. Please try again.')}
+                </p>
+            ) : null}
             {current && (
-                <p>
-                    {t('이번 결제금액', 'Due now')}: {money(current.gross)}
+                <p className="plus-payment-confirmation__amount">
+                    <span>{t('이번 결제금액', 'Due now')}</span>
+                    <strong>{money(current.gross)}</strong>
+                    <small>{t('부가세 포함', 'VAT included')}</small>
                 </p>
             )}
             {summary ? (
@@ -2268,12 +2269,12 @@ export function BillingReturn({
                     <div>
                         <dt>{t('이용기간', 'Service period')}</dt>
                         <dd>
-                            {date(summary.periodStart)} ~ {date(summary.periodEnd)} (KST)
+                            {billingDay(summary.periodStart)} ~ {billingDay(summary.periodEnd)}
                         </dd>
                     </div>
                     <div>
                         <dt>{t('다음 결제일', 'Next payment date')}</dt>
-                        <dd>{date(summary.periodEnd)} (KST)</dd>
+                        <dd>{billingDay(summary.periodEnd)}</dd>
                     </div>
                     <div>
                         <dt>{t('월 자동결제 금액 · 부가세 포함', 'Monthly automatic charge · VAT included')}</dt>
@@ -2289,119 +2290,131 @@ export function BillingReturn({
                     )}
                 </p>
             ) : null}
-            {current && ['PROCESSING', 'UNKNOWN', 'PAID_PENDING_APPLICATION'].includes(current.status) && (
-                <Notice>
-                    {t(
-                        '기존 결제 결과를 확인 중입니다. 새로 결제하지 말고 결과 조회를 이용해 주세요.',
-                        'The existing payment is being reconciled. Check its status instead of paying again.',
-                    )}
-                </Notice>
-            )}
-            {current?.status === 'FAILED' && (
-                <Notice>
-                    {t(
-                        '결제가 완료되지 않았습니다. 결제내역을 확인한 뒤 병동 결제 메뉴에서 새로 시작해 주세요.',
-                        'The payment did not complete. Review payment history, then restart from ward billing.',
-                    )}
-                </Notice>
-            )}
             {callbackError && (
-                <p role="alert">
-                    {callbackError === 'PAY_PROCESS_CANCELED'
-                        ? t(
-                              '카드 등록을 취소했습니다. 새 결제는 진행하지 않았습니다.',
-                              'Card registration was canceled. No new payment was submitted.',
-                          )
-                        : callbackError === 'INVALID_CARD_NUMBER'
-                          ? t(
-                                '카드번호가 올바르지 않거나 지원하지 않는 카드입니다. 아래에서 미결제 주문을 취소한 후 카드번호를 확인하고 다시 등록해 주세요.',
-                                'The card number is invalid or unsupported. Cancel the unpaid order below, then check the number and register again.',
-                            )
-                          : t(
-                                '카드 인증을 완료하지 못했습니다. 카드 정보를 확인하고 다시 시도해 주세요.',
-                                'Card authorization failed. Check your card details and try again.',
-                            )}
+                <p
+                    className="plus-payment-confirmation__alert"
+                    data-tone={callbackError === 'PAY_PROCESS_CANCELED' ? 'neutral' : 'error'}
+                    role="alert"
+                >
+                    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <path fillRule="evenodd" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm-1 5h2v6h-2V7Zm0 8h2v2h-2v-2Z" />
+                    </svg>
+                    <span>
+                        {callbackError === 'PAY_PROCESS_CANCELED'
+                            ? t(
+                                  '카드 등록을 취소했습니다. 새 결제는 진행하지 않았습니다.',
+                                  'Card registration was canceled. No new payment was submitted.',
+                              )
+                            : callbackError === 'INVALID_CARD_NUMBER'
+                              ? t(
+                                    '카드번호가 올바르지 않거나 지원하지 않는 카드입니다. 카드 정보를 확인하고 다시 등록해 주세요.',
+                                    'The card number is invalid or unsupported. Check your card details and register again.',
+                                )
+                              : t(
+                                    '카드 인증을 완료하지 못했습니다. 카드 정보를 확인하고 다시 시도해 주세요.',
+                                    'Card authorization failed. Check your card details and try again.',
+                                )}
+                    </span>
                 </p>
             )}
-            {authorization &&
-                customerKey &&
-                registration &&
-                !callbackError &&
-                !order.isError &&
-                !done &&
-                !applied &&
-                (!id || (current?.status === 'AWAITING_PAYMENT' && !current.provider)) && (
-                    <button
-                        disabled={
-                            action.busy ||
-                            invalidSummary ||
-                            (!!id && (!current || !Number.isSafeInteger(current.gross) || current.gross <= 0 || current.currency !== 'KRW'))
-                        }
-                        onClick={() =>
-                            void action.run(async () => {
-                                const body = {customerKey, authKey: authorization};
+            <div className={id ? 'plus-payment-confirmation__actions' : 'workspace-actions'}>
+                {authorization &&
+                    customerKey &&
+                    registration &&
+                    !callbackError &&
+                    !order.isError &&
+                    !done &&
+                    !applied &&
+                    (!id || awaitingPayment) && (
+                        <button
+                            type="button"
+                            className={id ? 'plus-payment-confirmation__primary' : undefined}
+                            aria-busy={action.busy || undefined}
+                            disabled={
+                                action.busy ||
+                                invalidSummary ||
+                                (!!id &&
+                                    (!current || !Number.isSafeInteger(current.gross) || current.gross <= 0 || current.currency !== 'KRW'))
+                            }
+                            onClick={() =>
+                                void action.run(async () => {
+                                    const body = {customerKey, authKey: authorization};
 
-                                if (id) {
-                                    try {
-                                        const payment = await commercialPost<Order>(`/orders/${id}/confirm-subscription`, {
-                                            ...body,
-                                            registrationId: registration,
-                                        });
+                                    if (id) {
+                                        try {
+                                            const payment = await commercialPost<Order>(`/orders/${id}/confirm-subscription`, {
+                                                ...body,
+                                                registrationId: registration,
+                                            });
 
-                                        client.setQueryData(commercialQueryKey(accountId, 'order', id), {
-                                            ...payment,
-                                            subscriptionSummary: payment.subscriptionSummary ?? current?.subscriptionSummary,
-                                        });
-
-                                        if (payment.status === 'APPLIED') {
-                                            setAppliedOrder({
+                                            client.setQueryData(commercialQueryKey(accountId, 'order', id), {
                                                 ...payment,
                                                 subscriptionSummary: payment.subscriptionSummary ?? current?.subscriptionSummary,
                                             });
-                                            setDone(true);
-                                            clearBillingReturnPayload();
+
+                                            if (payment.status === 'APPLIED') {
+                                                setAppliedOrder({
+                                                    ...payment,
+                                                    subscriptionSummary: payment.subscriptionSummary ?? current?.subscriptionSummary,
+                                                });
+                                                setDone(true);
+                                                clearBillingReturnPayload();
+                                            }
+                                        } finally {
+                                            // A failed HTTP response may still have submitted a charge.
+                                            // Refresh into reconciliation/declined state before another action.
+                                            await order.refetch();
                                         }
-                                    } finally {
-                                        // A failed HTTP response may still have submitted a charge.
-                                        // Refresh into reconciliation/declined state before another action.
-                                        await order.refetch();
+                                    } else {
+                                        await commercialPost(`/billing-registrations/${registration}/confirm`, body);
+                                        setDone(true);
+                                        clearBillingReturnPayload();
                                     }
-                                } else {
-                                    await commercialPost(`/billing-registrations/${registration}/confirm`, body);
-                                    setDone(true);
-                                    clearBillingReturnPayload();
-                                }
-                            })
-                        }
-                    >
-                        {id
-                            ? `${current && Number.isSafeInteger(current.gross) ? t(`${current.gross.toLocaleString('ko-KR')}원`, money(current.gross)) : ''} ${t('결제하고 Plus 시작', 'Pay & start Plus')}`
-                            : t('확인하고 등록 완료', 'Verify & finish registration')}
-                    </button>
+                                })
+                            }
+                        >
+                            {id
+                                ? action.busy
+                                    ? t('결제 중…', 'Processing payment…')
+                                    : t('결제 완료하기', 'Complete payment')
+                                : t('확인하고 등록 완료', 'Verify & finish registration')}
+                        </button>
+                    )}
+                {needsRecovery && !action.busy && (
+                    <Link className="workspace-button secondary" to={`${paymentReturnPath}?orderId=${encodeURIComponent(id)}`}>
+                        {t('결제 상태 확인', 'Check payment status')}
+                    </Link>
                 )}
-            {id && (
-                <Link className="workspace-button secondary" to={`${paymentReturnPath}?orderId=${encodeURIComponent(id)}`}>
-                    {t('결제 결과 재조회·미결제 주문 취소', 'Check payment status or cancel an unsubmitted order')}
-                </Link>
-            )}
-            {(!authorization || !customerKey || !registration) && !applied && !callbackError && (
+                {id && failedPayment && !order.isError && (
+                    <Link className="workspace-button" to={backPath}>
+                        {t('다시 시도하기', 'Try again')}
+                    </Link>
+                )}
+                {order.isError || invalidSummary ? (
+                    <button type="button" className="secondary" disabled={order.isFetching} onClick={() => void order.refetch()}>
+                        {t('결제 상태 다시 확인', 'Recheck payment status')}
+                    </button>
+                ) : null}
+                {!id || !failedPayment ? (
+                    <Link className={id ? 'plus-payment-confirmation__back' : undefined} to={backPath}>
+                        {id
+                            ? t('돌아가기', 'Go back')
+                            : backPath.startsWith('/billing')
+                              ? t('요금제·결제로', 'Back to billing')
+                              : t('관리 공간으로', 'Back to workspaces')}
+                    </Link>
+                ) : null}
+            </div>
+            {authorizationMissing && !applied && !callbackError && (!id || awaitingPayment) && (
                 <p>
                     {t(
-                        '인증 정보가 없으면 새로 청구하지 않습니다. 결제 결과를 먼저 확인해 주세요.',
-                        'No new charge is submitted without authorization. Check payment status first.',
+                        '카드 등록 정보를 확인하지 못했습니다. 다시 등록해 주세요.',
+                        'Unable to verify card registration. Please register again.',
                     )}
                 </p>
             )}
             <ErrorView error={order.error} />
-            {order.isError || invalidSummary ? (
-                <button type="button" className="secondary" disabled={order.isFetching} onClick={() => void order.refetch()}>
-                    {t('결제 상태 다시 확인', 'Recheck payment status')}
-                </button>
-            ) : null}
             <ActionsFeedback action={action} />
-            <Link to={backPath}>
-                {backPath.startsWith('/billing') ? t('요금제·결제로', 'Back to billing') : t('관리 공간으로', 'Back to workspaces')}
-            </Link>
         </Section>
     );
 }

@@ -75,7 +75,11 @@
             "review": "审查排班表",
             "summary": "排班表没有改变。",
             "openChat": "打开对话",
-            "pairedNightStaffingEvidence": "按当前人数条件，{{date}} 的 {{night}} 至少需要 {{minimumNight}} 人，其中最多 {{maximumContinuation}} 人可在 {{nextDate}} 转为 {{continuation}}。因此至少 {{minimumRepeats}} 人需要连续上 {{night}}。"
+            "pairedNightStaffingEvidence": "按当前人数条件，{{date}} 的 {{night}} 至少需要 {{minimumNight}} 人，其中最多 {{maximumContinuation}} 人可在 {{nextDate}} 转为 {{continuation}}。因此至少 {{minimumRepeats}} 人需要连续上 {{night}}。",
+            "requestedStaffingFixedShortfall": "{{date}} · {{shift}}：保留固定排班时，指定人员中最多可安排 {{maximum}} 人，少于要求的最低人数 {{minimum}} 人。你想怎样调整当天的人数下限？",
+            "requestedStaffingFixedExactShortfall": "{{date}} · {{shift}}：保留固定排班时，指定人员中最多可安排 {{maximum}} 人，无法达到指定的恰好 {{minimum}} 人。你想怎样调整当天的人数要求？",
+            "monthlyShiftBoundsConflict": "同一个月内，至少排 {{minimum}} 个班次和最多排 {{maximum}} 个班次这两个条件无法同时满足。你想修改哪一个条件？",
+            "monthlyRestTargetStaffingShortfall": "如果这组 {{groupCount}} 名护士维持每月休息目标，最多可安排 {{maximum}} 个班次。要满足人员要求，至少需要 {{required}} 个班次，还差 {{shortage}} 个。"
         },
         "title": "AI 自动排班",
         "allFixed": "所有更改都已固定,不修复更改,然后再试一次。",

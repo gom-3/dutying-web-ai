@@ -70,6 +70,14 @@ export const aiAdjustKo = {
         combinedConflictNext:
             '위 조건을 함께 확인해 주세요. 다른 조건까지 지키는 변경안은 아직 찾지 못했어요. 설정이나 요청을 수정해 주세요. 근무표와 설정은 변경되지 않았어요.',
 
+        requestedStaffingFixedShortfall:
+            '{{date}} · {{shift}}: 고정 배정을 유지하면 요청 대상에서 최대 {{maximum}}명까지 배정할 수 있어요. 요청한 최소 인원은 {{minimum}}명이에요. 이 날짜의 최소 인원을 어떻게 조정할까요?',
+        requestedStaffingFixedExactShortfall:
+            '{{date}} · {{shift}}: 고정 배정을 유지하면 요청 대상에서 최대 {{maximum}}명까지 배정할 수 있어요. 요청하신 인원은 정확히 {{minimum}}명이에요. 이 날짜의 인원 조건을 어떻게 조정할까요?',
+        monthlyShiftBoundsConflict:
+            '같은 달에 최소 {{minimum}}회와 최대 {{maximum}}회를 동시에 맞출 수 없어요. 월 근무 횟수 조건 중 어느 쪽을 수정할까요?',
+        monthlyRestTargetStaffingShortfall:
+            '대상 간호사 {{groupCount}}명의 월 휴무 목표를 유지하면 근무를 최대 {{maximum}}회 배정할 수 있어요. 요청한 인원을 채우려면 최소 {{required}}회가 필요해 {{shortage}}회 부족해요.',
         staffingConflict: '{{date}} · {{shift}}: 같은 대상에 최소 {{minimum}}명과 최대 {{maximum}}명을 동시에 요구하고 있어요.',
         monthlyCapacity:
             '휴무와 근무 횟수 조건을 함께 지키려면 {{shifts}} 근무를 최소 {{minimum}}회 배정해야 해요. 날짜별 최대 인원으로는 {{maximum}}회만 배정할 수 있어 {{difference}}회가 부족해요.',
@@ -540,6 +548,14 @@ export const aiAdjustEn = {
         combinedConflictNext:
             'These conditions need to be resolved together. No proposal that satisfies the remaining required conditions has been verified yet. Edit settings or change your request. Your schedule and settings have not changed.',
 
+        requestedStaffingFixedShortfall:
+            '{{date}} · {{shift}}: Keeping fixed assignments allows at most {{maximum}} people in the requested group. The requested minimum is {{minimum}}. How should the minimum for this date change?',
+        requestedStaffingFixedExactShortfall:
+            '{{date}} · {{shift}}: Keeping fixed assignments allows at most {{maximum}} people in the requested group. The request specifies exactly {{minimum}}. How should the staffing requirement for this date change?',
+        monthlyShiftBoundsConflict:
+            'This month cannot meet a minimum of {{minimum}} shifts and a maximum of {{maximum}} shifts at the same time. Which monthly shift limit should change?',
+        monthlyRestTargetStaffingShortfall:
+            'If the {{groupCount}} nurses in this group keep their monthly rest targets, they can cover at most {{maximum}} shifts. The staffing request needs at least {{required}} shifts, a shortfall of {{shortage}}.',
         staffingConflict: '{{date}} · {{shift}}: the same group requires at least {{minimum}} and at most {{maximum}} people at once.',
         monthlyCapacity:
             'Your rest, eligible-shift and monthly shift limits require at least {{minimum}} {{shifts}} assignments, but the daily staffing caps allow only {{maximum}} in total. The difference is {{difference}} assignments.',
