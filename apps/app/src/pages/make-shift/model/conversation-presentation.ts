@@ -153,7 +153,7 @@ export function requestTextForTurn(detail: TConversationDetail, turn: TConversat
 
 export function semanticRecovery(plan: TSemanticPlan): 'retry' | 'edit' {
     // A failed or invalid model response is not evidence that the same request will succeed.
-    return plan.reasonCodes.includes('MODEL_TIMEOUT') ? 'retry' : 'edit';
+    return plan.reasonCodes.some((code) => code === 'MODEL_TIMEOUT' || code === 'INTERPRET_TIMEOUT') ? 'retry' : 'edit';
 }
 
 export function clarificationQuestion(pending?: string, summary?: string): string | undefined {

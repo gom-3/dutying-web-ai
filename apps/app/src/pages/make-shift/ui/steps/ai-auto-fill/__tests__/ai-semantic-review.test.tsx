@@ -236,29 +236,34 @@ describe('request review actions', () => {
         expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
     });
 
-    it.each(['INVALID_CONDITION_EDIT', 'SCHEMA_INVALID', 'EXTRACTION_FAILED', 'UNKNOWN_FAILURE'])(
-        'offers revision or direct editing instead of repeating a failed request: %s',
-        async (reason) => {
-            const user = userEvent.setup();
-            const onEditSchedule = vi.fn();
-            const props = renderReview({plan: {...conflictPlan, state: 'FAILED', reasonCodes: [reason]}, onEditSchedule});
-
-            expect(screen.getByText('요청을 처리하지 못했어요.')).toBeVisible();
-            expect(screen.getByText(/어떤 근무를 어떻게 바꿀지 확인하지 못했어요/)).toHaveTextContent('근무표는 변경되지 않았어요.');
-            expect(screen.queryByRole('button', {name: '요청 다시 확인하기'})).not.toBeInTheDocument();
-            expect(screen.queryByRole('list')).not.toBeInTheDocument();
-            await user.click(screen.getByRole('button', {name: '요청 수정하기'}));
-            expect(props.onEdit).toHaveBeenCalledOnce();
-            await user.click(screen.getByRole('button', {name: '표 직접 수정하기'}));
-            expect(onEditSchedule).toHaveBeenCalledOnce();
-            expect(props.onRetry).not.toHaveBeenCalled();
-            expect(props.onApply).not.toHaveBeenCalled();
-        },
-    );
-
-    it('recovers a failed interpretation through retry without executing or condition selection', async () => {
+    it.each([
+        'INVALID_CONDITION_EDIT',
+        'SCHEMA_INVALID',
+        'EXTRACTION_FAILED',
+        'INVALID_RULE_SLOT',
+        'INVALID_INTENT_SHAPE',
+        'UNKNOWN_FAILURE',
+    ])('offers revision or direct editing instead of repeating a failed request: %s', async (reason) => {
         const user = userEvent.setup();
-        const props = renderReview({plan: {...conflictPlan, state: 'FAILED', reasonCodes: ['MODEL_TIMEOUT']}});
+        const onEditSchedule = vi.fn();
+        const props = renderReview({plan: {...conflictPlan, state: 'FAILED', reasonCodes: [reason]}, onEditSchedule});
+
+        expect(screen.getByText('요청을 처리하지 못했어요.')).toBeVisible();
+        expect(screen.getByText(/어떤 근무를 어떻게 바꿀지 확인하지 못했어요/)).toHaveTextContent('근무표는 변경되지 않았어요.');
+        expect(screen.queryByRole('button', {name: '요청 다시 확인하기'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('list')).not.toBeInTheDocument();
+        await user.click(screen.getByRole('button', {name: '요청 수정하기'}));
+        expect(props.onEdit).toHaveBeenCalledOnce();
+        await user.click(screen.getByRole('button', {name: '표 직접 수정하기'}));
+        expect(onEditSchedule).toHaveBeenCalledOnce();
+        expect(props.onRetry).not.toHaveBeenCalled();
+        expect(props.onApply).not.toHaveBeenCalled();
+    });
+
+    it.each(['MODEL_TIMEOUT', 'INTERPRET_TIMEOUT'])('offers retry and direct editing after %s', async (reason) => {
+        const user = userEvent.setup();
+        const onEditSchedule = vi.fn();
+        const props = renderReview({plan: {...conflictPlan, state: 'FAILED', reasonCodes: [reason]}, onEditSchedule});
 
         expect(screen.queryByText(conflictPlan.conditions[0].sourceSpan.quote)).not.toBeInTheDocument();
         expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
@@ -266,6 +271,8 @@ describe('request review actions', () => {
         expect(screen.getByText(/요청을 확인하는 시간이 길어져 중단됐어요/)).toBeVisible();
         await user.click(screen.getByRole('button', {name: '요청 다시 확인하기'}));
         expect(props.onRetry).toHaveBeenCalledOnce();
+        await user.click(screen.getByRole('button', {name: '표 직접 수정하기'}));
+        expect(onEditSchedule).toHaveBeenCalledOnce();
         expect(props.onApply).not.toHaveBeenCalled();
         expect(props.onEdit).not.toHaveBeenCalled();
     });
