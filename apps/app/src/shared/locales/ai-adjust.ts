@@ -72,6 +72,8 @@ export const aiAdjustKo = {
 
         requestedStaffingFixedShortfall:
             '{{date}} · {{shift}}: 고정 배정을 유지하면 요청 대상에서 최대 {{maximum}}명까지 배정할 수 있어요. 요청한 최소 인원은 {{minimum}}명이에요. 이 날짜의 최소 인원을 어떻게 조정할까요?',
+        requestedStaffingFixedExactShortfall:
+            '{{date}} · {{shift}}: 고정 배정을 유지하면 요청 대상에서 최대 {{maximum}}명까지 배정할 수 있어요. 요청하신 인원은 정확히 {{minimum}}명이에요. 이 날짜의 인원 조건을 어떻게 조정할까요?',
         monthlyShiftBoundsConflict:
             '같은 달에 최소 {{minimum}}회와 최대 {{maximum}}회를 동시에 맞출 수 없어요. 월 근무 횟수 조건 중 어느 쪽을 수정할까요?',
         staffingConflict: '{{date}} · {{shift}}: 같은 대상에 최소 {{minimum}}명과 최대 {{maximum}}명을 동시에 요구하고 있어요.',
@@ -546,6 +548,8 @@ export const aiAdjustEn = {
 
         requestedStaffingFixedShortfall:
             '{{date}} · {{shift}}: Keeping fixed assignments allows at most {{maximum}} people in the requested group. The requested minimum is {{minimum}}. How should the minimum for this date change?',
+        requestedStaffingFixedExactShortfall:
+            '{{date}} · {{shift}}: Keeping fixed assignments allows at most {{maximum}} people in the requested group. The request specifies exactly {{minimum}}. How should the staffing requirement for this date change?',
         monthlyShiftBoundsConflict:
             'This month cannot meet a minimum of {{minimum}} shifts and a maximum of {{maximum}} shifts at the same time. Which monthly shift limit should change?',
         staffingConflict: '{{date}} · {{shift}}: the same group requires at least {{minimum}} and at most {{maximum}} people at once.',

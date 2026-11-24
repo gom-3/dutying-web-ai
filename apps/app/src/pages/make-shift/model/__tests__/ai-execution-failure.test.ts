@@ -726,6 +726,15 @@ it('asks to revise a fixed daily staffing minimum instead of offering to change 
     expect(failure?.recovery).toBe('revise');
     expect(failure?.reviewFixed).toBeUndefined();
     expect(failure?.confirmationRequired).toBeUndefined();
+    response.engineResult!.conflictEvidence![0].operator = 'EXACT';
+    expect(aiExecutionFailure(response)?.message).toBe(
+        i18n.t('aiAdjust.executionFailure.requestedStaffingFixedExactShortfall', {
+            date: '2026-12-01',
+            shift: 'D',
+            maximum: 1,
+            minimum: 2,
+        }),
+    );
     response.engineResult!.conflictEvidence![0].maximumPossible = 2;
     expect(aiExecutionFailure(response)).toBeNull();
 });

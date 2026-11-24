@@ -76,6 +76,8 @@ export const aiAdjustJa = {
 
         requestedStaffingFixedShortfall:
             '{{date}}・{{shift}}：固定した勤務を維持すると、指定した対象から割り当てられるのは最大{{maximum}}人です。指定の最低人数は{{minimum}}人です。この日の最低人数をどう変更しますか？',
+        requestedStaffingFixedExactShortfall:
+            '{{date}}・{{shift}}：固定した勤務を維持すると、指定した対象から割り当てられるのは最大{{maximum}}人です。指定人数はちょうど{{minimum}}人です。この日の人数条件をどう変更しますか？',
         monthlyShiftBoundsConflict:
             '同じ月に最低{{minimum}}回と最大{{maximum}}回を同時に満たせません。月間勤務回数のどちらの条件を変更しますか？',
         staffingConflict: '{{date}}・{{shift}}：同じ対象に最低{{minimum}}名と最大{{maximum}}名が同時に指定されています。',

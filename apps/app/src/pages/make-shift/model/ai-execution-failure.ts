@@ -145,12 +145,17 @@ function requestedCountConflict(response: TAutofillResponse): TAiConversationFai
         : null;
     if (fixedShortfall)
         return {
-            message: i18n.t('aiAdjust.executionFailure.requestedStaffingFixedShortfall', {
-                date: fixedShortfall.date,
-                shift: String(fixedShortfall.shiftCode).slice(0, 32),
-                maximum: fixedShortfall.maximumPossible,
-                minimum: fixedShortfall.minimum,
-            }),
+            message: i18n.t(
+                fixedShortfall.operator === 'EXACT'
+                    ? 'aiAdjust.executionFailure.requestedStaffingFixedExactShortfall'
+                    : 'aiAdjust.executionFailure.requestedStaffingFixedShortfall',
+                {
+                    date: fixedShortfall.date,
+                    shift: String(fixedShortfall.shiftCode).slice(0, 32),
+                    maximum: fixedShortfall.maximumPossible,
+                    minimum: fixedShortfall.minimum,
+                },
+            ),
             blocked: false,
             conditionConflict: true,
             recovery: 'revise',
