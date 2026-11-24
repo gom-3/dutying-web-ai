@@ -74,6 +74,10 @@ export const aiAdjustJa = {
         combinedConflictNext:
             '上記の条件を一緒に解決する必要があります。他の必須条件も満たす修正案はまだ確認できていません。設定を直接変更するか、依頼を変更してください。勤務表と設定は変更されていません。',
 
+        requestedStaffingFixedShortfall:
+            '{{date}}・{{shift}}：固定した勤務を維持すると、指定した対象から割り当てられるのは最大{{maximum}}人です。指定の最低人数は{{minimum}}人です。この日の最低人数をどう変更しますか？',
+        monthlyShiftBoundsConflict:
+            '同じ月に最低{{minimum}}回と最大{{maximum}}回を同時に満たせません。月間勤務回数のどちらの条件を変更しますか？',
         staffingConflict: '{{date}}・{{shift}}：同じ対象に最低{{minimum}}名と最大{{maximum}}名が同時に指定されています。',
         monthlyCapacity:
             '休日数・勤務可能な種類・月間の勤務回数を守るには、{{shifts}}勤務が合計で最低{{minimum}}回必要ですが、日ごとの人数の上限では合計{{maximum}}回までしか配置できません。{{difference}}回の差があります。',

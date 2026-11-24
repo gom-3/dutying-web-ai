@@ -122,8 +122,69 @@ export function isGenerateReviewDraft(response: TAutofillResponse): boolean {
     );
 }
 
+function requestedCountConflict(response: TAutofillResponse): TAiConversationFailure | null {
+    if (response.applicable || response.changedCells?.length || response.candidate || response.conflictReview) return null;
+
+    const outcome = authoringOutcome(response);
+    if (outcome && outcome.draftState !== 'NONE') return null;
+
+    const evidence = response.engineResult?.conflictEvidence ?? response.engineResult?.solver?.conflictEvidence;
+    if (!Array.isArray(evidence)) return null;
+
+    const fixedShortfall = outcome?.reasonCodes?.includes('REQUESTED_STAFFING_FIXED_SHORTFALL')
+        ? evidence.find(
+              (issue) =>
+                  issue?.type === 'REQUESTED_STAFFING_FIXED_SHORTFALL' &&
+                  validDate(issue.date) &&
+                  typeof issue.shiftCode === 'string' &&
+                  issue.shiftCode.trim().length > 0 &&
+                  validCount(issue.maximumPossible) &&
+                  validCount(issue.minimum) &&
+                  issue.maximumPossible < issue.minimum,
+          )
+        : null;
+    if (fixedShortfall)
+        return {
+            message: i18n.t('aiAdjust.executionFailure.requestedStaffingFixedShortfall', {
+                date: fixedShortfall.date,
+                shift: String(fixedShortfall.shiftCode).slice(0, 32),
+                maximum: fixedShortfall.maximumPossible,
+                minimum: fixedShortfall.minimum,
+            }),
+            blocked: false,
+            conditionConflict: true,
+            recovery: 'revise',
+        };
+
+    const monthly = evidence.find(
+        (issue) =>
+            issue?.type === 'MONTHLY_SHIFT_BOUNDS_CONFLICT' &&
+            validCount(issue.minimum) &&
+            validCount(issue.maximum) &&
+            issue.minimum > issue.maximum,
+    );
+    if (!monthly) return null;
+
+    const subject = [monthly.nurseName, monthly.shiftCode]
+        .filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+        .map((item) => item.trim().slice(0, 80))
+        .join(' · ');
+
+    return {
+        message:
+            (subject ? `${subject} · ` : '') +
+            i18n.t('aiAdjust.executionFailure.monthlyShiftBoundsConflict', {minimum: monthly.minimum, maximum: monthly.maximum}),
+        blocked: false,
+        conditionConflict: true,
+        recovery: 'revise',
+    };
+}
+
 /** Explain a rejected result without treating an unverified result as proven infeasibility. */
 export function aiExecutionFailure(response: TAutofillResponse): TAiConversationFailure | null {
+    const countConflict = requestedCountConflict(response);
+    if (countConflict) return countConflict;
+
     const outcome = authoringOutcome(response);
 
     if (outcome) {
