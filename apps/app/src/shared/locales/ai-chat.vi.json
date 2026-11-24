@@ -76,6 +76,9 @@
             "summary": "Lập trình không thay đổi.",
             "openChat": "Mở cuộc trò chuyện",
             "pairedNightStaffingEvidence": "Với yêu cầu nhân sự hiện tại, ca {{night}} ngày {{date}} cần ít nhất {{minimumNight}} người, nhưng tối đa {{maximumContinuation}} người có thể chuyển sang ca {{continuation}} ngày {{nextDate}}. Vì vậy, ít nhất {{minimumRepeats}} người phải làm ca {{night}} liên tiếp.",
+            "requestedStaffingFixedShortfall": "{{date}} · {{shift}}: Nếu giữ nguyên các ca đã cố định, chỉ có thể xếp tối đa {{maximum}} người trong nhóm được chỉ định, thấp hơn mức tối thiểu {{minimum}} người. Bạn muốn điều chỉnh mức tối thiểu của ngày này thế nào?",
+            "requestedStaffingFixedExactShortfall": "{{date}} · {{shift}}: Nếu giữ nguyên các ca đã cố định, chỉ có thể xếp tối đa {{maximum}} người trong nhóm được chỉ định, không đủ đúng {{minimum}} người như yêu cầu. Bạn muốn điều chỉnh số người cần xếp trong ngày này thế nào?",
+            "monthlyShiftBoundsConflict": "Trong cùng một tháng, không thể vừa xếp ít nhất {{minimum}} ca vừa xếp tối đa {{maximum}} ca. Bạn muốn thay đổi giới hạn nào?",
             "monthlyRestTargetStaffingShortfall": "Nếu {{groupCount}} điều dưỡng trong nhóm giữ mục tiêu nghỉ hằng tháng, họ có thể làm tối đa {{maximum}} ca. Cần ít nhất {{required}} ca để đáp ứng yêu cầu nhân sự, còn thiếu {{shortage}} ca."
         },
         "title": "AI xếp lịch trực tự động",

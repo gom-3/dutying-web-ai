@@ -76,6 +76,9 @@
             "summary": "班表沒有改變。",
             "openChat": "開啟對話",
             "pairedNightStaffingEvidence": "依目前人數條件，{{date}} 的 {{night}} 至少需要 {{minimumNight}} 人，其中最多 {{maximumContinuation}} 人可在 {{nextDate}} 轉為 {{continuation}}。因此至少 {{minimumRepeats}} 人需要連續上 {{night}}。",
+            "requestedStaffingFixedShortfall": "{{date}} · {{shift}}：保留固定排班時，指定人員中最多可安排 {{maximum}} 人，低於要求的最低人數 {{minimum}} 人。你想怎麼調整當日的人數下限？",
+            "requestedStaffingFixedExactShortfall": "{{date}} · {{shift}}：保留固定排班時，指定人員中最多可安排 {{maximum}} 人，無法達到指定的剛好 {{minimum}} 人。你想怎麼調整當日的人數要求？",
+            "monthlyShiftBoundsConflict": "同一個月內，至少排 {{minimum}} 班和最多排 {{maximum}} 班這兩個條件無法同時滿足。你想修改哪一項條件？",
             "monthlyRestTargetStaffingShortfall": "如果這組 {{groupCount}} 位護理師維持每月休假目標，最多可安排 {{maximum}} 個班次。要符合人力要求，至少需要 {{required}} 個班次，還差 {{shortage}} 個。"
         },
         "title": "AI 自動排班",
