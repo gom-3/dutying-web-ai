@@ -80,6 +80,8 @@ export const aiAdjustJa = {
             '{{date}}・{{shift}}：固定した勤務を維持すると、指定した対象から割り当てられるのは最大{{maximum}}人です。指定人数はちょうど{{minimum}}人です。この日の人数条件をどう変更しますか？',
         monthlyShiftBoundsConflict:
             '同じ月に最低{{minimum}}回と最大{{maximum}}回を同時に満たせません。月間勤務回数のどちらの条件を変更しますか？',
+        monthlyRestTargetStaffingShortfall:
+            '対象の看護師{{groupCount}}人の月間休日目標を維持すると、勤務は最大{{maximum}}回までです。指定の人員を満たすには最低{{required}}回必要なため、{{shortage}}回不足します。',
         staffingConflict: '{{date}}・{{shift}}：同じ対象に最低{{minimum}}名と最大{{maximum}}名が同時に指定されています。',
         monthlyCapacity:
             '休日数・勤務可能な種類・月間の勤務回数を守るには、{{shifts}}勤務が合計で最低{{minimum}}回必要ですが、日ごとの人数の上限では合計{{maximum}}回までしか配置できません。{{difference}}回の差があります。',

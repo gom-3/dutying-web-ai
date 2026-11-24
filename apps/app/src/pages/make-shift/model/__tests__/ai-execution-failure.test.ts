@@ -725,6 +725,7 @@ it('asks to revise a fixed daily staffing minimum instead of offering to change 
     );
     expect(failure?.recovery).toBe('revise');
     expect(failure?.reviewFixed).toBeUndefined();
+    expect(failure?.conditionConflict).toBeUndefined();
     expect(failure?.confirmationRequired).toBeUndefined();
     response.engineResult!.conflictEvidence![0].operator = 'EXACT';
     expect(aiExecutionFailure(response)?.message).toBe(
@@ -756,4 +757,38 @@ it('surfaces the proved monthly count contradiction as a revision question', () 
     expect(failure?.confirmationRequired).toBeUndefined();
     response.engineResult!.conflictEvidence![0].maximum = 15;
     expect(aiExecutionFailure(response)?.recovery).toBe('retry');
+});
+
+it('explains the staffing shortfall conditionally while keeping timeout recovery', () => {
+    const response = authoringResponse({
+        applicable: false,
+        changedCells: [],
+        authoringOutcome: authoringOutcome({solveState: 'UNKNOWN', draftState: 'NONE'}),
+        engineResult: {
+            status: 'TIME_LIMIT',
+            conflictEvidence: [
+                {
+                    type: 'MONTHLY_REST_TARGET_STAFFING_SHORTFALL',
+                    requiredAssignments: 155,
+                    maximumAssignments: 150,
+                    shortageAssignments: 5,
+                    groupCount: 6,
+                },
+            ],
+        },
+    });
+    const failure = aiExecutionFailure(response);
+    const advisory = i18n.t('aiAdjust.executionFailure.monthlyRestTargetStaffingShortfall', {
+        required: 155,
+        maximum: 150,
+        shortage: 5,
+        groupCount: 6,
+    });
+    expect(failure?.message).toContain(advisory);
+    expect(failure?.recovery).toBe('retry');
+    expect(failure?.conditionConflict).toBeUndefined();
+    expect(failure?.confirmationRequired).toBeUndefined();
+
+    response.engineResult!.conflictEvidence![0].shortageAssignments = 4;
+    expect(aiExecutionFailure(response)?.message).not.toContain(advisory);
 });

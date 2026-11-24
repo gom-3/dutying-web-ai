@@ -157,7 +157,6 @@ function requestedCountConflict(response: TAutofillResponse): TAiConversationFai
                 },
             ),
             blocked: false,
-            conditionConflict: true,
             recovery: 'revise',
         };
 
@@ -187,6 +186,28 @@ function requestedCountConflict(response: TAutofillResponse): TAiConversationFai
 
 /** Explain a rejected result without treating an unverified result as proven infeasibility. */
 export function aiExecutionFailure(response: TAutofillResponse): TAiConversationFailure | null {
+    const failure = readExecutionFailure(response);
+    const issue = response.engineResult?.conflictEvidence?.find((entry) => entry?.type === 'MONTHLY_REST_TARGET_STAFFING_SHORTFALL');
+
+    if (!failure || !issue || failure.blocked || response.changedCells?.length) return failure;
+
+    const {requiredAssignments: required, maximumAssignments: maximum, shortageAssignments: shortage, groupCount} = issue;
+    if (
+        !validCount(required) ||
+        !validCount(maximum) ||
+        !validCount(shortage) ||
+        !validCount(groupCount) ||
+        groupCount === 0 ||
+        shortage === 0 ||
+        required - maximum !== shortage
+    )
+        return failure;
+
+    const comparison = i18n.t('aiAdjust.executionFailure.monthlyRestTargetStaffingShortfall', {required, maximum, shortage, groupCount});
+    return {...failure, message: failure.message ? `${failure.message}\n${comparison}` : comparison};
+}
+
+function readExecutionFailure(response: TAutofillResponse): TAiConversationFailure | null {
     const countConflict = requestedCountConflict(response);
     if (countConflict) return countConflict;
 

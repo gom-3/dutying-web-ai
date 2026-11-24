@@ -75,7 +75,8 @@
             "review": "審查班表",
             "summary": "班表沒有改變。",
             "openChat": "開啟對話",
-            "pairedNightStaffingEvidence": "依目前人數條件，{{date}} 的 {{night}} 至少需要 {{minimumNight}} 人，其中最多 {{maximumContinuation}} 人可在 {{nextDate}} 轉為 {{continuation}}。因此至少 {{minimumRepeats}} 人需要連續上 {{night}}。"
+            "pairedNightStaffingEvidence": "依目前人數條件，{{date}} 的 {{night}} 至少需要 {{minimumNight}} 人，其中最多 {{maximumContinuation}} 人可在 {{nextDate}} 轉為 {{continuation}}。因此至少 {{minimumRepeats}} 人需要連續上 {{night}}。",
+            "monthlyRestTargetStaffingShortfall": "如果這組 {{groupCount}} 位護理師維持每月休假目標，最多可安排 {{maximum}} 個班次。要符合人力要求，至少需要 {{required}} 個班次，還差 {{shortage}} 個。"
         },
         "title": "AI 自動排班",
         "allFixed": "所有更改都已固定,不修復更改,然後再試一次。",

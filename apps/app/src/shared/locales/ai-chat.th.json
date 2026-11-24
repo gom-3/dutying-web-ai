@@ -75,7 +75,8 @@
             "review": "ใบเสนอราคา",
             "summary": "ระยะเวลาไม่ได้เปลี่ยนแปลง",
             "openChat": "เปิดการสนทนา",
-            "pairedNightStaffingEvidence": "ตามเงื่อนไขจำนวนบุคลากรปัจจุบัน วันที่ {{date}} กะ {{night}} ต้องมีอย่างน้อย {{minimumNight}} คน โดยไม่เกิน {{maximumContinuation}} คนสามารถต่อกะ {{continuation}} ในวันที่ {{nextDate}} ได้ ดังนั้นอย่างน้อย {{minimumRepeats}} คนต้องทำกะ {{night}} ติดต่อกัน"
+            "pairedNightStaffingEvidence": "ตามเงื่อนไขจำนวนบุคลากรปัจจุบัน วันที่ {{date}} กะ {{night}} ต้องมีอย่างน้อย {{minimumNight}} คน โดยไม่เกิน {{maximumContinuation}} คนสามารถต่อกะ {{continuation}} ในวันที่ {{nextDate}} ได้ ดังนั้นอย่างน้อย {{minimumRepeats}} คนต้องทำกะ {{night}} ติดต่อกัน",
+            "monthlyRestTargetStaffingShortfall": "หากพยาบาล {{groupCount}} คนในกลุ่มนี้ยังคงเป้าหมายวันหยุดรายเดือน จะจัดเวรได้สูงสุด {{maximum}} ครั้ง แต่จำนวนบุคลากรที่ขอต้องใช้เวรอย่างน้อย {{required}} ครั้ง จึงขาด {{shortage}} ครั้ง"
         },
         "title": "AI จัดตารางเวรอัตโนมัติ",
         "allFixed": "การเปลี่ยนแปลงทั้งหมดจะคงที่ ลบการเปลี่ยนแปลงและลองอีกครั้ง",

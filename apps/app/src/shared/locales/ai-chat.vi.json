@@ -75,7 +75,8 @@
             "review": "Lập trình review",
             "summary": "Lập trình không thay đổi.",
             "openChat": "Mở cuộc trò chuyện",
-            "pairedNightStaffingEvidence": "Với yêu cầu nhân sự hiện tại, ca {{night}} ngày {{date}} cần ít nhất {{minimumNight}} người, nhưng tối đa {{maximumContinuation}} người có thể chuyển sang ca {{continuation}} ngày {{nextDate}}. Vì vậy, ít nhất {{minimumRepeats}} người phải làm ca {{night}} liên tiếp."
+            "pairedNightStaffingEvidence": "Với yêu cầu nhân sự hiện tại, ca {{night}} ngày {{date}} cần ít nhất {{minimumNight}} người, nhưng tối đa {{maximumContinuation}} người có thể chuyển sang ca {{continuation}} ngày {{nextDate}}. Vì vậy, ít nhất {{minimumRepeats}} người phải làm ca {{night}} liên tiếp.",
+            "monthlyRestTargetStaffingShortfall": "Nếu {{groupCount}} điều dưỡng trong nhóm giữ mục tiêu nghỉ hằng tháng, họ có thể làm tối đa {{maximum}} ca. Cần ít nhất {{required}} ca để đáp ứng yêu cầu nhân sự, còn thiếu {{shortage}} ca."
         },
         "title": "AI xếp lịch trực tự động",
         "allFixed": "Tất cả các thay đổi đều được cố định.Unfix một thay đổi và thử lại.",
