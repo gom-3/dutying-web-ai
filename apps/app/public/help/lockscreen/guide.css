@@ -233,98 +233,144 @@ a:active {
 }
 
 /* The home is a task picker, not another landing page. */
+/* A quiet editorial introduction and two equally weighted setup sections. */
 .home {
-    max-width: 480px;
-    padding: 40px 0 64px;
+    width: min(100%, 540px);
     margin-inline: auto;
+    padding: 32px 0 72px;
+}
+.home-intro {
+    margin-bottom: 30px;
 }
 .eyebrow {
     color: var(--tonal-ink);
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
     font-weight: 650;
+    letter-spacing: -0.015em;
     margin-bottom: 14px;
 }
 .home h1 {
-    font-size: 2rem;
-    font-weight: 750;
+    font-size: clamp(2rem, 5vw, 2.625rem);
+    font-weight: 760;
     letter-spacing: -0.055em;
-    line-height: 1.25;
-}
-.home-caption {
-    margin-top: 16px;
-    color: var(--secondary);
-    font-size: 1.0625rem;
+    line-height: 1.24;
 }
 .home-tasks {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     gap: 24px;
-    margin-top: 28px;
 }
 .home-task {
     display: flex;
     flex-direction: column;
-    align-items: stretch;
-    gap: 20px;
-    padding: 24px;
-    background: var(--tonal);
-    border-radius: 24px;
+    padding: 28px;
+    background: var(--surface);
+    border-radius: 28px;
+    overflow: hidden;
 }
 .task-heading {
     display: flex;
     align-items: center;
-    gap: 14px;
-}
-.task-icon {
-    display: grid;
-    place-items: center;
-    flex: 0 0 48px;
-    width: 48px;
-    height: 48px;
-    background: var(--page);
-    color: var(--tonal-ink);
-    border-radius: 16px;
-}
-.task-icon svg {
-    width: 25px;
-    height: 25px;
+    justify-content: space-between;
+    gap: 16px;
 }
 .task-copy {
-    flex: 1;
     min-width: 0;
 }
-.task-copy h2 {
-    display: block;
-    font-size: 1.0625rem;
+.task-order {
+    color: var(--muted);
+    font-size: 0.75rem;
     line-height: 1.5;
-    font-weight: 700;
+    font-weight: 550;
 }
-.task-copy small {
-    display: block;
-    margin-top: 3px;
+.task-order span {
+    color: var(--tonal-ink);
+    font-size: 0.8125rem;
+    font-weight: 750;
+    margin-right: 6px;
+    font-variant-numeric: tabular-nums;
+}
+.task-copy h2 {
+    margin-top: 8px;
+    font-size: 1.5rem;
+    font-weight: 750;
+    letter-spacing: -0.045em;
+    line-height: 1.3;
+}
+.task-description {
+    margin-top: 7px;
     color: var(--secondary);
     font-size: 0.875rem;
-    line-height: 1.5;
+    line-height: 1.6;
+}
+.task-art {
+    flex: 0 0 88px;
+    width: 88px;
+    height: 88px;
+    object-fit: contain;
 }
 .task-sample {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 12px;
     min-width: 0;
-    min-height: 340px;
-    padding: 20px;
-    background: var(--native);
-    border-radius: 18px;
+    margin-top: 28px;
+    padding: 4px 0;
+    gap: 18px;
+}
+.sample-phone {
+    width: 202px;
+    max-width: 100%;
+    padding: 7px;
+    background: #282630;
+    border-radius: 32px;
+}
+.sample-phone-screen {
+    position: relative;
+    overflow: hidden;
+    padding: 37px 8px 20px;
+    background: #f5f7fa;
+    border-radius: 25px;
+}
+.sample-island {
+    position: absolute;
+    top: 7px;
+    left: 50%;
+    width: 49px;
+    height: 14px;
+    border-radius: 12px;
+    transform: translateX(-50%);
+    background: #282630;
+}
+.sample-clock {
+    display: block;
+    text-align: center;
+    margin: 0 0 9px;
+    font:
+        600 2.625rem/1 -apple-system,
+        BlinkMacSystemFont,
+        sans-serif;
+    letter-spacing: -0.06em;
+    color: #343243;
+}
+.sample-home-indicator {
+    position: absolute;
+    bottom: 7px;
+    left: 50%;
+    width: 57px;
+    height: 3px;
+    border-radius: 3px;
+    transform: translateX(-50%);
+    background: #282630;
 }
 .sample-button {
     display: block;
-    width: min(100%, 226px);
+    width: 100%;
     overflow: hidden;
     padding: 0;
     background: transparent;
-    border-radius: 12px;
+    border-radius: 10px;
 }
 .sample-button:focus-visible {
     padding: 5px;
@@ -332,77 +378,113 @@ a:active {
 .sample-button:focus-visible img {
     opacity: 0.85;
 }
-.task-sample-input .sample-button {
-    width: 100%;
-    max-width: 350px;
-}
-.task-sample-input .sample-control {
-    width: 98px;
-    border-radius: 50%;
-}
-.sample-label {
-    color: #4e5968;
-    font-size: 0.8125rem;
-    font-weight: 550;
-}
 .task-sample-caption {
-    margin-top: -6px;
-    color: var(--secondary);
-    font-size: 0.9375rem;
-    font-weight: 550;
-    text-align: center;
-}
-.task-sample-caption span {
-    display: block;
-    margin-top: 3px;
+    margin: 14px 0 20px;
     color: var(--muted);
+    font-size: 0.75rem;
+    text-align: center;
+    line-height: 1.6;
+}
+.task-sample-input {
+    width: 100%;
+    min-height: 290px;
+}
+.task-sample-input > .sample-button {
+    width: min(100%, 360px);
+}
+.sample-control-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    color: var(--secondary);
     font-size: 0.8125rem;
-    font-weight: 450;
+}
+.sample-control-row .sample-control {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    flex: 0 0 42px;
+}
+.sample-control-row svg {
+    width: 16px;
+    height: 16px;
+    transform: rotate(90deg);
+}
+.sample-task-result {
+    width: min(100%, 360px);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.sample-task-result span {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 10px 14px;
+    background: var(--page);
+    color: var(--secondary);
+    border-radius: 10px;
+    font-size: 0.8125rem;
+}
+.sample-task-result span::before {
+    content: '';
+    display: grid;
+    place-items: center;
+    width: 18px;
+    height: 18px;
+    background: var(--tonal);
+    color: var(--tonal-ink);
+    border-radius: 6px;
+    font-weight: 750;
 }
 .task-start {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    min-height: 48px;
-    padding: 12px 16px;
-    color: var(--on-accent);
+    min-height: 52px;
+    padding: 13px 16px;
     background: var(--accent);
-    border-radius: 12px;
-    font-size: 1rem;
+    color: var(--on-accent);
+    border-radius: 14px;
+    font-size: 0.9375rem;
     font-weight: 650;
 }
 .task-start svg {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
 }
 .task-start:hover {
     background: var(--accent-hover);
 }
 .resume {
-    display: inline-flex;
+    display: flex;
     align-items: center;
+    justify-content: space-between;
     flex-wrap: wrap;
-    gap: 8px;
-    min-height: 44px;
-    padding: 9px 12px;
-    margin: 12px 0 0 4px;
-    background: transparent;
+    gap: 4px 12px;
+    width: 100%;
+    min-height: 54px;
+    padding: 14px 18px;
+    margin: -8px 0 24px;
+    background: var(--tonal);
     color: var(--tonal-ink);
-    border-radius: 10px;
-    font-size: 0.875rem;
+    border-radius: 14px;
+    text-align: left;
+    font-size: 0.8125rem;
     font-weight: 650;
 }
 .resume span {
-    color: var(--muted);
+    color: var(--secondary);
     font-weight: 450;
+    font-size: 0.75rem;
 }
 .resume:hover {
-    background: var(--surface);
+    background: var(--surface-strong);
 }
 .home-help {
-    max-width: 460px;
-    margin-top: 20px;
+    margin-top: 24px;
 }
 .home-help ul {
     display: grid;
@@ -410,7 +492,7 @@ a:active {
     padding-left: 20px;
     margin: 8px 0 0;
     color: var(--secondary);
-    font-size: 1rem;
+    font-size: 0.9375rem;
     line-height: 1.75;
 }
 
@@ -1291,31 +1373,21 @@ a:active {
         margin-top: 28px;
     }
     .home-task {
-        padding: 20px;
-        gap: 18px;
+        padding: 24px;
+        border-radius: 24px;
     }
-    .task-icon {
-        flex-basis: 44px;
-        width: 44px;
-        height: 44px;
-        border-radius: 15px;
-    }
-    .task-icon svg {
-        width: 24px;
-        height: 24px;
-    }
+
     .task-copy h2 {
-        font-size: 1.0625rem;
+        font-size: 1.375rem;
     }
     .resume {
-        margin-left: 2px;
+        margin-left: 0;
     }
     .home-help {
         margin-top: 12px;
     }
     .task-sample {
-        padding: 16px;
-        min-height: 320px;
+        padding: 0;
     }
     .tutorial {
         padding-top: 0;
@@ -1511,15 +1583,10 @@ a:active {
         font-size: 2rem;
     }
     .home-task {
-        gap: 12px;
-        padding-inline: 12px;
+        padding: 24px;
+        border-radius: 24px;
     }
-    .task-icon {
-        flex-basis: 40px;
-        width: 40px;
-        height: 40px;
-        border-radius: 14px;
-    }
+
     .task-chevron {
         flex-basis: 18px;
         width: 18px;

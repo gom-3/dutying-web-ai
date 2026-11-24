@@ -159,3 +159,19 @@ logout invalidation and environment checks remain separate. This requires a new
 app build. iPhone scheduled wallpaper application and cross-device shared-trigger
 import still require physical-device verification; simulator and DOM tests do
 not establish those outcomes. No deployment is included in this revision.
+
+## 2026-11-24 visual redesign
+
+The guide home uses two newly generated, transparent 3D assets:
+`assets/calendar-3d.webp` and `assets/tasks-3d.webp`. Created with the built-in
+image generator, then resized/encoded as alpha-preserving WebP (384px).
+They are original Dutying-specific violet/porcelain illustrations and contain no
+third-party branding or text. The generated originals and full prompts are kept
+in `deliverables/lockscreen-redesign-20261124/` in the shared New project workspace.
+
+Both setup sections use the same neutral surface, heading scale and violet CTA.
+The phone frame and 9:41 clock are illustrative layout; the enclosed wallpaper is
+still the existing app-rendered example, without altered calendar/task pixels.
+The quick-add dialog remains the existing native screenshot. Completed flows
+now clear their saved resume state. Routing, installation links and automation
+steps are unchanged. Mobile light/dark review uses 390px-wide Safari iframes.
