@@ -16,7 +16,8 @@
     const rawFlows = sourceFlows
         .filter((flow) => flow.id !== 'auto')
         .map((flow) => {
-            if (flow.id === 'wallpaper') return {...flow, title: '근무표 설정', steps: flow.steps.filter((step) => step.id !== 'refresh-method')};
+            if (flow.id === 'wallpaper')
+                return {...flow, title: '근무표 설정', steps: flow.steps.filter((step) => step.id !== 'refresh-method')};
             return flow.id === 'quickadd' ? {...flow, title: '할 일 버튼 설정'} : flow;
         });
     const legacyAutoSteps = new Map([
@@ -265,9 +266,15 @@
         if (!step.note) return '';
         const title = escape(step.noteTitle || '안 될 때');
         if (step.noteStyle === 'warning') {
-            return '<aside class="step-notice" role="note" aria-labelledby="notice-title"><span class="notice-icon">' +
-                icon('notice') + '</span><div><p class="notice-title" id="notice-title">' + title +
-                '</p><p class="notice-body">' + step.note + '</p></div></aside>';
+            return (
+                '<aside class="step-notice" role="note" aria-labelledby="notice-title"><span class="notice-icon">' +
+                icon('notice') +
+                '</span><div><p class="notice-title" id="notice-title">' +
+                title +
+                '</p><p class="notice-body">' +
+                step.note +
+                '</p></div></aside>'
+            );
         }
         return '<details class="step-help"><summary>' + title + '</summary><div>' + step.note + '</div></details>';
     }
@@ -276,7 +283,9 @@
         const href = safeLink(action.href, action.kind);
         if (!href) return '';
         const isInstall = href.includes('icloud.com/shortcuts');
-        const actionIcon = icon(href.startsWith('dutying:') ? 'dutying-app' : isInstall || href.startsWith('shortcuts:') ? 'shortcuts-app' : 'shortcut');
+        const actionIcon = icon(
+            href.startsWith('dutying:') ? 'dutying-app' : isInstall || href.startsWith('shortcuts:') ? 'shortcuts-app' : 'shortcut',
+        );
         return (
             '<a class="step-action' +
             (secondary ? ' secondary' : '') +
@@ -320,18 +329,48 @@
     }
     function homeSampleHTML(task) {
         const keys = DATA.homeSamples?.[task.id] || [];
-        return '<div class="task-sample' + (task.id === 'quickadd' ? ' task-sample-input' : '') + '">' +
-            keys.map((key) => {
+        const samples = keys
+            .map((key) => {
                 const shot = DATA.shots?.[key];
                 if (!shot) return '';
-                const control = key === 'home-control';
-                return '<button class="sample-button' + (control ? ' sample-control' : '') + '" type="button" data-zoom="' +
-                    escape(key) + '" data-sample-title="' + (task.id === 'wallpaper' ? '근무표 예시' : control ? '왼쪽 아래 버튼' : '할 일 입력창 예시') +
-                    '" aria-label="' + escape(shot.caption + ' 크게 보기') + '">' + cropHTML(shot, false) + '</button>' +
-                    (control ? '<p class="sample-label">왼쪽 아래 버튼을 누르면</p>' : '');
-            }).join('') + '</div><p class="task-sample-caption">' +
-            (task.id === 'wallpaper' ? '근무·일정·할 일을 한눈에' : '입력창에 /로 나눠 한 번에 추가') +
-            '<span>캡처를 누르면 크게 보여요</span></p>';
+                const title = task.id === 'wallpaper' ? '근무표 예시' : key === 'home-control' ? '왼쪽 아래 버튼' : '할 일 입력창 예시';
+                const button =
+                    '<button class="sample-button' +
+                    (key === 'home-control' ? ' sample-control' : '') +
+                    '" type="button" data-zoom="' +
+                    escape(key) +
+                    '" data-sample-title="' +
+                    title +
+                    '" aria-label="' +
+                    escape(shot.caption + ' 크게 보기') +
+                    '">' +
+                    cropHTML(shot, false) +
+                    '</button>';
+                if (task.id === 'wallpaper') {
+                    return (
+                        '<div class="sample-phone" aria-label="잠금화면 미리보기"><div class="sample-phone-screen"><span class="sample-island" aria-hidden="true"></span>' +
+                        '<span class="sample-clock" aria-hidden="true">9:41</span>' +
+                        button +
+                        '<span class="sample-home-indicator" aria-hidden="true"></span></div></div>'
+                    );
+                }
+                return key === 'home-control'
+                    ? '<div class="sample-control-row">' + button + '<span>왼쪽 버튼을 누르면</span>' + icon('chevron') + '</div>'
+                    : button;
+            })
+            .join('');
+        return (
+            '<div class="task-sample' +
+            (task.id === 'quickadd' ? ' task-sample-input' : '') +
+            '">' +
+            samples +
+            (task.id === 'quickadd'
+                ? '<div class="sample-task-result" aria-hidden="true"><span>밥먹기</span><span>놀기</span></div>'
+                : '') +
+            '</div><p class="task-sample-caption">' +
+            (task.id === 'wallpaper' ? '잠금화면 예시' : '/로 나누면, 할 일이 각각 저장돼요') +
+            '</p>'
+        );
     }
     function home() {
         current = null;
@@ -343,27 +382,59 @@
             resumeFlow = progress && flows.find((flow) => flow.id === progress.flow),
             resumeIndex = resumeFlow ? resumeFlow.steps.findIndex((step) => step.id === progress.step) : -1;
         const tasks = [
-            {id: 'wallpaper', title: '근무표 띄우기', helper: '처음 한 번 설정', icon: 'calendar'},
-            {id: 'quickadd', title: '할 일 버튼 추가', helper: '근무표 설정 후', icon: 'add'},
+            {
+                id: 'wallpaper',
+                title: '근무표 띄우기',
+                helper: '근무·일정·할 일을 한눈에',
+                icon: '/help/lockscreen/assets/calendar-3d.webp',
+                order: '01',
+                lead: '처음 한 번 설정',
+                action: '근무표 설정하기',
+            },
+            {
+                id: 'quickadd',
+                title: '할 일 버튼 추가',
+                helper: '잠금화면에서 바로 입력',
+                icon: '/help/lockscreen/assets/tasks-3d.webp',
+                order: '02',
+                lead: '근무표 설정 후',
+                action: '버튼 추가하기',
+            },
         ];
         const taskLinks = tasks
             .map((task) => {
                 const flow = flows.find((item) => item.id === task.id);
                 return flow
-                    ? '<article class="home-task" aria-labelledby="task-' + task.id + '"><div class="task-heading"><span class="task-icon">' +
-                          icon(task.icon) +
-                          '</span><div class="task-copy"><h2 id="task-' + task.id + '">' +
+                    ? '<article class="home-task" aria-labelledby="task-' +
+                          task.id +
+                          '"><div class="task-heading"><div class="task-copy"><p class="task-order"><span>' +
+                          task.order +
+                          '</span> ' +
+                          task.lead +
+                          '</p><h2 id="task-' +
+                          task.id +
+                          '">' +
                           task.title +
-                          '</h2>' +
-                          (task.helper ? '<small>' + task.helper + '</small>' : '') +
-                          '</div></div>' + homeSampleHTML(task) +
-                          '<a class="task-start" href="' + escape(routeHash(flow, flow.steps[0])) +
-                          '" aria-label="' + escape(task.title + ' 설정하기') + '">설정하기' + icon('chevron') + '</a></article>'
+                          '</h2><p class="task-description">' +
+                          task.helper +
+                          '</p></div>' +
+                          '<img class="task-art" src="' +
+                          task.icon +
+                          '" width="96" height="96" alt="" decoding="async"></div>' +
+                          homeSampleHTML(task) +
+                          '<a class="task-start" href="' +
+                          escape(routeHash(flow, flow.steps[0])) +
+                          '" aria-label="' +
+                          escape(task.title + ' 설정하기') +
+                          '">' +
+                          task.action +
+                          icon('chevron') +
+                          '</a></article>'
                     : '';
             })
             .join('');
         MAIN.innerHTML =
-            '<section class="home"><p class="eyebrow">아이폰</p><h1>잠금화면 설정</h1>' +
+            '<section class="home"><header class="home-intro"><p class="eyebrow">아이폰 · 듀팅 가이드</p><h1>잠금화면,<br>이렇게 설정해요.</h1></header>' +
             (resumeIndex >= 0
                 ? '<button class="resume" type="button" id="resume">이어서 설정하기<span>' +
                   escape(resumeFlow.title) +
@@ -371,7 +442,8 @@
                   (resumeIndex + 1) +
                   '단계</span></button>'
                 : '') +
-            '<nav class="home-tasks" aria-label="설정할 기능">' + taskLinks +
+            '<nav class="home-tasks" aria-label="설정할 기능">' +
+            taskLinks +
             '</nav><details class="home-help"><summary>시작 전 확인</summary><ul><li>iPhone · iOS 18 이상</li><li>듀팅 로그인과 이번 달 근무표가 필요해요.</li><li>사진 배경을 준비하고 Safari에서 진행해 주세요.</li></ul></details></section>';
         if (resumeIndex >= 0) $('resume').addEventListener('click', () => go(resumeFlow, resumeIndex));
         MAIN.querySelectorAll('[data-zoom]').forEach((button) =>
@@ -473,6 +545,9 @@
     }
     function finish(flow) {
         current = {flow, index: flow.steps.length, step: null};
+        try {
+            localStorage.removeItem(KEY);
+        } catch (e) {}
         DOCK.hidden = true;
         document.body.dataset.view = 'done';
         document.title = '설정 안내 완료 · 듀팅';
@@ -483,10 +558,13 @@
             topHTML(flow, flow.steps.length - 1) +
             '<div class="done-view"><div class="done-symbol">' +
             icon('check') +
-            '</div><h1 class="step-title" id="step-title" tabindex="-1">설정 안내를 마쳤어요</h1><p class="done-caption">' + instruction + '</p>' +
+            '</div><h1 class="step-title" id="step-title" tabindex="-1">설정 안내를 마쳤어요</h1><p class="done-caption">' +
+            instruction +
+            '</p>' +
             actionHTML(run) +
             '<div class="done-next"><a href="#">다른 기능 설정하기</a>' +
-            (flow.id === 'wallpaper' && (decision('refresh-method') || choiceDefinitions.get('refresh-method')?.fallback) !== 'notifications'
+            (flow.id === 'wallpaper' &&
+            (decision('refresh-method') || choiceDefinitions.get('refresh-method')?.fallback) !== 'notifications'
                 ? '<a href="#wallpaper/notification-configure">알림 방식 안내 보기</a>'
                 : '') +
             '</div><details class="step-help"><summary>도움이 필요해요</summary><div>화면이 그대로라면 듀팅에서 이번 달 근무표를 확인하고 다시 갱신해 주세요.</div></details></div></section>';
