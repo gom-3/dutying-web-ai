@@ -978,6 +978,7 @@
             "savedResult": "這一結果不適用於當前班表。",
             "undoStale": "你的班表改變了. 應用程式沒有錯過. 比較以前的結果。",
             "qualitative": "檢視更改,看看這是你想要的安排。",
+            "recoveryPreviewOnly": "已根據原始請求產生修改方案。部分條件無法驗證，班表仍維持原樣。",
             "draft": "這是一個可編輯的草案,最終確認是單獨的。",
             "settingChangesTitle": "僅適用於本月此方案的條件",
             "settingChangesScope": "不會儲存或永久變更現有設定。同意以下所有條件後，僅套用此方案。",

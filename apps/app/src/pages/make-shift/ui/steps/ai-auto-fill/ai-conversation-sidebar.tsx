@@ -845,7 +845,7 @@ export default function AiConversationSidebar({
                 operationType,
                 ...(conflict?.result?.candidate
                     ? {
-                          conflictReviewToken: conflict.result.candidate.token,
+                          conflictReviewToken: conflict.result.candidate.token ?? undefined,
                           conflictConfirmed: true,
                           candidateDigest: conflict.result.candidate.candidateDigest,
                           sourceOperationId: conflict.operationId,

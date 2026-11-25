@@ -83,6 +83,15 @@ describe('reviewable authoring candidate', () => {
         expect(input.result).toEqual(before);
         expect(screen.queryByText(i18n.t('aiConversationSidebar.authoring.SATISFIED'))).toBeNull();
     });
+    it('shows the raw proposal without actions or an expiration warning', () => {
+        const input = props();
+        input.result.candidate = candidate({selectionReason: 'INTERPRETATION_RECOVERY_UNVERIFIED', token: null});
+        render(<AiAuthoringCandidate {...input} />);
+        expect(screen.getByRole('table')).toBeVisible();
+        expect(screen.getByRole('status')).toHaveTextContent(i18n.t('aiConversationSidebar.authoring.recoveryPreviewOnly'));
+        expect(screen.queryByRole('button', {name: i18n.t('aiConversationSidebar.authoring.apply')})).not.toBeInTheDocument();
+        expect(input.onApply).not.toHaveBeenCalled();
+    });
     it('retains an expired candidate diff but disables execution', () => {
         const input = props();
 

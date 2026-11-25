@@ -48,6 +48,7 @@ export function AiAuthoringCandidate({
     const conflictMessages = nightRunConflictMessages(result);
     const priority = authoringOutcome(result)?.requestPriority;
     const settingsConsent = priority?.version === 'request-first-v2' && priority.settingChangesRequired === true;
+    const advisory = candidate.selectionReason === 'INTERPRETATION_RECOVERY_UNVERIFIED';
     const available = current && canSelectAuthoringCandidate(result, sourceVersionId, now);
     const expired = !current || !Number.isFinite(Date.parse(candidate.expiresAt)) || Date.parse(candidate.expiresAt) <= now;
     const impacts = priority?.candidateImpacts ?? [];
@@ -59,9 +60,13 @@ export function AiAuthoringCandidate({
             {authoringOutcome(result)?.validation.coverage === 'PARTIAL' && (
                 <p role="status">{t('aiConversationSidebar.authoring.partialCoverage')}</p>
             )}
-            {(candidate.selectionReason === 'QUALITATIVE_REVIEW' ||
-                result.authoringOutcome?.clauses.some((clause) => clause.kind === 'REVIEW')) && (
-                <p>{t('aiConversationSidebar.authoring.qualitative')}</p>
+            {advisory ? (
+                <p role="status">{t('aiConversationSidebar.authoring.recoveryPreviewOnly')}</p>
+            ) : (
+                (candidate.selectionReason === 'QUALITATIVE_REVIEW' ||
+                    result.authoringOutcome?.clauses.some((clause) => clause.kind === 'REVIEW')) && (
+                    <p>{t('aiConversationSidebar.authoring.qualitative')}</p>
+                )
             )}
             {settingsConsent && (
                 <div className="space-y-2" role="status">
@@ -176,35 +181,41 @@ export function AiAuthoringCandidate({
                     <AiScheduleWarningList violations={candidate.violations} nurseName={nurseName} messages={conflictMessages} />
                 </details>
             )}
-            {!available && (
+            {!available && !advisory && (
                 <p role="status">
                     {t(expired ? 'aiConversationSidebar.authoring.expired' : 'aiConversationSidebar.authoring.candidateUnavailable')}
                 </p>
             )}
-            {kept ? (
-                <p role="status">{t('aiConversationSidebar.authoring.keep')}</p>
-            ) : (
-                <div className="flex flex-wrap gap-2">
-                    <button type="button" className={`${action} bg-main-1 text-white`} disabled={disabled || !available} onClick={onApply}>
-                        {t(
-                            settingsConsent
-                                ? 'aiConversationSidebar.authoring.settingConsentApply'
-                                : 'aiConversationSidebar.authoring.apply',
-                        )}
-                    </button>
-                    <button
-                        type="button"
-                        className={`${action} text-main-1`}
-                        disabled={disabled}
-                        onClick={() => {
-                            setKept(true);
-                            onKeep?.();
-                        }}
-                    >
-                        {t('aiConversationSidebar.authoring.keep')}
-                    </button>
-                </div>
-            )}
+            {!advisory &&
+                (kept ? (
+                    <p role="status">{t('aiConversationSidebar.authoring.keep')}</p>
+                ) : (
+                    <div className="flex flex-wrap gap-2">
+                        <button
+                            type="button"
+                            className={`${action} bg-main-1 text-white`}
+                            disabled={disabled || !available}
+                            onClick={onApply}
+                        >
+                            {t(
+                                settingsConsent
+                                    ? 'aiConversationSidebar.authoring.settingConsentApply'
+                                    : 'aiConversationSidebar.authoring.apply',
+                            )}
+                        </button>
+                        <button
+                            type="button"
+                            className={`${action} text-main-1`}
+                            disabled={disabled}
+                            onClick={() => {
+                                setKept(true);
+                                onKeep?.();
+                            }}
+                        >
+                            {t('aiConversationSidebar.authoring.keep')}
+                        </button>
+                    </div>
+                ))}
         </section>
     );
 }

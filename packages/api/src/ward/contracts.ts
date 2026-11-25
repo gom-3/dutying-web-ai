@@ -974,8 +974,8 @@ export type TAuthoringCandidate = {
     violations: TScheduleViolationDto[];
     violationDelta: TAuthoringViolationDelta;
     expiresAt: string;
-    token: string;
-    selectionReason: 'MATERIAL_TRADEOFF' | 'QUALITATIVE_REVIEW' | 'STRENGTH_ESCALATION';
+    token: string | null;
+    selectionReason: 'MATERIAL_TRADEOFF' | 'QUALITATIVE_REVIEW' | 'STRENGTH_ESCALATION' | 'INTERPRETATION_RECOVERY_UNVERIFIED';
 };
 
 export type TAutofillResponse = {

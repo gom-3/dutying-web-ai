@@ -978,6 +978,7 @@
             "savedResult": "Kết quả này không áp dụng cho lịch trực hiện tại.",
             "undoStale": "Chương trình của bạn đã thay đổi. ứng dụng không bị bỏ phiếu. so sánh kết quả trước.",
             "qualitative": "Kiểm tra các thay đổi để xem liệu đây là thỏa thuận bạn muốn.",
+            "recoveryPreviewOnly": "Đã tạo đề xuất dựa trên yêu cầu ban đầu. Một số điều kiện chưa được xác minh nên lịch trực vẫn giữ nguyên.",
             "draft": "Đây là một dự án có thể chỉnh sửa. xác nhận cuối cùng là riêng biệt.",
             "settingChangesTitle": "Điều kiện chỉ áp dụng cho phương án tháng này",
             "settingChangesScope": "Các cài đặt đã lưu không thay đổi. Đồng ý với tất cả điều kiện bên dưới để chỉ áp dụng phương án này.",

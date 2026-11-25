@@ -74,6 +74,7 @@ export function canSelectAuthoringCandidate(response: TAutofillResponse, sourceV
             candidate.sourceVersionId === sourceVersionId &&
             candidate.candidateDigest &&
             candidate.candidateDigest === outcome.candidateDigest &&
+            candidate.selectionReason !== 'INTERPRETATION_RECOVERY_UNVERIFIED' &&
             candidate.token &&
             Date.parse(candidate.expiresAt) > now &&
             candidate.changedCells.length > 0 &&
