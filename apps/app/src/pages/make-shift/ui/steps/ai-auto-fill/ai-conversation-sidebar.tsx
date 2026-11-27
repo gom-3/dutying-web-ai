@@ -791,6 +791,7 @@ export default function AiConversationSidebar({
             if (
                 [400, 403, 422, 429].includes((e as {code?: number}).code ?? 0) ||
                 (e as {serverCode?: string}).serverCode === 'CANDIDATE_EXPIRED' ||
+                (Boolean(request.retryOperationId) && (e as {serverCode?: string}).serverCode === 'SCHEDULE_RETRY_INPUT_CHANGED') ||
                 aiConversationFailure(e).blocked
             )
                 sessionStorage.removeItem(pendingKey);
@@ -808,6 +809,7 @@ export default function AiConversationSidebar({
         submittedText?: string,
         retryAdjustment?: TConversationOperation,
     ) => {
+        let retryReviewError: unknown;
         await run(async () => {
             if (isScheduleFullyProtected(useShiftEditorStore.getState().doc)) throw new Error(t('aiAdjust.allFixed'));
 
@@ -960,7 +962,14 @@ export default function AiConversationSidebar({
                 }),
             );
 
-            const operation = await sendExecution(current.conversation.conversationId, request);
+            let operation: TConversationOperation;
+            try {
+                operation = await sendExecution(current.conversation.conversationId, request);
+            } catch (cause) {
+                if (!retryAdjustment || (cause as {serverCode?: string}).serverCode !== 'SCHEDULE_RETRY_INPUT_CHANGED') throw cause;
+                retryReviewError = cause;
+                return;
+            }
 
             if (isExecutionFinished(operation)) sessionStorage.removeItem(pendingKey);
 
@@ -970,6 +979,8 @@ export default function AiConversationSidebar({
             if (submittedText) setText((value) => (value.trim() === submittedText ? '' : value));
             window.dispatchEvent(new Event('dutying:commercial-usage-changed'));
         }, true);
+
+        if (retryReviewError) throw retryReviewError;
     };
     const changeModalities = async (turn: TConversationTurn, overrides: Record<string, 'HARD' | 'SOFT'>) => {
         // run() presents errors but deliberately consumes them. Track completion so the editor retains failed changes.
@@ -2551,7 +2562,7 @@ export default function AiConversationSidebar({
             </button>
         );
     };
-    const retryFailedAdjustment = (current: TConversationDetail, failure: TConversationOperation, turn: TConversationTurn) => {
+    const retryFailedAdjustment = async (current: TConversationDetail, failure: TConversationOperation, turn: TConversationTurn) => {
         const plan = turn.semanticPlan;
         if (!plan) {
             void prepareAndAdjust(turn);
@@ -2567,8 +2578,15 @@ export default function AiConversationSidebar({
             failure.sourceVersionId === current.conversation.currentVersionId &&
             Date.parse(plan.planExpiresAt ?? '') > Date.now()
         ) {
-            void execute('ADJUST', undefined, turn.interpretationId ?? undefined, undefined, undefined, false, undefined, failure);
-            return;
+            try {
+                await execute('ADJUST', undefined, turn.interpretationId ?? undefined, undefined, undefined, false, undefined, failure);
+                return;
+            } catch (cause) {
+                if ((cause as {serverCode?: string}).serverCode !== 'SCHEDULE_RETRY_INPUT_CHANGED') {
+                    if (mounted.current) setError(aiConversationFailure(cause));
+                    return;
+                }
+            }
         }
         const original = requestTextForAdjustmentRetry(current, turn);
         if (original && original.length <= MAX_REQUEST_LENGTH)

@@ -3525,7 +3525,8 @@ describe('persistent schedule sidebar', () => {
         return {raw, confirmed, executed};
     };
 
-    it.each([false, true])('recovers a failed model execution without retyping the request (plan expired: %s)', async (expired) => {
+    it.each(['same settings', 'expired plan', 'changed settings'])('recovers model failure (%s)', async (scenario) => {
+        const expired = scenario === 'expired plan';
         const {raw, confirmed, executed} = executedSemanticRequest('FAILED');
         useShiftEditorStore.getState().setIntentFirstAuthoringEnabled(true);
         Object.assign(confirmed.semanticPlan!, {
@@ -3543,16 +3544,19 @@ describe('persistent schedule sidebar', () => {
             failure: {reasonCode: 'MODEL_TIMEOUT', message: ''},
         };
         const docBefore = useShiftEditorStore.getState().doc;
-        mocks.execute.mockResolvedValueOnce({...executed, operationId: 'retry:1', sequence: executed.sequence + 1});
-        mocks.interpret.mockResolvedValueOnce({interpretationId: 'review:1'});
+        if (scenario === 'changed settings') mocks.execute.mockRejectedValueOnce({code: 409, serverCode: 'SCHEDULE_RETRY_INPUT_CHANGED'});
+        else if (!expired) mocks.execute.mockResolvedValueOnce({...executed, operationId: 'retry:1', sequence: executed.sequence + 1});
+        if (scenario !== 'same settings') mocks.interpret.mockResolvedValueOnce({interpretationId: 'review:1'});
         renderSidebar();
 
-        await userEvent.click(await screen.findByRole('button', {name: '다시 계산하기'}));
+        const retry = await screen.findByRole('button', {name: '다시 계산하기'});
+        const detailsBeforeRetry = mocks.detail.mock.calls.length;
+        await act(async () => userEvent.click(retry));
 
-        if (expired) {
+        if (scenario !== 'same settings') {
+            await waitFor(() => expect(mocks.execute).toHaveBeenCalledTimes(expired ? 0 : 1));
             await waitFor(() => expect(mocks.interpret).toHaveBeenCalledOnce());
             expect(mocks.interpret.mock.calls[0]![1]).toMatchObject({text: raw, reviewBeforeExecution: true});
-            expect(mocks.execute).not.toHaveBeenCalled();
         } else {
             await waitFor(() => expect(mocks.execute).toHaveBeenCalledOnce());
             expect(mocks.execute.mock.calls[0]![1]).toMatchObject({
@@ -3562,6 +3566,7 @@ describe('persistent schedule sidebar', () => {
                 planHash: confirmed.semanticPlan!.planHash,
                 interactionId: confirmed.semanticPlan!.interactionId,
             });
+            await waitFor(() => expect(mocks.detail.mock.calls.length).toBeGreaterThan(detailsBeforeRetry + 1));
             expect(mocks.interpret).not.toHaveBeenCalled();
             expect(mocks.confirmPlan).not.toHaveBeenCalled();
         }
