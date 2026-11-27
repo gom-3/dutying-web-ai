@@ -3457,6 +3457,28 @@ describe('persistent schedule sidebar', () => {
 
         return {raw, proposal};
     };
+    it.each(['MODEL_TIMEOUT', 'INTERPRET_TIMEOUT'])('retries a saved %s without using or clearing the composer', async (reason) => {
+        const {raw, proposal} = semanticRequest('FAILED', [reason]);
+
+        mocks.interpret.mockResolvedValueOnce({...proposal, interpretationId: 'retry:1'});
+        renderSidebar();
+
+        const composer = await screen.findByRole('textbox');
+        const draft = '다음 요청 초안';
+        await userEvent.type(composer, draft);
+        await userEvent.click(await screen.findByRole('button', {name: '요청 다시 확인하기'}));
+
+        await waitFor(() => expect(mocks.interpret).toHaveBeenCalledOnce());
+        expect(mocks.interpret.mock.calls[0]![1]).toMatchObject({
+            text: raw,
+            previousInterpretationId: proposal.interpretationId,
+            change: 'REPLACE',
+        });
+        await waitFor(() => expect(composer).toBeEnabled());
+        expect(composer).toHaveValue(draft);
+        expect(mocks.execute).not.toHaveBeenCalled();
+    });
+
     const confirmSemanticRequest = (proposal: TConversationTurn) => {
         const confirmed: TConversationTurn = {
             ...proposal,

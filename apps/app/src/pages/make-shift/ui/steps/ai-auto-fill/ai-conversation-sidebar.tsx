@@ -31,6 +31,7 @@ import {
     operationAttempt,
     precedingCompletedOperation,
     requestTextForTurn,
+    semanticRecovery,
     unexecutedRequestForRecovery,
 } from '../../../model/conversation-presentation';
 import {isConversationSuggestionCurrent, isFailureSuggestionAvailable} from '../../../model/conversation-suggestion';
@@ -1323,14 +1324,18 @@ export default function AiConversationSidebar({
         rememberDeclinedSettingCandidate(chatKey, operation);
         setNotice(t('aiConversationSidebar.authoring.keep'));
     };
-    const interpret = async (request = text, reference = previousId, {removeConditionId}: {removeConditionId?: string} = {}) => {
+    const interpret = async (
+        request = text,
+        reference = previousId,
+        {removeConditionId, retry = false}: {removeConditionId?: string; retry?: boolean} = {},
+    ) => {
         const message = request.trim();
 
         if (!message) return;
 
         const currentDetail = detailRef.current;
         const consent =
-            !editingRequest && !removeConditionId && !busy && !running && !preparing
+            !retry && !editingRequest && !removeConditionId && !busy && !running && !preparing
                 ? settingConsentReply(currentDetail, message, localDirty, declinedSettingCandidates.current)
                 : null;
 
@@ -1358,6 +1363,7 @@ export default function AiConversationSidebar({
             !currentDetail.operations.some((operation) => operation.interpretationId === currentDetail.conversation.latestInterpretationId);
 
         if (
+            !retry &&
             !isAutofillBlocked &&
             !editingRequest &&
             !currentDetail?.conversationState?.pendingQuestion &&
@@ -1430,7 +1436,7 @@ export default function AiConversationSidebar({
                     if (before && before.conversation.conversationId !== current.conversation.conversationId)
                         throw new AiConversationInputError('staleRequest');
 
-                    if (!state && reference && latestInterpretationId && reference !== latestInterpretationId)
+                    if ((retry || !state) && reference && latestInterpretationId && reference !== latestInterpretationId)
                         throw new AiConversationInputError('staleRequest');
 
                     if (invalidatedReference) {
@@ -1575,7 +1581,9 @@ export default function AiConversationSidebar({
 
                     const failed = interpreted.semanticPlan?.state === 'FAILED';
 
-                    if (!removeConditionId) setText(failed ? request : '');
+                    const canRetry = failed && interpreted.semanticPlan && semanticRecovery(interpreted.semanticPlan) === 'retry';
+
+                    if (!removeConditionId && !retry) setText(failed && !canRetry ? request : '');
 
                     setEditingRequest(null);
                     setPreviousId(interpreted.interpretationId ?? undefined);
@@ -2632,7 +2640,7 @@ export default function AiConversationSidebar({
                                 const current = detailRef.current;
                                 const original = current ? requestTextForTurn(current, turn) : '';
 
-                                if (original) void interpret(original, turn.interpretationId ?? undefined);
+                                if (original) void interpret(original, turn.interpretationId ?? undefined, {retry: true});
                                 else editRequest(turn);
                             }}
                         />
