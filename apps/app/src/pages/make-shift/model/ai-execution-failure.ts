@@ -119,6 +119,8 @@ export function conversationOperationFailure(operation: TConversationOperation):
               )
             : null);
 
+    if (failure && operation.rateLimitedAdjustmentRetry) return {...failure, blocked: false, recovery: 'retry'};
+
     return failure && (operation.executionStatus === 'FAILED' || operation.result?.applicable === false)
         ? {
               ...failure,
@@ -215,6 +217,14 @@ export function isAdjustmentModelFailure(response: TAutofillResponse | null | un
 
     return ['MODEL_CALL_FAILED', 'MODEL_TIMEOUT'].some(
         (code) => response.failure?.reasonCode === code || response.authoringOutcome?.reasonCodes?.includes(code),
+    );
+}
+
+export function isRetryableAdjustmentOperation(operation: TConversationOperation): boolean {
+    return (
+        operation.operationType === 'ADJUST' &&
+        operation.executionStatus === 'FAILED' &&
+        (Boolean(operation.rateLimitedAdjustmentRetry) || isAdjustmentModelFailure(operation.result))
     );
 }
 

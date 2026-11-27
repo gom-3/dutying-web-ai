@@ -3525,55 +3525,77 @@ describe('persistent schedule sidebar', () => {
         return {raw, confirmed, executed};
     };
 
-    it.each(['same settings', 'expired plan', 'changed settings'])('recovers model failure (%s)', async (scenario) => {
-        const expired = scenario === 'expired plan';
-        const {raw, confirmed, executed} = executedSemanticRequest('FAILED');
-        useShiftEditorStore.getState().setIntentFirstAuthoringEnabled(true);
-        Object.assign(confirmed.semanticPlan!, {
-            authoringContractVersion: 'intent-first-v1',
-            interactionId: 'initial-interaction',
-            deadlineAt: new Date(Date.now() - 1000).toISOString(),
-            planExpiresAt: new Date(Date.now() + (expired ? -1000 : 60000)).toISOString(),
-        });
-        executed.result = {
-            ...successfulResult,
-            operationType: 'ADJUST',
-            applicable: false,
-            changedCells: [],
-            engineResult: {status: 'ERROR'},
-            failure: {reasonCode: 'MODEL_TIMEOUT', message: ''},
-        };
-        const docBefore = useShiftEditorStore.getState().doc;
-        if (scenario === 'changed settings') mocks.execute.mockRejectedValueOnce({code: 409, serverCode: 'SCHEDULE_RETRY_INPUT_CHANGED'});
-        else if (!expired) mocks.execute.mockResolvedValueOnce({...executed, operationId: 'retry:1', sequence: executed.sequence + 1});
-        if (scenario !== 'same settings') mocks.interpret.mockResolvedValueOnce({interpretationId: 'review:1'});
-        renderSidebar();
-
-        const retry = await screen.findByRole('button', {name: '다시 계산하기'});
-        const detailsBeforeRetry = mocks.detail.mock.calls.length;
-        await act(async () => userEvent.click(retry));
-
-        if (scenario !== 'same settings') {
-            await waitFor(() => expect(mocks.execute).toHaveBeenCalledTimes(expired ? 0 : 1));
-            await waitFor(() => expect(mocks.interpret).toHaveBeenCalledOnce());
-            expect(mocks.interpret.mock.calls[0]![1]).toMatchObject({text: raw, reviewBeforeExecution: true});
-        } else {
-            await waitFor(() => expect(mocks.execute).toHaveBeenCalledOnce());
-            expect(mocks.execute.mock.calls[0]![1]).toMatchObject({
-                operationType: 'ADJUST',
-                retryOperationId: executed.operationId,
-                interpretationId: confirmed.interpretationId,
-                planHash: confirmed.semanticPlan!.planHash,
-                interactionId: confirmed.semanticPlan!.interactionId,
+    it.each(['same settings', 'expired plan', 'changed settings', 'early rate limit', 'late rate limit'])(
+        'recovers model failure (%s)',
+        async (scenario) => {
+            const expired = scenario === 'expired plan';
+            const {raw, confirmed, executed} = executedSemanticRequest('FAILED');
+            useShiftEditorStore.getState().setIntentFirstAuthoringEnabled(true);
+            Object.assign(confirmed.semanticPlan!, {
+                authoringContractVersion: 'intent-first-v1',
+                interactionId: 'initial-interaction',
+                deadlineAt: new Date(Date.now() - 1000).toISOString(),
+                planExpiresAt: new Date(Date.now() + (expired ? -1000 : 60000)).toISOString(),
             });
-            await waitFor(() => expect(mocks.detail.mock.calls.length).toBeGreaterThan(detailsBeforeRetry + 1));
-            expect(mocks.interpret).not.toHaveBeenCalled();
-            expect(mocks.confirmPlan).not.toHaveBeenCalled();
-        }
+            executed.result = {
+                ...successfulResult,
+                operationType: 'ADJUST',
+                applicable: false,
+                changedCells: [],
+                engineResult: {status: 'ERROR'},
+                failure: {reasonCode: 'MODEL_TIMEOUT', message: ''},
+            };
+            if (scenario === 'late rate limit') {
+                executed.result = null;
+                executed.failureReason = 'SCHEDULE_AUTOFILL_RATE_LIMIT_EXCEEDED';
+                executed.failureMessage = '약 1초 후 다시 시도해 주세요.';
+                executed.rateLimitedAdjustmentRetry = true;
+            }
+            const needsReview = expired || scenario === 'changed settings';
+            const docBefore = useShiftEditorStore.getState().doc;
+            const cooldown = scenario === 'early rate limit';
+            if (cooldown)
+                mocks.execute.mockRejectedValueOnce({
+                    code: 429,
+                    serverCode: 'SCHEDULE_AUTOFILL_RATE_LIMIT_EXCEEDED',
+                    message: '약 1초 후 다시 시도해 주세요.',
+                });
+            if (scenario === 'changed settings')
+                mocks.execute.mockRejectedValueOnce({code: 409, serverCode: 'SCHEDULE_RETRY_INPUT_CHANGED'});
+            else if (!expired) mocks.execute.mockResolvedValueOnce({...executed, operationId: 'retry:1', sequence: executed.sequence + 1});
+            if (needsReview) mocks.interpret.mockResolvedValueOnce({interpretationId: 'review:1'});
+            renderSidebar();
 
-        expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
-        expect(useShiftEditorStore.getState().doc).toBe(docBefore);
-    });
+            const retry = await screen.findByRole('button', {name: '다시 계산하기'});
+            const detailsBeforeRetry = mocks.detail.mock.calls.length;
+            await act(async () => userEvent.click(retry));
+            if (cooldown) {
+                expect(await screen.findByText(/1초 후 다시 시도/)).toBeVisible();
+                await act(async () => userEvent.click(screen.getByRole('button', {name: '다시 계산하기'})));
+            }
+
+            if (needsReview) {
+                await waitFor(() => expect(mocks.execute).toHaveBeenCalledTimes(expired ? 0 : 1));
+                await waitFor(() => expect(mocks.interpret).toHaveBeenCalledOnce());
+                expect(mocks.interpret.mock.calls[0]![1]).toMatchObject({text: raw, reviewBeforeExecution: true});
+            } else {
+                await waitFor(() => expect(mocks.execute).toHaveBeenCalledTimes(cooldown ? 2 : 1));
+                expect(mocks.execute.mock.lastCall![1]).toMatchObject({
+                    operationType: 'ADJUST',
+                    retryOperationId: executed.operationId,
+                    interpretationId: confirmed.interpretationId,
+                    planHash: confirmed.semanticPlan!.planHash,
+                    interactionId: confirmed.semanticPlan!.interactionId,
+                });
+                await waitFor(() => expect(mocks.detail.mock.calls.length).toBeGreaterThan(detailsBeforeRetry + 1));
+                expect(mocks.interpret).not.toHaveBeenCalled();
+                expect(mocks.confirmPlan).not.toHaveBeenCalled();
+            }
+
+            expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
+            expect(useShiftEditorStore.getState().doc).toBe(docBefore);
+        },
+    );
 
     it('restarts after an edited failed request without old recovery controls or condition targets', async () => {
         const {raw, executed} = executedSemanticRequest('FAILED');

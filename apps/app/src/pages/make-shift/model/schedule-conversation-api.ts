@@ -120,6 +120,7 @@ export type TConversationOperation = {
     applyStatus: string;
     failureReason: string | null;
     failureMessage?: string | null;
+    rateLimitedAdjustmentRetry?: boolean;
     result: TAutofillResponse | null;
     createdAt: string;
 };

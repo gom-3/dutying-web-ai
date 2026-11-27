@@ -20,7 +20,7 @@ import {
     isDraftRevisionConflict,
     type TAiConversationFailure,
 } from '../../../model/ai-conversation-failure';
-import {conversationOperationFailure as operationFailure, isAdjustmentModelFailure} from '../../../model/ai-execution-failure';
+import {conversationOperationFailure as operationFailure, isRetryableAdjustmentOperation} from '../../../model/ai-execution-failure';
 import {conversationDraftSignature as signature} from '../../../model/conversation-draft-signature';
 import {isExecutionFinished, readPendingExecution, isDefinitiveExecutionConflict} from '../../../model/conversation-pending-execution';
 import {
@@ -2166,7 +2166,7 @@ export default function AiConversationSidebar({
             operationFailure(latestOperation) &&
             dismissedFailureId !== latestOperation.operationId &&
             !editingRequest &&
-            (entryChoice !== 'modify' || isAdjustmentModelFailure(latestOperation.result)) &&
+            (entryChoice !== 'modify' || isRetryableAdjustmentOperation(latestOperation)) &&
             !detail?.turns.some((turn) => turn.sequence > latestOperation.sequence),
     );
     const latestStoredError = visibleLocalEvents
@@ -2568,7 +2568,7 @@ export default function AiConversationSidebar({
             void prepareAndAdjust(turn);
             return;
         }
-        if (!intentFirstEnabled || plan.authoringContractVersion !== INTENT_FIRST_CONTRACT || !isAdjustmentModelFailure(failure.result)) {
+        if (!intentFirstEnabled || plan.authoringContractVersion !== INTENT_FIRST_CONTRACT || !isRetryableAdjustmentOperation(failure)) {
             void confirmAndAdjust(turn);
             return;
         }
