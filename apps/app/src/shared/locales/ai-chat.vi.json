@@ -79,6 +79,7 @@
             "requestedStaffingFixedShortfall": "{{date}} · {{shift}}: Nếu giữ nguyên các ca đã cố định, chỉ có thể xếp tối đa {{maximum}} người trong nhóm được chỉ định, thấp hơn mức tối thiểu {{minimum}} người. Bạn muốn điều chỉnh mức tối thiểu của ngày này thế nào?",
             "requestedStaffingFixedExactShortfall": "{{date}} · {{shift}}: Nếu giữ nguyên các ca đã cố định, chỉ có thể xếp tối đa {{maximum}} người trong nhóm được chỉ định, không đủ đúng {{minimum}} người như yêu cầu. Bạn muốn điều chỉnh số người cần xếp trong ngày này thế nào?",
             "monthlyShiftBoundsConflict": "Trong cùng một tháng, không thể vừa xếp ít nhất {{minimum}} ca vừa xếp tối đa {{maximum}} ca. Bạn muốn thay đổi giới hạn nào?",
+            "monthlyRestTargetConflict": "{{name}}: Nếu giữ các ca đã cố định, tháng này chỉ có thể bố trí tối đa {{available}} ngày nghỉ, trong khi yêu cầu ít nhất {{minimum}} ngày. Hãy kiểm tra mục tiêu ngày nghỉ và các ca cố định.",
             "monthlyRestTargetStaffingShortfall": "Nếu {{groupCount}} điều dưỡng trong nhóm giữ mục tiêu nghỉ hằng tháng, họ có thể làm tối đa {{maximum}} ca. Cần ít nhất {{required}} ca để đáp ứng yêu cầu nhân sự, còn thiếu {{shortage}} ca."
         },
         "title": "AI xếp lịch trực tự động",

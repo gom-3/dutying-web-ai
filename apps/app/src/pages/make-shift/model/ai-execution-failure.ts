@@ -66,6 +66,30 @@ function nightRunBoundsMessage(issue: Record<string, unknown>): string | null {
     return message;
 }
 
+function monthlyRestTargetMessage(response: TAutofillResponse): string | null {
+    const issue = response.engineResult?.conflictEvidence?.find(
+        (entry) =>
+            entry?.type === 'MONTHLY_REST_TARGET_CONFLICT' &&
+            validCount(entry.minimum) &&
+            validCount(entry.availableRestDays) &&
+            validCount(entry.fixedRestDays) &&
+            entry.availableRestDays <= 31 &&
+            entry.fixedRestDays <= entry.availableRestDays &&
+            entry.availableRestDays < entry.minimum,
+    );
+    if (!issue) return null;
+
+    const name =
+        typeof issue.nurseName === 'string' && issue.nurseName.trim()
+            ? issue.nurseName.trim().slice(0, 80)
+            : i18n.t('aiAdjust.executionFailure.affectedNurse');
+    return i18n.t('aiAdjust.executionFailure.monthlyRestTargetConflict', {
+        name,
+        minimum: issue.minimum,
+        available: issue.availableRestDays,
+    });
+}
+
 /** Display original-input proof beside an already-authorized consent candidate.
  * Never modifies candidate violations/delta, selection eligibility or the roster.
  */
@@ -272,8 +296,15 @@ function readExecutionFailure(response: TAutofillResponse): TAiConversationFailu
             if (
                 reasonCodes.includes('SEARCH_MODEL_INFEASIBLE') ||
                 (outcome.solveState === 'INFEASIBLE_PROVEN' && engine?.solver?.reason === 'infeasible')
-            )
-                return {message: i18n.t('aiAdjust.executionFailure.infeasible'), blocked: false, recovery: 'revise'};
+            ) {
+                const detail = outcome.solveState === 'INFEASIBLE_PROVEN' ? monthlyRestTargetMessage(response) : null;
+                return {
+                    message: detail ?? i18n.t('aiAdjust.executionFailure.infeasible'),
+                    blocked: false,
+                    ...(detail ? {conditionConflict: true} : {}),
+                    recovery: 'revise',
+                };
+            }
 
             if (reasonCodes.includes('CANDIDATE_INCOMPLETE'))
                 return {message: i18n.t('aiAdjust.executionFailure.incomplete'), blocked: false, recovery: 'retry'};

@@ -812,3 +812,31 @@ it.each([
 
     expect(aiExecutionFailure(response)).toMatchObject({message: i18n.t(`aiAdjust.executionFailure.${message}`), recovery});
 });
+
+it('shows the verified monthly rest limit with a revise action and no draft', () => {
+    const response = authoringResponse({
+        operationType: 'GENERATE',
+        applicable: false,
+        changedCells: [],
+        authoringOutcome: authoringOutcome({
+            solveState: 'INFEASIBLE_PROVEN',
+            requestState: 'NO_IMPROVEMENT',
+            draftState: 'NONE',
+            reasonCodes: ['SEARCH_MODEL_INFEASIBLE'],
+        }),
+    });
+    const evidence = {type: 'MONTHLY_REST_TARGET_CONFLICT', nurseName: 'A', minimum: 10, fixedRestDays: 9, availableRestDays: 9};
+    response.engineResult = {...response.engineResult!, status: 'INFEASIBLE', conflictEvidence: [evidence]};
+
+    expect(aiExecutionFailure(response)).toMatchObject({
+        message: i18n.t('aiAdjust.executionFailure.monthlyRestTargetConflict', {name: 'A', minimum: 10, available: 9}),
+        conditionConflict: true,
+        recovery: 'revise',
+    });
+    evidence.availableRestDays = 10;
+    expect(aiExecutionFailure(response)?.message).toBe(i18n.t('aiAdjust.executionFailure.infeasible'));
+    evidence.availableRestDays = 9;
+    response.authoringOutcome!.solveState = 'UNKNOWN';
+    response.authoringOutcome!.reasonCodes = ['CANDIDATE_INCOMPLETE'];
+    expect(aiExecutionFailure(response)?.message).toBe(i18n.t('aiAdjust.executionFailure.incomplete'));
+});

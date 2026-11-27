@@ -79,6 +79,7 @@
             "requestedStaffingFixedShortfall": "{{date}} · {{shift}}：保留固定排班時，指定人員中最多可安排 {{maximum}} 人，低於要求的最低人數 {{minimum}} 人。你想怎麼調整當日的人數下限？",
             "requestedStaffingFixedExactShortfall": "{{date}} · {{shift}}：保留固定排班時，指定人員中最多可安排 {{maximum}} 人，無法達到指定的剛好 {{minimum}} 人。你想怎麼調整當日的人數要求？",
             "monthlyShiftBoundsConflict": "同一個月內，至少排 {{minimum}} 班和最多排 {{maximum}} 班這兩個條件無法同時滿足。你想修改哪一項條件？",
+            "monthlyRestTargetConflict": "{{name}}：維持固定班次時，這個月最多只能排 {{available}} 天休假，達不到至少 {{minimum}} 天的要求。請確認每月休假目標與固定班次。",
             "monthlyRestTargetStaffingShortfall": "如果這組 {{groupCount}} 位護理師維持每月休假目標，最多可安排 {{maximum}} 個班次。要符合人力要求，至少需要 {{required}} 個班次，還差 {{shortage}} 個。"
         },
         "title": "AI 自動排班",
