@@ -910,6 +910,8 @@
         "batchReview": "收取评论结果 · 没有额外使用"
     },
     "aiConversationSidebar": {
+        "useTeamPreference": "使用 {{year}} 年 {{month}} 月已确认排班表的团队偏好",
+        "teamPreferenceEvidence": "比较候选方案时采用了与 {{year}} 年 {{month}} 月已确认排班表 #{{snapshot}} 关联的团队偏好。",
         "authoring": {
             "requestResults": "请求结果",
             "clauseCount": "×{{count}}",
@@ -978,6 +980,7 @@
             "savedResult": "这一结果不适用于当前排班表。",
             "undoStale": "你的排班表改变了. 应用程序没有错过. 比较以前的结果。",
             "qualitative": "查看更改,看看这是你想要的安排。",
+            "recoveryPreviewOnly": "已根据原始请求生成修改方案。部分条件无法验证，排班表仍保持原样。",
             "draft": "这是一个可编辑的草案,最终确认是单独的。",
             "settingChangesTitle": "仅适用于本月此方案的条件",
             "settingChangesScope": "不会保存或永久更改现有设置。同意以下所有条件后，仅应用此方案。",

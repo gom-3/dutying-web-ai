@@ -245,6 +245,9 @@ export default function AiConversationSidebar({
     const [dismissedFailureId, setDismissedFailureId] = useState<string | null>(null);
     const chatOwner = useAuthStore((state) => scheduleChatOwner(state.accountId, state.accessToken));
     const chatKey = scheduleChatKey(chatOwner, wardId, teamId, year, month);
+    const preferenceScope = `${chatOwner}:${wardId}:${teamId}:${year}:${month}`;
+    const [ignoredPreferenceScope, setIgnoredPreferenceScope] = useState<string | null>(null);
+    const ignoreTeamPreferences = ignoredPreferenceScope === preferenceScope;
     const transcriptKey = chatKey ? `${chatKey}:server-transcript` : null;
     const {
         text,
@@ -832,6 +835,7 @@ export default function AiConversationSidebar({
             if (saved) throw new AiConversationInputError('pendingExecution');
 
             const request: TConversationExecute = {
+                ...(ignoreTeamPreferences ? {ignoreTeamPreferences: true} : {}),
                 clientContext: {
                     surfaceVersion: 'conversation-minimal-v1',
                     entryChoice: operationType === 'GENERATE' ? 'regenerate' : 'modify',
@@ -845,7 +849,7 @@ export default function AiConversationSidebar({
                 operationType,
                 ...(conflict?.result?.candidate
                     ? {
-                          conflictReviewToken: conflict.result.candidate.token,
+                          conflictReviewToken: conflict.result.candidate.token ?? undefined,
                           conflictConfirmed: true,
                           candidateDigest: conflict.result.candidate.candidateDigest,
                           sourceOperationId: conflict.operationId,
@@ -1367,12 +1371,26 @@ export default function AiConversationSidebar({
         ) {
             if (emptyOnly) {
                 if (isGenerationReady && !isGenerationReady()) return;
+
+                const id = `request:${++localSequence.current}`;
+                const createdAt = new Date().toISOString();
+                const after = Math.max(0, ...conversationEvents(currentDetail).map((event) => event.sequence));
+
+                setLocalEvents((events) => [
+                    ...events,
+                    {
+                        kind: 'local',
+                        id,
+                        sequence: Math.max(after, ...events.map((event) => event.sequence)) + 0.001,
+                        messages: [{role: 'user', text: message, createdAt}],
+                    },
+                ]);
                 await execute('GENERATE', 'EMPTY_ONLY', undefined, undefined, undefined, false, message);
                 return;
             }
 
             setText('');
-            chooseNextAction('regenerate');
+            chooseNextAction('regenerate', message);
 
             return;
         }
@@ -2357,7 +2375,7 @@ export default function AiConversationSidebar({
     const showInitialGeneration = showNextActions && !showScheduleChoice && !attachNextActions && !hasGeneratedAssignments;
     const showEntryQuestion = showScheduleChoice || (showNextActions && !attachNextActions && !hasConversationMessages);
     const entryQuestion = t(showScheduleChoice ? 'aiConversationSidebar.entry.question' : 'aiAdjust.chat.welcome');
-    const chooseNextAction = (choice: TConversationEntryChoice) => {
+    const chooseNextAction = (choice: TConversationEntryChoice, requestedText?: string) => {
         if (!detail || busy || running || awaitingAdjustment || preparing) return;
 
         if (choice === 'edit') {
@@ -2375,9 +2393,13 @@ export default function AiConversationSidebar({
 
         if (regenerateWithCurrentConditions && isGenerationReady && !isGenerationReady()) return;
 
-        const reply = t(
-            choice === 'modify' || regenerateWithCurrentConditions ? `aiConversationSidebar.entry.${choice}` : 'aiAdjust.chat.regenerate',
-        );
+        const reply =
+            requestedText ??
+            t(
+                choice === 'modify' || regenerateWithCurrentConditions
+                    ? `aiConversationSidebar.entry.${choice}`
+                    : 'aiAdjust.chat.regenerate',
+            );
         const createdAt = new Date().toISOString();
 
         if (choice === 'regenerate') preserveGenerationComposer.current = entryChoice === 'modify';
@@ -3608,6 +3630,20 @@ export default function AiConversationSidebar({
                                         textarea.current?.focus();
                                     }}
                                 />
+                            )}
+                            {intentFirstEnabled && detail?.teamPreference && (
+                                <label className="flex min-h-11 cursor-pointer items-center gap-2 text-sm">
+                                    <input
+                                        type="checkbox"
+                                        checked={!ignoreTeamPreferences}
+                                        disabled={busy || running}
+                                        onChange={(event) => setIgnoredPreferenceScope(event.target.checked ? null : preferenceScope)}
+                                    />
+                                    {t('aiConversationSidebar.useTeamPreference', {
+                                        year: detail.teamPreference.year,
+                                        month: detail.teamPreference.month,
+                                    })}
+                                </label>
                             )}
                             <div className="ai-adjust-composer ai-conversation-composer flex items-end gap-[8px] rounded-xl border-[1.5px] border-[#DCE2EB] bg-[#F2F4F6] px-[12px] py-[8px] focus-within:border-main-1 focus-within:bg-[#F0EBFF]">
                                 <div className="min-w-0 flex-1 self-center">

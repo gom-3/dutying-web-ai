@@ -6,6 +6,10 @@ This repository uses one shared version across all workspaces, so release notes 
 
 Entries are generated from pending `.changeset/*.md` files when `pnpm run changeset:version` or `pnpm run release:version` is executed.
 
+## 1.3.59 - 2026-11-27
+
+- `@dutying/app` (patch): 직접 입력한 근무표 요청을 대화에 유지하고, 검증이 필요한 조정안과 자동채우기 실패의 원인을 구별합니다. 임시 저장 복구와 팀 선호 조건 표시를 보완합니다.
+
 ## 1.3.58 - 2026-11-24
 
 - `@dutying/app` (patch): 잠금화면 가이드를 보라색 3D 달력·할 일 아이콘과 휴대폰 미리보기 중심으로 재구성합니다. 두 설정 항목의 시각적 위계를 통일하고 모바일·다크모드를 다듬으며, 안내를 완료한 뒤 이어서 설정이 남는 문제를 수정합니다.

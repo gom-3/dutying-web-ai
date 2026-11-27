@@ -1046,12 +1046,24 @@ describe('persistent schedule sidebar', () => {
     });
 
     it('fills only empty cells for the preserved-wanted request in one submission', async () => {
-        renderSidebar();
-        await userEvent.type(await screen.findByRole('textbox'), '원티드 한거 그대로 두고 빈칸을 채워줘');
+        const original = '원티드 한거 그대로 두고 빈칸을 채워줘';
+        const {unmount} = renderSidebar();
+        await userEvent.type(await screen.findByRole('textbox'), original);
         await userEvent.click(screen.getByRole('button', {name: i18n.t('aiAdjust.send')}));
         await waitFor(() => expect(mocks.execute).toHaveBeenCalledOnce());
-        expect(mocks.execute.mock.calls[0]![1]).toMatchObject({operationType: 'GENERATE', fillPolicy: 'EMPTY_ONLY', rebuildConfirmed: false});
+        expect(mocks.execute.mock.calls[0]![1]).toMatchObject({
+            operationType: 'GENERATE',
+            fillPolicy: 'EMPTY_ONLY',
+            rebuildConfirmed: false,
+            clientContext: {typedText: original},
+        });
+        expect(screen.getAllByText(original)).toHaveLength(1);
         expect(mocks.interpret).not.toHaveBeenCalled();
+
+        unmount();
+        renderSidebar();
+        expect(await screen.findByText(original)).toBeVisible();
+        expect(mocks.execute).toHaveBeenCalledOnce();
     });
 
     it('routes a standalone autofill command directly to the existing preparation without model work', async () => {

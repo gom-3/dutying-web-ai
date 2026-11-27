@@ -792,3 +792,23 @@ it('explains the staffing shortfall conditionally while keeping timeout recovery
     response.engineResult!.conflictEvidence![0].shortageAssignments = 4;
     expect(aiExecutionFailure(response)?.message).not.toContain(advisory);
 });
+
+it.each([
+    ['SEARCH_MODEL_INFEASIBLE', 'INFEASIBLE_PROVEN', 'INFEASIBLE', 'infeasible', 'revise'],
+    ['CANDIDATE_INCOMPLETE', 'UNKNOWN', 'REJECTED', 'incomplete', 'retry'],
+] as const)('shows the recorded autofill failure %s ahead of verification warnings', (reason, solveState, status, message, recovery) => {
+    const response = authoringResponse({
+        operationType: 'GENERATE',
+        applicable: false,
+        changedCells: [],
+        authoringOutcome: authoringOutcome({
+            solveState,
+            requestState: 'NEEDS_REVIEW',
+            draftState: 'NONE',
+            reasonCodes: ['PYTHON_SPRING_DELTA_MISMATCH', reason, 'PYTHON_CONTRACT_UNVERIFIED'],
+        }),
+    });
+    response.engineResult = {...response.engineResult!, status};
+
+    expect(aiExecutionFailure(response)).toMatchObject({message: i18n.t(`aiAdjust.executionFailure.${message}`), recovery});
+});

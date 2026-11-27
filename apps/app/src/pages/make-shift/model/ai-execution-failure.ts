@@ -243,6 +243,20 @@ function readExecutionFailure(response: TAutofillResponse): TAiConversationFailu
         )
             return null;
 
+        if (response.operationType === 'GENERATE' && response.applicable === false && outcome.draftState === 'NONE') {
+            const engine = response.engineResult;
+            const reasonCodes = [...(outcome.reasonCodes ?? []), ...(engine?.authoringOutcome?.reasonCodes ?? [])];
+
+            if (
+                reasonCodes.includes('SEARCH_MODEL_INFEASIBLE') ||
+                (outcome.solveState === 'INFEASIBLE_PROVEN' && engine?.solver?.reason === 'infeasible')
+            )
+                return {message: i18n.t('aiAdjust.executionFailure.infeasible'), blocked: false, recovery: 'revise'};
+
+            if (reasonCodes.includes('CANDIDATE_INCOMPLETE'))
+                return {message: i18n.t('aiAdjust.executionFailure.incomplete'), blocked: false, recovery: 'retry'};
+        }
+
         // Verification failures are not proof that the user's conditions conflict.
         if (
             outcome.reasonCodes?.includes('EXACT_REQUEST_UNVERIFIED') ||

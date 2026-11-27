@@ -1,5 +1,14 @@
 # @dutying/app
 
+## 1.3.59
+
+### Patch Changes
+
+- 직접 입력한 근무표 요청을 대화에 유지하고, 검증이 필요한 조정안과 자동채우기 실패의 원인을 구별합니다. 임시 저장 복구와 팀 선호 조건 표시를 보완합니다.
+    - @dutying/api@1.3.59
+    - @dutying/domain@1.3.59
+    - @dutying/utils@1.3.59
+
 ## 1.3.58
 
 ### Patch Changes

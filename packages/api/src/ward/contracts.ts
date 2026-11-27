@@ -974,11 +974,26 @@ export type TAuthoringCandidate = {
     violations: TScheduleViolationDto[];
     violationDelta: TAuthoringViolationDelta;
     expiresAt: string;
-    token: string;
-    selectionReason: 'MATERIAL_TRADEOFF' | 'QUALITATIVE_REVIEW' | 'STRENGTH_ESCALATION';
+    token: string | null;
+    selectionReason:
+        | 'MATERIAL_TRADEOFF'
+        | 'QUALITATIVE_REVIEW'
+        | 'STRENGTH_ESCALATION'
+        | 'INTERPRETATION_RECOVERY_UNVERIFIED'
+        | 'QUALITATIVE_FULFILLMENT_UNVERIFIED';
+};
+
+export type TTeamPreferenceEvidence = {
+    year: number;
+    month: number;
+    shiftTeamId: number;
+    snapshotId: number;
+    sourceSnapshotId: number;
+    knobs: Record<string, number>;
 };
 
 export type TAutofillResponse = {
+    teamPreference?: TTeamPreferenceEvidence;
     authoringOutcome?: TAuthoringOutcome;
     candidate?: TAuthoringCandidate;
     reviewRequired?: boolean;
@@ -1079,6 +1094,7 @@ export type TAutofillResponse = {
 
 export type TSaveSnapshotDTO = {
     snapshotId?: number;
+    idempotencyKey?: string;
     title: string;
     year: number;
     month: number;

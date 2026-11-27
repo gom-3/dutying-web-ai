@@ -1,4 +1,6 @@
 export const aiConversationSidebarKo = {
+    useTeamPreference: '{{year}}년 {{month}}월 확정표의 팀 선호 사용',
+    teamPreferenceEvidence: '같은 팀의 {{year}}년 {{month}}월 확정표 #{{snapshot}}에 연결된 선호를 후보 비교에 사용했어요.',
     authoring: {
         settingReviewTitle: '이번 달 이 설정을 허용할까요?',
         candidateReviewTitle: '요청한 근무 변경안을 확인해 주세요',
@@ -88,6 +90,7 @@ export const aiConversationSidebarKo = {
         savedResult: '이 결과는 현재 근무표에 반영되어 있지 않아요.',
         undoStale: '표가 바뀌어 반영을 취소하지 않았어요. 이전 결과와 비교해 주세요.',
         qualitative: '바뀐 근무가 원하던 내용과 맞는지 확인해 주세요.',
+        recoveryPreviewOnly: '원문으로 변경안을 만들었어요. 요청 조건을 모두 검증하지 못해 표에 반영하지 않았어요.',
         draft: '아직 작성 중인 근무표예요. 검토를 마친 뒤 확정해 주세요.',
     },
     conditionsSaved: '근무 조건을 저장했어요. 근무표는 변경되지 않았어요. 바뀐 조건으로 다시 계산할 수 있어요.',
@@ -173,6 +176,8 @@ export const aiConversationSidebarKo = {
 } as const;
 
 export const aiConversationSidebarEn = {
+    useTeamPreference: 'Use team preferences from {{year}}/{{month}}',
+    teamPreferenceEvidence: 'Candidate comparison used team preferences linked to confirmed schedule #{{snapshot}} for {{year}}/{{month}}.',
     authoring: {
         settingReviewTitle: 'Allow these settings for this month?',
         candidateReviewTitle: 'Review the requested shift changes',
@@ -263,6 +268,8 @@ export const aiConversationSidebarEn = {
         savedResult: 'This result is not applied to the current schedule.',
         undoStale: 'Your schedule changed. The application was not undone. Compare the previous result.',
         qualitative: 'Check the changes to see whether this is the arrangement you wanted.',
+        recoveryPreviewOnly:
+            'This proposal uses your original request. Some conditions could not be verified, so the schedule has stayed as it was.',
         draft: 'This is an editable draft. Final confirmation is separate.',
     },
     conditionsSaved: 'Conditions saved. Your schedule is unchanged. You can fill it again with the updated conditions.',
@@ -347,6 +354,8 @@ export const aiConversationSidebarEn = {
 } as const;
 
 export const aiConversationSidebarJa = {
+    useTeamPreference: '{{year}}年{{month}}月の確定表のチームの希望を使う',
+    teamPreferenceEvidence: '候補の比較に{{year}}年{{month}}月の確定表 #{{snapshot}} に紐づくチームの希望を使いました。',
     authoring: {
         settingReviewTitle: '今月だけこの設定を許可しますか？',
         candidateReviewTitle: '依頼した勤務変更案をご確認ください',
@@ -434,6 +443,7 @@ export const aiConversationSidebarJa = {
         savedResult: 'この結果は現在の勤務表に反映されていません。',
         undoStale: '勤務表が変わったため取り消しませんでした。以前の結果と比較してください。',
         qualitative: '変更内容を見て、ご希望の配置になっているかご確認ください。',
+        recoveryPreviewOnly: '元の依頼をもとに変更案を作成しました。一部の条件を検証できなかったため、勤務表には反映していません。',
         draft: '編集可能な下書きです。最終確定は別途行います。',
     },
     conditionsSaved: '制約条件を保存しました。勤務表は変更されていません。変更した条件でもう一度自動入力できます。',

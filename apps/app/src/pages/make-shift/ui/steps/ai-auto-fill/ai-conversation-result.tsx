@@ -199,6 +199,15 @@ export function AiConversationResult({
                     {t('aiConversationSidebar.authoring.partialCoverage')}
                 </p>
             )}
+            {result?.teamPreference && (
+                <p className="mt-3 text-sm">
+                    {t('aiConversationSidebar.teamPreferenceEvidence', {
+                        year: result.teamPreference.year,
+                        month: result.teamPreference.month,
+                        snapshot: result.teamPreference.snapshotId,
+                    })}
+                </p>
+            )}
             {result && <AiRequestOutcome result={result} showChangedSummary={!compactResult && !historical} />}
             {children}
         </AiScheduleResultCard>
