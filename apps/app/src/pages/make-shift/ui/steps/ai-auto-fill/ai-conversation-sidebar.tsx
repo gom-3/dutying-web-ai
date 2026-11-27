@@ -1371,12 +1371,26 @@ export default function AiConversationSidebar({
         ) {
             if (emptyOnly) {
                 if (isGenerationReady && !isGenerationReady()) return;
+
+                const id = `request:${++localSequence.current}`;
+                const createdAt = new Date().toISOString();
+                const after = Math.max(0, ...conversationEvents(currentDetail).map((event) => event.sequence));
+
+                setLocalEvents((events) => [
+                    ...events,
+                    {
+                        kind: 'local',
+                        id,
+                        sequence: Math.max(after, ...events.map((event) => event.sequence)) + 0.001,
+                        messages: [{role: 'user', text: message, createdAt}],
+                    },
+                ]);
                 await execute('GENERATE', 'EMPTY_ONLY', undefined, undefined, undefined, false, message);
                 return;
             }
 
             setText('');
-            chooseNextAction('regenerate');
+            chooseNextAction('regenerate', message);
 
             return;
         }
@@ -2361,7 +2375,7 @@ export default function AiConversationSidebar({
     const showInitialGeneration = showNextActions && !showScheduleChoice && !attachNextActions && !hasGeneratedAssignments;
     const showEntryQuestion = showScheduleChoice || (showNextActions && !attachNextActions && !hasConversationMessages);
     const entryQuestion = t(showScheduleChoice ? 'aiConversationSidebar.entry.question' : 'aiAdjust.chat.welcome');
-    const chooseNextAction = (choice: TConversationEntryChoice) => {
+    const chooseNextAction = (choice: TConversationEntryChoice, requestedText?: string) => {
         if (!detail || busy || running || awaitingAdjustment || preparing) return;
 
         if (choice === 'edit') {
@@ -2379,9 +2393,13 @@ export default function AiConversationSidebar({
 
         if (regenerateWithCurrentConditions && isGenerationReady && !isGenerationReady()) return;
 
-        const reply = t(
-            choice === 'modify' || regenerateWithCurrentConditions ? `aiConversationSidebar.entry.${choice}` : 'aiAdjust.chat.regenerate',
-        );
+        const reply =
+            requestedText ??
+            t(
+                choice === 'modify' || regenerateWithCurrentConditions
+                    ? `aiConversationSidebar.entry.${choice}`
+                    : 'aiAdjust.chat.regenerate',
+            );
         const createdAt = new Date().toISOString();
 
         if (choice === 'regenerate') preserveGenerationComposer.current = entryChoice === 'modify';
