@@ -910,6 +910,8 @@
         "batchReview": "Tải về kết quả cho đánh giá · Không sử dụng thêm"
     },
     "aiConversationSidebar": {
+        "useTeamPreference": "Dùng ưu tiên của nhóm từ lịch trực đã xác nhận tháng {{month}}/{{year}}",
+        "teamPreferenceEvidence": "Khi so sánh các phương án, hệ thống đã dùng ưu tiên của nhóm gắn với lịch trực đã xác nhận #{{snapshot}} tháng {{month}}/{{year}}.",
         "authoring": {
             "requestResults": "Kết quả yêu cầu",
             "clauseCount": "× {{count}}",

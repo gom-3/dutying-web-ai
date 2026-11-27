@@ -910,6 +910,8 @@
         "batchReview": "收取評論結果 · 沒有額外使用"
     },
     "aiConversationSidebar": {
+        "useTeamPreference": "使用 {{year}} 年 {{month}} 月已確認班表的團隊偏好",
+        "teamPreferenceEvidence": "比較候選方案時採用了與 {{year}} 年 {{month}} 月已確認班表 #{{snapshot}} 關聯的團隊偏好。",
         "authoring": {
             "requestResults": "請求結果",
             "clauseCount": "×{{count}}",

@@ -910,6 +910,8 @@
         "batchReview": "ผลการโหลดสําหรับการตรวจสอบ · ไม่มีการใช้เพิ่มเติม"
     },
     "aiConversationSidebar": {
+        "useTeamPreference": "ใช้ความต้องการของทีมจากตารางเวรที่ยืนยันแล้วเดือน {{month}} ปี {{year}}",
+        "teamPreferenceEvidence": "การเปรียบเทียบทางเลือกใช้ความต้องการของทีมที่เชื่อมโยงกับตารางเวรที่ยืนยันแล้ว #{{snapshot}} เดือน {{month}} ปี {{year}}",
         "authoring": {
             "requestResults": "ผลการสอบถาม",
             "clauseCount": "× {{count}}",

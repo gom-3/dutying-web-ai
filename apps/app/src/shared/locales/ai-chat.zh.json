@@ -910,6 +910,8 @@
         "batchReview": "收取评论结果 · 没有额外使用"
     },
     "aiConversationSidebar": {
+        "useTeamPreference": "使用 {{year}} 年 {{month}} 月已确认排班表的团队偏好",
+        "teamPreferenceEvidence": "比较候选方案时采用了与 {{year}} 年 {{month}} 月已确认排班表 #{{snapshot}} 关联的团队偏好。",
         "authoring": {
             "requestResults": "请求结果",
             "clauseCount": "×{{count}}",
