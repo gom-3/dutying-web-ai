@@ -78,6 +78,7 @@ import {
     type TInterpretCardItem,
     toInterpretCells,
 } from '../../../model/schedule-month-requests';
+import {saveTemporarySnapshot} from '../../../model/save-temporary-snapshot';
 import {useSchedulePublishSuccessStore} from '../../../model/schedule-publish-success-store';
 import {observeScheduleRequest} from '../../../model/schedule-telemetry';
 import {useMakeShiftNurseOrder} from '../../../model/use-make-shift-nurse-order';
@@ -371,6 +372,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
     const [showFaults, setShowFaults] = useState(true);
     const [isWorking, setIsWorking] = useState(false);
     const [isSavingSnapshot, setIsSavingSnapshot] = useState(false);
+    const savingSnapshotRef = useRef(false);
     const [isAiGenerating, setIsAiGenerating] = useState(false);
     const [isRequestBusy, setIsRequestBusy] = useState(false);
     const [aiExecution, setAiExecution] = useState<TConversationExecution | null>(null);
@@ -1001,17 +1003,15 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
         setIsAiBlankPreviewVisible(false);
     }, [aiFillDecisionContext, isAiBlankPreviewVisible, isAiGenerating, lastShiftBlankWarningIntent]);
 
-    const saveSnapshotFromList = async (snapshots: TSnapshotSummaryDto[]) => {
+    const saveSnapshotFromList = async (snapshots: TSnapshotSummaryDto[], docToSave: TDutyDoc) => {
         if (!isCurrentShiftTeamReady || !wardId || !currentShiftTeamId || !orderedShift) return;
 
         const progressToastId = 'make-shift-snapshot-save-progress';
-        const docToSave = useShiftEditorStore.getState().doc;
-
         if (hasScheduleScopeShape(orderedShift) && !isDutyDocInScheduleScope(docToSave, orderedShift, year, month)) return;
 
         toast.loading(t('page.makeShift.aiRefill.savingSnapshot'), {id: progressToastId});
 
-        const saved = await WardAPI.saveSnapshot(
+        const saved = await saveTemporarySnapshot(
             wardId,
             currentShiftTeamId,
             buildSaveSnapshotDTO({
@@ -1025,7 +1025,16 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
 
         prependSnapshotToListCache(queryClient, wardId, currentShiftTeamId, year, month, saved);
         invalidateSnapshots(wardId, currentShiftTeamId, year, month);
-        markEditableDocSaved(docToSave);
+        const current = currentAiContextRef.current;
+        if (
+            current.wardId === wardId &&
+            current.shiftTeamId === currentShiftTeamId &&
+            current.year === year &&
+            current.month === month &&
+            useShiftEditorStore.getState().doc === docToSave
+        ) {
+            markEditableDocSaved(docToSave);
+        }
         toast.success(t('page.makeShift.aiRefill.saveSnapshotSuccess'), {id: progressToastId});
     };
 
@@ -1202,8 +1211,11 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
         return true;
     };
     const handleSaveSnapshot = async () => {
-        if (!isCurrentShiftTeamReady || !wardId || !currentShiftTeamId || !orderedShift || isSavingSnapshot) return;
+        if (!isCurrentShiftTeamReady || !wardId || !currentShiftTeamId || !orderedShift || savingSnapshotRef.current) return;
 
+        const docToSave = useShiftEditorStore.getState().doc;
+        const context = currentAiContextRef.current;
+        savingSnapshotRef.current = true;
         setIsSavingSnapshot(true);
 
         try {
@@ -1215,12 +1227,22 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                 normalizeScheduleSnapshots(snapshots),
             );
 
-            await saveSnapshotFromList(snapshots);
+            const current = currentAiContextRef.current;
+            if (
+                current.wardId !== context.wardId ||
+                current.shiftTeamId !== context.shiftTeamId ||
+                current.year !== context.year ||
+                current.month !== context.month
+            )
+                return;
+
+            await saveSnapshotFromList(snapshots, docToSave);
         } catch (error) {
             if (!isScheduleRosterChangedApiError(error)) {
                 toast.error(t('page.makeShift.aiRefill.saveSnapshotFailed'), {id: 'make-shift-snapshot-save-progress'});
             }
         } finally {
+            savingSnapshotRef.current = false;
             setIsSavingSnapshot(false);
         }
     };

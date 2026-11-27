@@ -245,6 +245,9 @@ export default function AiConversationSidebar({
     const [dismissedFailureId, setDismissedFailureId] = useState<string | null>(null);
     const chatOwner = useAuthStore((state) => scheduleChatOwner(state.accountId, state.accessToken));
     const chatKey = scheduleChatKey(chatOwner, wardId, teamId, year, month);
+    const preferenceScope = `${chatOwner}:${wardId}:${teamId}:${year}:${month}`;
+    const [ignoredPreferenceScope, setIgnoredPreferenceScope] = useState<string | null>(null);
+    const ignoreTeamPreferences = ignoredPreferenceScope === preferenceScope;
     const transcriptKey = chatKey ? `${chatKey}:server-transcript` : null;
     const {
         text,
@@ -832,6 +835,7 @@ export default function AiConversationSidebar({
             if (saved) throw new AiConversationInputError('pendingExecution');
 
             const request: TConversationExecute = {
+                ...(ignoreTeamPreferences ? {ignoreTeamPreferences: true} : {}),
                 clientContext: {
                     surfaceVersion: 'conversation-minimal-v1',
                     entryChoice: operationType === 'GENERATE' ? 'regenerate' : 'modify',
@@ -3608,6 +3612,20 @@ export default function AiConversationSidebar({
                                         textarea.current?.focus();
                                     }}
                                 />
+                            )}
+                            {intentFirstEnabled && detail?.teamPreference && (
+                                <label className="flex min-h-11 cursor-pointer items-center gap-2 text-sm">
+                                    <input
+                                        type="checkbox"
+                                        checked={!ignoreTeamPreferences}
+                                        disabled={busy || running}
+                                        onChange={(event) => setIgnoredPreferenceScope(event.target.checked ? null : preferenceScope)}
+                                    />
+                                    {t('aiConversationSidebar.useTeamPreference', {
+                                        year: detail.teamPreference.year,
+                                        month: detail.teamPreference.month,
+                                    })}
+                                </label>
                             )}
                             <div className="ai-adjust-composer ai-conversation-composer flex items-end gap-[8px] rounded-xl border-[1.5px] border-[#DCE2EB] bg-[#F2F4F6] px-[12px] py-[8px] focus-within:border-main-1 focus-within:bg-[#F0EBFF]">
                                 <div className="min-w-0 flex-1 self-center">

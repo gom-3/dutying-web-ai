@@ -48,7 +48,9 @@ export function AiAuthoringCandidate({
     const conflictMessages = nightRunConflictMessages(result);
     const priority = authoringOutcome(result)?.requestPriority;
     const settingsConsent = priority?.version === 'request-first-v2' && priority.settingChangesRequired === true;
-    const advisory = candidate.selectionReason === 'INTERPRETATION_RECOVERY_UNVERIFIED';
+    const advisory =
+        candidate.selectionReason === 'INTERPRETATION_RECOVERY_UNVERIFIED' ||
+        candidate.selectionReason === 'QUALITATIVE_FULFILLMENT_UNVERIFIED';
     const available = current && canSelectAuthoringCandidate(result, sourceVersionId, now);
     const expired = !current || !Number.isFinite(Date.parse(candidate.expiresAt)) || Date.parse(candidate.expiresAt) <= now;
     const impacts = priority?.candidateImpacts ?? [];

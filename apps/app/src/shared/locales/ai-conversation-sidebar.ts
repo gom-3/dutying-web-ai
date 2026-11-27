@@ -1,4 +1,6 @@
 export const aiConversationSidebarKo = {
+    useTeamPreference: '{{year}}년 {{month}}월 확정표의 팀 선호 사용',
+    teamPreferenceEvidence: '같은 팀의 {{year}}년 {{month}}월 확정표 #{{snapshot}}에 연결된 선호를 후보 비교에 사용했어요.',
     authoring: {
         settingReviewTitle: '이번 달 이 설정을 허용할까요?',
         candidateReviewTitle: '요청한 근무 변경안을 확인해 주세요',
@@ -174,6 +176,8 @@ export const aiConversationSidebarKo = {
 } as const;
 
 export const aiConversationSidebarEn = {
+    useTeamPreference: 'Use team preferences from {{year}}/{{month}}',
+    teamPreferenceEvidence: 'Candidate comparison used team preferences linked to confirmed schedule #{{snapshot}} for {{year}}/{{month}}.',
     authoring: {
         settingReviewTitle: 'Allow these settings for this month?',
         candidateReviewTitle: 'Review the requested shift changes',
@@ -264,7 +268,8 @@ export const aiConversationSidebarEn = {
         savedResult: 'This result is not applied to the current schedule.',
         undoStale: 'Your schedule changed. The application was not undone. Compare the previous result.',
         qualitative: 'Check the changes to see whether this is the arrangement you wanted.',
-        recoveryPreviewOnly: 'This proposal uses your original request. Some conditions could not be verified, so the schedule has stayed as it was.',
+        recoveryPreviewOnly:
+            'This proposal uses your original request. Some conditions could not be verified, so the schedule has stayed as it was.',
         draft: 'This is an editable draft. Final confirmation is separate.',
     },
     conditionsSaved: 'Conditions saved. Your schedule is unchanged. You can fill it again with the updated conditions.',
@@ -349,6 +354,8 @@ export const aiConversationSidebarEn = {
 } as const;
 
 export const aiConversationSidebarJa = {
+    useTeamPreference: '{{year}}年{{month}}月の確定表のチームの希望を使う',
+    teamPreferenceEvidence: '候補の比較に{{year}}年{{month}}月の確定表 #{{snapshot}} に紐づくチームの希望を使いました。',
     authoring: {
         settingReviewTitle: '今月だけこの設定を許可しますか？',
         candidateReviewTitle: '依頼した勤務変更案をご確認ください',

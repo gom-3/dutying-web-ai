@@ -133,6 +133,7 @@ export type TConversationState = {
     pendingQuestion: {conditionId: string; question: string; originalText?: string | null} | null;
 };
 export type TConversationDetail = {
+    teamPreference?: TAutofillResponse['teamPreference'];
     conversationState?: TConversationState | null;
     contextHash: string;
     activeConditionLabels: string[];
@@ -155,6 +156,7 @@ export type TConversationClientContext = {
     typedText?: string;
 };
 export type TConversationExecute = {
+    ignoreTeamPreferences?: boolean;
     clientContext?: TConversationClientContext;
     authoringContractVersion?: 'intent-first-v1';
     interactionId?: string;
