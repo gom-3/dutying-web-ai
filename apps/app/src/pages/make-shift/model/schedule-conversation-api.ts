@@ -173,6 +173,7 @@ export type TConversationExecute = {
     interpretationId?: string;
     planHash?: string;
     sourceVersionId?: string;
+    retryOperationId?: string;
     failureSourceOperationId?: string;
     failureSuggestionId?: string;
     failureSuggestionDigest?: string;
@@ -217,6 +218,7 @@ export function conversationApi(wardId: number, teamId: number) {
                 language: string;
                 previousInterpretationId?: string;
                 change?: 'ADD' | 'UPDATE' | 'REPLACE' | 'REMOVE' | 'RESET' | 'AUTO';
+                reviewBeforeExecution?: boolean;
                 expectedStateVersion?: number;
                 targetConditionIds?: string[];
                 removeLabels?: string[];

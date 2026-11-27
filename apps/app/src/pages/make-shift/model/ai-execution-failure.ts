@@ -184,6 +184,16 @@ function requestedCountConflict(response: TAutofillResponse): TAiConversationFai
     };
 }
 
+/** A provider failure may be retried only when it did not produce a candidate or apply any changes. */
+export function isAdjustmentModelFailure(response: TAutofillResponse | null | undefined): boolean {
+    if (!response || response.operationType !== 'ADJUST' || response.applicable !== false || response.conflictReview || response.candidate)
+        return false;
+
+    return ['MODEL_CALL_FAILED', 'MODEL_TIMEOUT'].some(
+        (code) => response.failure?.reasonCode === code || response.authoringOutcome?.reasonCodes?.includes(code),
+    );
+}
+
 /** Explain a rejected result without treating an unverified result as proven infeasibility. */
 export function aiExecutionFailure(response: TAutofillResponse): TAiConversationFailure | null {
     const failure = readExecutionFailure(response);
@@ -208,6 +218,18 @@ export function aiExecutionFailure(response: TAutofillResponse): TAiConversation
 }
 
 function readExecutionFailure(response: TAutofillResponse): TAiConversationFailure | null {
+    if (isAdjustmentModelFailure(response)) {
+        const timedOut =
+            response.failure?.reasonCode === 'MODEL_TIMEOUT' || response.authoringOutcome?.reasonCodes?.includes('MODEL_TIMEOUT');
+
+        return {
+            message: i18n.t(timedOut ? 'aiAdjust.executionFailure.timeout' : 'aiAdjust.executionFailure.response'),
+            blocked: false,
+            recovery: 'retry',
+            ...(response.observation ? {observation: response.observation} : {}),
+        };
+    }
+
     const countConflict = requestedCountConflict(response);
     if (countConflict) return countConflict;
 

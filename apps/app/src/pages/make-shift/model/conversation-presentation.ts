@@ -151,6 +151,38 @@ export function requestTextForTurn(detail: TConversationDetail, turn: TConversat
     );
 }
 
+/** Restore the dialogue that produced a now-expired calculation. Stored conditions include resolved short replies. */
+export function requestTextForAdjustmentRetry(detail: TConversationDetail, turn: TConversationTurn): string {
+    const selection = turn.semanticPlan?.selectionAudit;
+    if (selection) {
+        return selection.conditionGroups
+            .filter(({conditionId}) => selection.selectedConditionIds.includes(conditionId))
+            .map(({sourceSpan}) => sourceSpan.quote)
+            .join('\n');
+    }
+
+    const conditions = detail.conversationState?.conditions.map(({text}) => text.trim()).filter(Boolean) ?? [];
+    if (conditions.length) return [...new Set(conditions)].join('\n');
+
+    const turns = detail.turns.filter((entry) => entry.sequence < turn.sequence).sort((a, b) => b.sequence - a.sequence);
+    let text = requestTextForTurn(detail, turn);
+    const newestMessage = turns.find((entry) => entry.actor === 'USER' && entry.text);
+    if (!newestMessage) return text;
+
+    let before = newestMessage.sequence;
+    for (const entry of turns) {
+        if (entry.sequence >= before || !entry.semanticPlan) continue;
+        if (entry.semanticPlan.state !== 'NEEDS_CLARIFICATION') break;
+        const original = requestTextForTurn(detail, entry);
+        if (!original || text.includes(original)) break;
+        text = `${original}\n추가 답변: ${text}`;
+        const previousMessage = turns.find((candidate) => candidate.actor === 'USER' && candidate.sequence < entry.sequence);
+        if (!previousMessage) break;
+        before = previousMessage.sequence;
+    }
+    return text;
+}
+
 export function semanticRecovery(plan: TSemanticPlan): 'retry' | 'edit' {
     // A failed or invalid model response is not evidence that the same request will succeed.
     return plan.reasonCodes.some((code) => code === 'MODEL_TIMEOUT' || code === 'INTERPRET_TIMEOUT') ? 'retry' : 'edit';

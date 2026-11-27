@@ -3525,6 +3525,51 @@ describe('persistent schedule sidebar', () => {
         return {raw, confirmed, executed};
     };
 
+    it.each([false, true])('recovers a failed model execution without retyping the request (plan expired: %s)', async (expired) => {
+        const {raw, confirmed, executed} = executedSemanticRequest('FAILED');
+        useShiftEditorStore.getState().setIntentFirstAuthoringEnabled(true);
+        Object.assign(confirmed.semanticPlan!, {
+            authoringContractVersion: 'intent-first-v1',
+            interactionId: 'initial-interaction',
+            deadlineAt: new Date(Date.now() - 1000).toISOString(),
+            planExpiresAt: new Date(Date.now() + (expired ? -1000 : 60000)).toISOString(),
+        });
+        executed.result = {
+            ...successfulResult,
+            operationType: 'ADJUST',
+            applicable: false,
+            changedCells: [],
+            engineResult: {status: 'ERROR'},
+            failure: {reasonCode: 'MODEL_TIMEOUT', message: ''},
+        };
+        const docBefore = useShiftEditorStore.getState().doc;
+        mocks.execute.mockResolvedValueOnce({...executed, operationId: 'retry:1', sequence: executed.sequence + 1});
+        mocks.interpret.mockResolvedValueOnce({interpretationId: 'review:1'});
+        renderSidebar();
+
+        await userEvent.click(await screen.findByRole('button', {name: '다시 계산하기'}));
+
+        if (expired) {
+            await waitFor(() => expect(mocks.interpret).toHaveBeenCalledOnce());
+            expect(mocks.interpret.mock.calls[0]![1]).toMatchObject({text: raw, reviewBeforeExecution: true});
+            expect(mocks.execute).not.toHaveBeenCalled();
+        } else {
+            await waitFor(() => expect(mocks.execute).toHaveBeenCalledOnce());
+            expect(mocks.execute.mock.calls[0]![1]).toMatchObject({
+                operationType: 'ADJUST',
+                retryOperationId: executed.operationId,
+                interpretationId: confirmed.interpretationId,
+                planHash: confirmed.semanticPlan!.planHash,
+                interactionId: confirmed.semanticPlan!.interactionId,
+            });
+            expect(mocks.interpret).not.toHaveBeenCalled();
+            expect(mocks.confirmPlan).not.toHaveBeenCalled();
+        }
+
+        expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
+        expect(useShiftEditorStore.getState().doc).toBe(docBefore);
+    });
+
     it('restarts after an edited failed request without old recovery controls or condition targets', async () => {
         const {raw, executed} = executedSemanticRequest('FAILED');
 
@@ -6093,9 +6138,7 @@ describe('intent-first sidebar integration', () => {
                 requestPriority: {version: 'request-first-v2', userSummary: '기존 배정을 유지하고 빈 칸을 먼저 채울까요?'},
             }),
         });
-        current.operations = [
-            {...operation, operationType: 'ADJUST', resultVersionId: null, applyStatus: 'NOT_APPLIED_REVIEW', result},
-        ];
+        current.operations = [{...operation, operationType: 'ADJUST', resultVersionId: null, applyStatus: 'NOT_APPLIED_REVIEW', result}];
         renderSidebar();
         expect(await screen.findByText('기존 배정을 유지하고 빈 칸을 먼저 채울까요?')).toBeVisible();
         const reply = screen.getByPlaceholderText(i18n.t('aiConversationSidebar.describeChanges'));
@@ -6112,5 +6155,4 @@ describe('intent-first sidebar integration', () => {
         });
         expect(mocks.interpret).not.toHaveBeenCalled();
     });
-
 });

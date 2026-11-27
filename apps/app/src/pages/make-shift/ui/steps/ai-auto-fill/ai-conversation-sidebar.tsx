@@ -20,7 +20,7 @@ import {
     isDraftRevisionConflict,
     type TAiConversationFailure,
 } from '../../../model/ai-conversation-failure';
-import {conversationOperationFailure as operationFailure} from '../../../model/ai-execution-failure';
+import {conversationOperationFailure as operationFailure, isAdjustmentModelFailure} from '../../../model/ai-execution-failure';
 import {conversationDraftSignature as signature} from '../../../model/conversation-draft-signature';
 import {isExecutionFinished, readPendingExecution, isDefinitiveExecutionConflict} from '../../../model/conversation-pending-execution';
 import {
@@ -30,6 +30,7 @@ import {
     localizeConversationServerCopy,
     operationAttempt,
     precedingCompletedOperation,
+    requestTextForAdjustmentRetry,
     requestTextForTurn,
     semanticRecovery,
     unexecutedRequestForRecovery,
@@ -805,13 +806,22 @@ export default function AiConversationSidebar({
         conflict?: TConversationOperation,
         refreshBeforeExecution = false,
         submittedText?: string,
+        retryAdjustment?: TConversationOperation,
     ) => {
         await run(async () => {
             if (isScheduleFullyProtected(useShiftEditorStore.getState().doc)) throw new Error(t('aiAdjust.allFixed'));
 
-            if (selection || conflict?.result?.candidate || refreshBeforeExecution) await refresh();
+            if (selection || conflict?.result?.candidate || refreshBeforeExecution || retryAdjustment) await refresh();
 
             const current = await sync();
+
+            if (
+                retryAdjustment &&
+                (!isConversationSuggestionCurrent(current, retryAdjustment) ||
+                    current.conversation.currentVersionId !== retryAdjustment.sourceVersionId ||
+                    current.operations.some((operation) => operation.sequence > retryAdjustment.sequence))
+            )
+                throw new AiConversationInputError('staleRequest', 'ADJUST');
 
             if (
                 selection &&
@@ -862,12 +872,14 @@ export default function AiConversationSidebar({
                     : {}),
                 ...(fillPolicy ? {fillPolicy, rebuildConfirmed: fillPolicy === 'REBUILD_UNLOCKED'} : {}),
                 ...(interpretationId ? {interpretationId} : {}),
+                ...(retryAdjustment ? {retryOperationId: retryAdjustment.operationId} : {}),
                 ...(() => {
                     const turn = current.turns.find((entry) => entry.interpretationId === interpretationId);
 
                     if (!turn?.semanticPlan) return {};
 
                     if (
+                        !retryAdjustment &&
                         !conflict?.result?.candidate &&
                         (!isSemanticExecutionCurrent(current, turn, localDirty) ||
                             (turn.type !== 'SEMANTIC_PLAN_CONFIRMED' && !intentFirstEnabled))
@@ -916,7 +928,12 @@ export default function AiConversationSidebar({
 
                 const selectedPlan = latest.turns.find((turn) => turn.interpretationId === interpretationId && turn.semanticPlan);
 
-                if (!conflict?.result?.candidate && selectedPlan && !isSemanticExecutionCurrent(latest, selectedPlan, false))
+                if (
+                    !retryAdjustment &&
+                    !conflict?.result?.candidate &&
+                    selectedPlan &&
+                    !isSemanticExecutionCurrent(latest, selectedPlan, false)
+                )
                     throw new AiConversationInputError('staleRequest', operationType, canRetryGeneration);
 
                 if (conflict?.result?.candidate && !canSelectAuthoringCandidate(conflict.result, latest.conversation.currentVersionId))
@@ -1327,7 +1344,15 @@ export default function AiConversationSidebar({
     const interpret = async (
         request = text,
         reference = previousId,
-        {removeConditionId, retry = false}: {removeConditionId?: string; retry?: boolean} = {},
+        {
+            removeConditionId,
+            retry = false,
+            reviewBeforeExecution = false,
+        }: {
+            removeConditionId?: string;
+            retry?: boolean;
+            reviewBeforeExecution?: boolean;
+        } = {},
     ) => {
         const message = request.trim();
 
@@ -1509,6 +1534,7 @@ export default function AiConversationSidebar({
                     const interpretationRequest: Parameters<typeof api.interpret>[1] = {
                         expectedRevision: current.conversation.revision,
                         text: interpretedText,
+                        ...(reviewBeforeExecution ? {reviewBeforeExecution: true} : {}),
                         clientContext: {
                             surfaceVersion: 'conversation-minimal-v1',
                             entryChoice: entryChoice ?? undefined,
@@ -2129,7 +2155,7 @@ export default function AiConversationSidebar({
             operationFailure(latestOperation) &&
             dismissedFailureId !== latestOperation.operationId &&
             !editingRequest &&
-            entryChoice !== 'modify' &&
+            (entryChoice !== 'modify' || isAdjustmentModelFailure(latestOperation.result)) &&
             !detail?.turns.some((turn) => turn.sequence > latestOperation.sequence),
     );
     const latestStoredError = visibleLocalEvents
@@ -2524,6 +2550,30 @@ export default function AiConversationSidebar({
                 {t('aiConversationSidebar.authoring.undo')}
             </button>
         );
+    };
+    const retryFailedAdjustment = (current: TConversationDetail, failure: TConversationOperation, turn: TConversationTurn) => {
+        const plan = turn.semanticPlan;
+        if (!plan) {
+            void prepareAndAdjust(turn);
+            return;
+        }
+        if (!intentFirstEnabled || plan.authoringContractVersion !== INTENT_FIRST_CONTRACT || !isAdjustmentModelFailure(failure.result)) {
+            void confirmAndAdjust(turn);
+            return;
+        }
+        if (
+            !localDirty &&
+            isConversationSuggestionCurrent(current, failure) &&
+            failure.sourceVersionId === current.conversation.currentVersionId &&
+            Date.parse(plan.planExpiresAt ?? '') > Date.now()
+        ) {
+            void execute('ADJUST', undefined, turn.interpretationId ?? undefined, undefined, undefined, false, undefined, failure);
+            return;
+        }
+        const original = requestTextForAdjustmentRetry(current, turn);
+        if (original && original.length <= MAX_REQUEST_LENGTH)
+            void interpret(original, turn.interpretationId ?? undefined, {retry: true, reviewBeforeExecution: true});
+        else reviewRequest(turn);
     };
     const renderTurn = (turn: TConversationTurn) => {
         if (turn.type === 'SEGMENT_START')
@@ -3156,8 +3206,8 @@ export default function AiConversationSidebar({
                                                                                       event.operation.interpretationId,
                                                                               );
 
-                                                                              if (turn?.semanticPlan) void confirmAndAdjust(turn);
-                                                                              else if (turn) void prepareAndAdjust(turn);
+                                                                              if (turn)
+                                                                                  retryFailedAdjustment(detail, event.operation, turn);
                                                                           }
                                                                       }
                                                                     : undefined
